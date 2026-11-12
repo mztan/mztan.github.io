@@ -1,0 +1,249 @@
+// JavaScript implementation of TrieDictionary based on the C++ version from nimble
+// Optimized for Quest 3 with aggressive pruning and memory efficiency
+
+class TrieNode {
+    constructor() {
+        this.children = new Map();
+        this.word = '';
+    }
+}
+
+class TrieDictionary {
+    constructor(adjacentKeyMultiplier = 0.4, words = []) {
+        this.adjacentKeyMultiplier = adjacentKeyMultiplier;
+        this.root = new TrieNode();
+        this.adjacentKeysSet = new Set();
+
+        // Initialize adjacent keys set from keyboard layout
+        this.initializeAdjacentKeys();
+
+        // Insert all words if provided
+        for (const word of words) {
+            this.insert(word);
+        }
+    }
+
+    initializeAdjacentKeys() {
+        // Use the global keyboardNeighbors from keyboard-layout.js
+        if (typeof keyboardNeighbors !== 'undefined') {
+            for (const [char, neighbors] of Object.entries(keyboardNeighbors)) {
+                for (const neighbor of neighbors) {
+                    this.adjacentKeysSet.add(char + neighbor);
+                }
+            }
+        }
+    }
+
+    insert(word) {
+        const lowercaseWord = word.toLowerCase();
+        let node = this.root;
+
+        for (const char of lowercaseWord) {
+            if (!node.children.has(char)) {
+                node.children.set(char, new TrieNode());
+            }
+            node = node.children.get(char);
+        }
+
+        node.word = lowercaseWord;
+    }
+
+    contains(word) {
+        const lowercaseWord = word.toLowerCase();
+        let node = this.root;
+
+        for (const char of lowercaseWord) {
+            if (!node.children.has(char)) {
+                return false;
+            }
+            node = node.children.get(char);
+        }
+
+        return node.word === lowercaseWord;
+    }
+
+    search(word, maxEditDist = 2) {
+        const results = [];
+        const lowercaseWord = word.toLowerCase();
+        const sz = lowercaseWord.length;
+
+        // DEBUG: Check if trie has any children
+        if (this.root.children.size === 0) {
+            console.error(`❌ TrieDictionary.search("${word}"): Trie is EMPTY! No root children.`);
+            return results;
+        }
+
+        // Calculate acceptable length range for early pruning
+        // Allow maxEditDist characters difference in either direction
+        const inputLength = lowercaseWord.length;
+        const minLength = Math.max(1, inputLength - maxEditDist);
+        const maxLength = inputLength + maxEditDist;
+
+        // Pre-allocate row buffers for reuse (faster than creating new arrays)
+        const rowBuffer1 = new Float32Array(sz + 1);
+        const rowBuffer2 = new Float32Array(sz + 1);
+
+        // Initialize first row of edit distance matrix
+        for (let i = 0; i <= sz; i++) {
+            rowBuffer1[i] = i;
+        }
+
+        // DEBUG logging for "fantastic" searches
+        if (word.includes('fantastic')) {
+            console.log(`🔎 Searching for "${word}": minLen=${minLength}, maxLen=${maxLength}, maxDist=${maxEditDist}`);
+            console.log(`🔎 Root has ${this.root.children.size} children:`, Array.from(this.root.children.keys()).slice(0, 10));
+        }
+
+        // Start search from root's children
+        for (const [char, node] of this.root.children) {
+            this.searchImpl(
+                node, 
+                char, 
+                rowBuffer1, 
+                rowBuffer2,
+                lowercaseWord, 
+                maxEditDist, 
+                results,
+                1, // current depth
+                minLength,
+                maxLength
+            );
+        }
+
+        return results;
+    }
+
+    searchImpl(node, char, lastRow, currentRow, word, maxEditDist, results, depth, minLength, maxLength) {
+        const sz = lastRow.length;
+
+        if (sz === 0) {
+            return;
+        }
+
+        // AGGRESSIVE PRUNING: Check if we can possibly reach acceptable length
+        // If current depth already exceeds maxLength, bail immediately
+        if (depth > maxLength) {
+            return;
+        }
+
+        currentRow[0] = lastRow[0] + 1;
+
+        // Calculate the min cost of insertion, deletion, match or substitution
+        let minInRow = currentRow[0];
+        for (let i = 1; i < sz; i++) {
+            const insertCondition = 1.0 + currentRow[i - 1];
+            const deleteCondition = 1.0 + lastRow[i];
+            let replaceCondition = lastRow[i - 1];
+
+            if (word[i - 1] !== char) {
+                replaceCondition = 1.0 + lastRow[i - 1];
+
+                // Check if characters are adjacent keys for reduced edit distance
+                const adjacentKey = word[i - 1] + char;
+                if (this.adjacentKeysSet.has(adjacentKey)) {
+                    replaceCondition = this.adjacentKeyMultiplier + lastRow[i - 1];
+                }
+            }
+
+            const minVal = Math.min(insertCondition, deleteCondition, replaceCondition);
+            currentRow[i] = minVal;
+            
+            // Track minimum inline to avoid second pass
+            if (minVal < minInRow) {
+                minInRow = minVal;
+            }
+        }
+
+        // If we found a complete word, check length constraint AND edit distance
+        if (node.word.length > 0) {
+            const wordLength = node.word.length;
+            const editDist = currentRow[sz - 1];
+            
+            // DEBUG: Log when we find candidate words
+            if (word.includes('facilitat') || word.includes('archival')) {
+                console.log(`📊 Found "${node.word}": depth=${depth}, len=${wordLength}, minLen=${minLength}, maxLen=${maxLength}, editDist=${editDist}, maxDist=${maxEditDist}`);
+                console.log(`   Length OK: ${wordLength >= minLength && wordLength <= maxLength}`);
+                console.log(`   Edit distance OK: ${editDist <= maxEditDist}`);
+                console.log(`   currentRow:`, Array.from(currentRow));
+            }
+            
+            // CRITICAL: Check length constraint before adding to results
+            if (wordLength >= minLength && wordLength <= maxLength && 
+                editDist <= maxEditDist) {
+                results.push({
+                    word: node.word,
+                    editDistance: editDist
+                });
+            }
+        }
+
+        // AGGRESSIVE PRUNING: Only continue if there's hope
+        // Stop early if minimum cost in row already exceeds threshold
+        // DISABLED: Too aggressive, cuts off valid paths
+        // if (minInRow > maxEditDist) {
+        //     return;
+        // }
+
+        // Recurse to children - need fresh buffer for next row
+        for (const [nextChar, childNode] of node.children) {
+            const nextRow = new Float32Array(sz);
+            this.searchImpl(
+                childNode, 
+                nextChar, 
+                currentRow,  // current becomes last for next level
+                nextRow,     // fresh buffer for next level
+                word, 
+                maxEditDist, 
+                results,
+                depth + 1,
+                minLength,
+                maxLength
+            );
+        }
+    }
+
+    // Find the closest word with minimum edit distance
+    findClosestWord(word) {
+        // If the word is already in the dictionary, return it
+        if (this.contains(word)) {
+            return word;
+        }
+
+        const candidates = this.search(word, 2);
+
+        if (candidates.length === 0) {
+            return word; // No correction found
+        }
+
+        // Find best match without full sort (more efficient for single result)
+        let bestCandidate = candidates[0];
+        for (let i = 1; i < candidates.length; i++) {
+            const candidate = candidates[i];
+            if (candidate.editDistance < bestCandidate.editDistance ||
+                (candidate.editDistance === bestCandidate.editDistance &&
+                 candidate.word.length < bestCandidate.word.length)) {
+                bestCandidate = candidate;
+            }
+        }
+
+        return bestCandidate.word;
+    }
+
+    // Get word candidates with their edit distances (similar to C++ version)
+    getWordCandidates(word, maxEditDist = 2) {
+        const candidates = this.search(word, maxEditDist);
+
+        // Sort by edit distance for consistent results
+        candidates.sort((a, b) => a.editDistance - b.editDistance);
+
+        // Return in format compatible with existing code [word, distance]
+        return candidates.map(candidate => [candidate.word, candidate.editDistance]);
+    }
+}
+
+// Export for both Node.js and browser environments
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = TrieDictionary;
+} else if (typeof window !== 'undefined') {
+    window.TrieDictionary = TrieDictionary;
+}

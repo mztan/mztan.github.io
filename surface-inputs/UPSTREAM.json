@@ -1,0 +1,795 @@
+{
+  "sources": [
+    {
+      "name": "keyboard",
+      "repository": "https://github.com/fbotros/si_eval_app",
+      "commit": "082f9d740ba2e65a6a2714c4b40065082c28e58e",
+      "path": ".",
+      "files": 58
+    },
+    {
+      "name": "touchpad",
+      "repository": "https://github.com/sheng-shen/sheng-shen.github.io",
+      "commit": "0867883aa5e63c75c6ed320b32253d71eeb71b4f",
+      "path": "data/fitts/",
+      "files": 37
+    },
+    {
+      "name": "jquery-ui-images",
+      "version": "1.8.6",
+      "theme": "ui-lightness",
+      "repository": "https://jqueryui.com/",
+      "path": "https://code.jquery.com/ui/1.8.6/themes/ui-lightness/images/",
+      "files": 28,
+      "note": "Restore image assets referenced by the unchanged upstream CSS."
+    }
+  ],
+  "files": [
+    {
+      "path": "keyboard/.gitignore",
+      "source_path": ".gitignore",
+      "source": "keyboard",
+      "sha256": "5b11334fb427e39f1e0d6b8f9af3d5166d18008ef8dd25a02db912a847d5cf58"
+    },
+    {
+      "path": "keyboard/README.md",
+      "source_path": "README.md",
+      "source": "keyboard",
+      "sha256": "960d9fb43b2bee90830ae5953db93c802a8b6ca9b9d42b3ea5c7af36870a024c"
+    },
+    {
+      "path": "keyboard/exec_demo/AutocorrectEngine.js",
+      "source_path": "exec_demo/AutocorrectEngine.js",
+      "source": "keyboard",
+      "sha256": "62aa46922bd03050b2f8abac4da9dac107546311e2930b36380c80c7e8586e81"
+    },
+    {
+      "path": "keyboard/exec_demo/TrieDictionary.js",
+      "source_path": "exec_demo/TrieDictionary.js",
+      "source": "keyboard",
+      "sha256": "47ea14ff532ddfad92ecc0bb563f1c04c54c65f2ea1a74c31980cc6106e70ef4"
+    },
+    {
+      "path": "keyboard/exec_demo/TrieDictionary.js.bak",
+      "source_path": "exec_demo/TrieDictionary.js.bak",
+      "source": "keyboard",
+      "sha256": "9acf2f41e5c1b502f0552c10d6545a9305b88382cbf79acb315502fd52cb59e5"
+    },
+    {
+      "path": "keyboard/exec_demo/clean_short_words.js",
+      "source_path": "exec_demo/clean_short_words.js",
+      "source": "keyboard",
+      "sha256": "4871ebfaaddeae865d6474b3d7c11c443a855b839a3f66429535a60ebcfb65b2"
+    },
+    {
+      "path": "keyboard/exec_demo/common_words.txt",
+      "source_path": "exec_demo/common_words.txt",
+      "source": "keyboard",
+      "sha256": "97a52610f4d951576b7e1e64bce562d43e367c660282915d8f31b1ca281c6cc8"
+    },
+    {
+      "path": "keyboard/exec_demo/comprehensive_dictionary.txt",
+      "source_path": "exec_demo/comprehensive_dictionary.txt",
+      "source": "keyboard",
+      "sha256": "c5270fbb768d921bcc3350718de88e82e1092e7cc058d7e45206d59e4497d55a"
+    },
+    {
+      "path": "keyboard/exec_demo/conversational_easy.txt",
+      "source_path": "exec_demo/conversational_easy.txt",
+      "source": "keyboard",
+      "sha256": "cde5f0abc8f644caefac371681dc2e8b714c53051726fcd2fc5c962f0c2fc40a"
+    },
+    {
+      "path": "keyboard/exec_demo/debug-keyboard.js",
+      "source_path": "exec_demo/debug-keyboard.js",
+      "source": "keyboard",
+      "sha256": "7b48b78201d55cf86b8e9c078c8c20f6ac959683587f781918bb8b41f2133381"
+    },
+    {
+      "path": "keyboard/exec_demo/debug-trie.js",
+      "source_path": "exec_demo/debug-trie.js",
+      "source": "keyboard",
+      "sha256": "9ce3616011fbeb33dc95a20c984ac3ac8164e128433c6a14866f2f5d29365dce"
+    },
+    {
+      "path": "keyboard/exec_demo/dictionary-loader.js",
+      "source_path": "exec_demo/dictionary-loader.js",
+      "source": "keyboard",
+      "sha256": "44165ee8073407fde8cfde393b471ebd52b9b068e961b8a0706bd096d95d87db"
+    },
+    {
+      "path": "keyboard/exec_demo/document_editor/common_words.txt",
+      "source_path": "exec_demo/document_editor/common_words.txt",
+      "source": "keyboard",
+      "sha256": "97a52610f4d951576b7e1e64bce562d43e367c660282915d8f31b1ca281c6cc8"
+    },
+    {
+      "path": "keyboard/exec_demo/document_editor/index.html",
+      "source_path": "exec_demo/document_editor/index.html",
+      "source": "keyboard",
+      "sha256": "d9f0df7a770285183bfd9c74df6a6bc34283ddc6e3a022fbd448f0987123f52a"
+    },
+    {
+      "path": "keyboard/exec_demo/extra_hard_prompts.txt",
+      "source_path": "exec_demo/extra_hard_prompts.txt",
+      "source": "keyboard",
+      "sha256": "c7232087d92c6c485b328a1baaf4961bfbd32313f447ee7ff9e0c22ea423b93f"
+    },
+    {
+      "path": "keyboard/exec_demo/filter_dictionary.js",
+      "source_path": "exec_demo/filter_dictionary.js",
+      "source": "keyboard",
+      "sha256": "7ea8c3b47d3d0dd368a3d351874dbacc43c8d7780ffc8443c6e279cd6811d197"
+    },
+    {
+      "path": "keyboard/exec_demo/generate_frequency_data.py",
+      "source_path": "exec_demo/generate_frequency_data.py",
+      "source": "keyboard",
+      "sha256": "7473aa57ec480f5cdf0d8f80a27ecb178ecf4693409b2ef13189a4825cfa9f1e"
+    },
+    {
+      "path": "keyboard/exec_demo/hard_prompts.txt",
+      "source_path": "exec_demo/hard_prompts.txt",
+      "source": "keyboard",
+      "sha256": "712834d49a75753f873f1f9bbf09aeb3dc9cb845a1937640e8da3c58af48caae"
+    },
+    {
+      "path": "keyboard/exec_demo/hybrid_dictionary.txt",
+      "source_path": "exec_demo/hybrid_dictionary.txt",
+      "source": "keyboard",
+      "sha256": "664904ef9957e9b8930cade8e79e4246ee0477499f004a9b0c784fc652ec3f01"
+    },
+    {
+      "path": "keyboard/exec_demo/index.html",
+      "source_path": "exec_demo/index.html",
+      "source": "keyboard",
+      "sha256": "c86c3ec9aa5817333de7e1be9b5f079513ea05a883c3d4dae659aaa0427ac7e2"
+    },
+    {
+      "path": "keyboard/exec_demo/keyboard-layout.js",
+      "source_path": "exec_demo/keyboard-layout.js",
+      "source": "keyboard",
+      "sha256": "14a6b6ddc19f92b14d215cd5dd776b23bf6de8565cfb3b9e16c74888883a3ce0"
+    },
+    {
+      "path": "keyboard/exec_demo/prompts.txt",
+      "source_path": "exec_demo/prompts.txt",
+      "source": "keyboard",
+      "sha256": "a929342e936c4fcbfb41630fb133a428d29fb4cdaa4149cc241f18662f0e8d7c"
+    },
+    {
+      "path": "keyboard/exec_demo/remove_invalid_single_letters.js",
+      "source_path": "exec_demo/remove_invalid_single_letters.js",
+      "source": "keyboard",
+      "sha256": "19c2c6a1335670a8c43a8a4507895471d33b017422fbf11cd32df2f18cdab28b"
+    },
+    {
+      "path": "keyboard/exec_demo/script.js",
+      "source_path": "exec_demo/script.js",
+      "source": "keyboard",
+      "sha256": "b87896b8a4053e1a8ce2b7e032d24d983e403b9f16f61bab0cd70ecc30becb2c"
+    },
+    {
+      "path": "keyboard/exec_demo/test-autocorrect.js",
+      "source_path": "exec_demo/test-autocorrect.js",
+      "source": "keyboard",
+      "sha256": "515d789ba70273993f7919f3307ad79da4058fef8b3e30992e28afeb0e9e987a"
+    },
+    {
+      "path": "keyboard/exec_demo/test-canonical.js",
+      "source_path": "exec_demo/test-canonical.js",
+      "source": "keyboard",
+      "sha256": "b5dd95ae7247538d74846159184c1dc85f5d3ffe17d2a189ce7bc238da3556cb"
+    },
+    {
+      "path": "keyboard/exec_demo/test-costs.js",
+      "source_path": "exec_demo/test-costs.js",
+      "source": "keyboard",
+      "sha256": "3fc07d5a7024dfa277b76a25760014b9d296392792352881d52a1b5be1a0a02c"
+    },
+    {
+      "path": "keyboard/exec_demo/test-dp-simple.js",
+      "source_path": "exec_demo/test-dp-simple.js",
+      "source": "keyboard",
+      "sha256": "cfc7b8bc5a30bfd2a65d8b007f53e846d5fbac4b9ef23233fcbc523399307b6f"
+    },
+    {
+      "path": "keyboard/exec_demo/test-dp.html",
+      "source_path": "exec_demo/test-dp.html",
+      "source": "keyboard",
+      "sha256": "36cd734233b65aeb64d2ac7c2a3e302107bb99e5c94b81e41760745b5cd24fe0"
+    },
+    {
+      "path": "keyboard/exec_demo/test-dp.js",
+      "source_path": "exec_demo/test-dp.js",
+      "source": "keyboard",
+      "sha256": "dcdeb2cc96e3f0db8946b73148c8cf3b6126de28b0e4fb4b1c70b48c06d22e23"
+    },
+    {
+      "path": "keyboard/exec_demo/test-iam.js",
+      "source_path": "exec_demo/test-iam.js",
+      "source": "keyboard",
+      "sha256": "07458b807f2d0d2fa7363cb88a5bc715c69a49f0b57c3bba5536f005ff3c34fb"
+    },
+    {
+      "path": "keyboard/exec_demo/test-incremental-dp.js",
+      "source_path": "exec_demo/test-incremental-dp.js",
+      "source": "keyboard",
+      "sha256": "c08b3e4f6390eb25f1d90b1defd51d7c1358e8f268330d96700ef1b3ffd1e305"
+    },
+    {
+      "path": "keyboard/exec_demo/test-incremental-performance.js",
+      "source_path": "exec_demo/test-incremental-performance.js",
+      "source": "keyboard",
+      "sha256": "ba6bdffdb891938c78d30354d0602e715b150504f2e2a7b82db36e469f20dc24"
+    },
+    {
+      "path": "keyboard/exec_demo/test-iss.js",
+      "source_path": "exec_demo/test-iss.js",
+      "source": "keyboard",
+      "sha256": "617b25165497f1e9d563c6c4d04b94dd8286864c2c2762e847e139a2882a624c"
+    },
+    {
+      "path": "keyboard/exec_demo/test-keyboard-aware.js",
+      "source_path": "exec_demo/test-keyboard-aware.js",
+      "source": "keyboard",
+      "sha256": "042ee858a80ac1a75a2f2fd5ad06f4e04eb2134fda30393697abdabbe9611dbf"
+    },
+    {
+      "path": "keyboard/exec_demo/test-lev-debug.js",
+      "source_path": "exec_demo/test-lev-debug.js",
+      "source": "keyboard",
+      "sha256": "5e8f02b0efa8c3085bb8e56977566e2b1cea98ccbcfa30e8880aae9450b7660d"
+    },
+    {
+      "path": "keyboard/exec_demo/test-readd.js",
+      "source_path": "exec_demo/test-readd.js",
+      "source": "keyboard",
+      "sha256": "81d69330246f1742fe2e47663c1d8db9b6841bba97765ccff5bf8d865fb0e2d6"
+    },
+    {
+      "path": "keyboard/exec_demo/test-skip-autocorrect.js",
+      "source_path": "exec_demo/test-skip-autocorrect.js",
+      "source": "keyboard",
+      "sha256": "0b4c081d691c776620da6140726a204a0f3a0f351f9d80f6213c4e3e919c3181"
+    },
+    {
+      "path": "keyboard/exec_demo/test-trace-tin.js",
+      "source_path": "exec_demo/test-trace-tin.js",
+      "source": "keyboard",
+      "sha256": "f6b78ac00117b2f5ba490cd7dcd6cd5266739c6108196ea7cd0aa95e622b7286"
+    },
+    {
+      "path": "keyboard/exec_demo/test-typin.js",
+      "source_path": "exec_demo/test-typin.js",
+      "source": "keyboard",
+      "sha256": "c2fbfa3ef8b4103625882643668b10d295446398d4ddb56ba5a063c3642e83a3"
+    },
+    {
+      "path": "keyboard/exec_demo/test-verify-costs.js",
+      "source_path": "exec_demo/test-verify-costs.js",
+      "source": "keyboard",
+      "sha256": "33cb892540191c199d0eb83ae82ffe48f6e397e185397a0d0f0edc3bec95e04e"
+    },
+    {
+      "path": "keyboard/exec_demo/test-word-splitting.js",
+      "source_path": "exec_demo/test-word-splitting.js",
+      "source": "keyboard",
+      "sha256": "1fe98b2ecb3858db52a163ce8e3e6ae34250a7feeb0aea08c678e911bb709d0f"
+    },
+    {
+      "path": "keyboard/exec_demo/vet_short_words.js",
+      "source_path": "exec_demo/vet_short_words.js",
+      "source": "keyboard",
+      "sha256": "b1ce0e38ad55b87109a4da91963f3b69c5a2bef3ca7dfaf5a89e66b8375610e2"
+    },
+    {
+      "path": "keyboard/exec_demo/word_frequencies.json",
+      "source_path": "exec_demo/word_frequencies.json",
+      "source": "keyboard",
+      "sha256": "dbcc56708d6f1d8c6ef4618f88ea18540193b811a43783cca86907438c619031"
+    },
+    {
+      "path": "keyboard/favicon-32x32.png",
+      "source_path": "favicon-32x32.png",
+      "source": "keyboard",
+      "sha256": "8c92edf7c51b72a846d0a20dc514805e3ef0843da37d7cdf12fb562b1dc6a8fc"
+    },
+    {
+      "path": "keyboard/index.html",
+      "source_path": "index.html",
+      "source": "keyboard",
+      "sha256": "b63b5fa023f4eec32fd8084ffe63a09448335bc30b1aa3dc298ea0e7e7c1419e"
+    },
+    {
+      "path": "keyboard/keyboard-layout.js",
+      "source_path": "keyboard-layout.js",
+      "source": "keyboard",
+      "sha256": "ffc2979afb49976f77d8fe762888d9ec0be81bc1b484fde4969f603d822ac509"
+    },
+    {
+      "path": "keyboard/prompts/arrows.txt",
+      "source_path": "prompts/arrows.txt",
+      "source": "keyboard",
+      "sha256": "3434f534206149b44c17a59694a1ceefcd06fb47914dcb0dd643ba7fa98c4f5a"
+    },
+    {
+      "path": "keyboard/prompts/emails.txt",
+      "source_path": "prompts/emails.txt",
+      "source": "keyboard",
+      "sha256": "913992e643bb83e94b091ab03737d516c2f938c0ae6d95ad90802b5be27759ff"
+    },
+    {
+      "path": "keyboard/prompts/emails_passwords.txt",
+      "source_path": "prompts/emails_passwords.txt",
+      "source": "keyboard",
+      "sha256": "71f5b54b00862bd574728b9e1274ae85dc52c6eda197dce81464aa68024b0631"
+    },
+    {
+      "path": "keyboard/prompts/metal_keys.txt",
+      "source_path": "prompts/metal_keys.txt",
+      "source": "keyboard",
+      "sha256": "87537839ef9eff8816bd9c475e2fa854cde166e518987d145c74ac14fd70aa41"
+    },
+    {
+      "path": "keyboard/prompts/nat_lang_no_punc.txt",
+      "source_path": "prompts/nat_lang_no_punc.txt",
+      "source": "keyboard",
+      "sha256": "ca93686559e5f5f88927f282e0658086a4f3dde066a37d59fba5b214fbe9f6d6"
+    },
+    {
+      "path": "keyboard/prompts/nat_lang_with_cap_punc.txt",
+      "source_path": "prompts/nat_lang_with_cap_punc.txt",
+      "source": "keyboard",
+      "sha256": "c31f216ab74a38c3f96dc7bb86fcc97cb7f07c103f1766281c1ba3f700711c6d"
+    },
+    {
+      "path": "keyboard/prompts/passwords.txt",
+      "source_path": "prompts/passwords.txt",
+      "source": "keyboard",
+      "sha256": "8fee4ccace6116a4b3914d35de37bdf02e9e84b4ea52779f8a24dc851b6b6437"
+    },
+    {
+      "path": "keyboard/prompts/practice.txt",
+      "source_path": "prompts/practice.txt",
+      "source": "keyboard",
+      "sha256": "a202fb006cbfd496dceb0891b7c29d5e7d51523d2093a4bfb38fbce1ddb750b0"
+    },
+    {
+      "path": "keyboard/prompts/shortcuts.txt",
+      "source_path": "prompts/shortcuts.txt",
+      "source": "keyboard",
+      "sha256": "26e2980048c39c4dba233792481b2ed3f9cebc8bbcd8d0a2dfe5b6dcc72c43fe"
+    },
+    {
+      "path": "keyboard/script.js",
+      "source_path": "script.js",
+      "source": "keyboard",
+      "sha256": "480c45babefdeaaee90af571af0f33a8eb57fd2988b8cf3c7018f70ab308daa6"
+    },
+    {
+      "path": "keyboard/styles.css",
+      "source_path": "styles.css",
+      "source": "keyboard",
+      "sha256": "4081ea4d53da85b1eabf7253d721016115dc1e24704156fbfbe25d3d1670eb98"
+    },
+    {
+      "path": "touchpad/audio/chime_1.mp3",
+      "source_path": "data/fitts/audio/chime_1.mp3",
+      "source": "touchpad",
+      "sha256": "d1fb532c05e45120f480ac23375681c59087ec4094d383160fb297b814c13f86"
+    },
+    {
+      "path": "touchpad/audio/error_1.mp3",
+      "source_path": "data/fitts/audio/error_1.mp3",
+      "source": "touchpad",
+      "sha256": "2754c5b2353b20d5573c17b2e5511fbbcf5dad4b61ba6c60caf6038c0612742e"
+    },
+    {
+      "path": "touchpad/d3.v2.js",
+      "source_path": "data/fitts/d3.v2.js",
+      "source": "touchpad",
+      "sha256": "4432c25f242b7e529293f56e2f50fdcb771ef7b91401488a519f62165ece0ea7"
+    },
+    {
+      "path": "touchpad/event-logger.js",
+      "source_path": "data/fitts/event-logger.js",
+      "source": "touchpad",
+      "sha256": "c57d9f17463c5eb587af1cfbee234935a2887b2b019dc53824ba0ca92240dd9f"
+    },
+    {
+      "path": "touchpad/fitts-law.js",
+      "source_path": "data/fitts/fitts-law.js",
+      "source": "touchpad",
+      "sha256": "5a2a59a1df2e151d05704be7e529ea5fc6a6b45df8bfe76ea0961ec23fb9595e"
+    },
+    {
+      "path": "touchpad/index.html",
+      "source_path": "data/fitts/index.html",
+      "source": "touchpad",
+      "sha256": "123975e16eb466f1db9978fd215e85bbbdcc7dd6749ac1d2ddfd54fd4bb67f97"
+    },
+    {
+      "path": "touchpad/jquery-ui.css",
+      "source_path": "data/fitts/jquery-ui.css",
+      "source": "touchpad",
+      "sha256": "2170b38cc38e94555419fce746909c870de86c07f05dd7282c18938779be5f51"
+    },
+    {
+      "path": "touchpad/jquery-ui.min.js",
+      "source_path": "data/fitts/jquery-ui.min.js",
+      "source": "touchpad",
+      "sha256": "0bb022160465dec45a1e2e6e589a519a4bbf5bd853a1c2458f6bfee1c013cea7"
+    },
+    {
+      "path": "touchpad/jquery.min.js",
+      "source_path": "data/fitts/jquery.min.js",
+      "source": "touchpad",
+      "sha256": "f800b399e5c7a5254fc66bb407117fe38dbde0528780e68c9f7c87d299f8486a"
+    },
+    {
+      "path": "touchpad/reset.css",
+      "source_path": "data/fitts/reset.css",
+      "source": "touchpad",
+      "sha256": "e459d43872bf659ffc602eab6fda18eb88539dabd5de5ed57de6af5a3f3b4584"
+    },
+    {
+      "path": "touchpad/scripts_dc.js",
+      "source_path": "data/fitts/scripts_dc.js",
+      "source": "touchpad",
+      "sha256": "b0c6eec2003b72be54bb4a1b00558296e301a4724eff92c8c66ceb1c5303fc9a"
+    },
+    {
+      "path": "touchpad/scroll.html",
+      "source_path": "data/fitts/scroll.html",
+      "source": "touchpad",
+      "sha256": "ecfd52ff3c15e1a1232cf9dabbd2047c38b24f1ccb9a0c5541c999098cf9b0d1"
+    },
+    {
+      "path": "touchpad/style.css",
+      "source_path": "data/fitts/style.css",
+      "source": "touchpad",
+      "sha256": "cb485a54a738df563fbda33febf378dd6a0a9635da6eb4da6cd7afceb2654e57"
+    },
+    {
+      "path": "touchpad/style_dc.css",
+      "source_path": "data/fitts/style_dc.css",
+      "source": "touchpad",
+      "sha256": "289af1cb5fdfcac676ea21da0d31e2d7c04f255f4b7f430947631d51b59d0d61"
+    },
+    {
+      "path": "touchpad/textselection.html",
+      "source_path": "data/fitts/textselection.html",
+      "source": "touchpad",
+      "sha256": "70d978ca16bdfadccd66bc119ee32c53f930f8cf2f34b6d65b91b192ff897fd8"
+    },
+    {
+      "path": "touchpad/uxr/audio/chime_1.mp3",
+      "source_path": "data/fitts/uxr/audio/chime_1.mp3",
+      "source": "touchpad",
+      "sha256": "d1fb532c05e45120f480ac23375681c59087ec4094d383160fb297b814c13f86"
+    },
+    {
+      "path": "touchpad/uxr/audio/error_1.mp3",
+      "source_path": "data/fitts/uxr/audio/error_1.mp3",
+      "source": "touchpad",
+      "sha256": "2754c5b2353b20d5573c17b2e5511fbbcf5dad4b61ba6c60caf6038c0612742e"
+    },
+    {
+      "path": "touchpad/uxr/d3.v2.js",
+      "source_path": "data/fitts/uxr/d3.v2.js",
+      "source": "touchpad",
+      "sha256": "4432c25f242b7e529293f56e2f50fdcb771ef7b91401488a519f62165ece0ea7"
+    },
+    {
+      "path": "touchpad/uxr/event-logger.js",
+      "source_path": "data/fitts/uxr/event-logger.js",
+      "source": "touchpad",
+      "sha256": "cd5c8f3655c7b863df36381d3b368e7bd29d92d374f5602306034f8b5e0775c4"
+    },
+    {
+      "path": "touchpad/uxr/fitts-latency.html",
+      "source_path": "data/fitts/uxr/fitts-latency.html",
+      "source": "touchpad",
+      "sha256": "4f087f34789c92e0a68ed617f4dc26e850bdda00a8852d7434bc03b8c0de0b4f"
+    },
+    {
+      "path": "touchpad/uxr/fitts-law-latency.js",
+      "source_path": "data/fitts/uxr/fitts-law-latency.js",
+      "source": "touchpad",
+      "sha256": "881771ff7a5eed6f8207ec261dc362317455f6dfc6ca672cdeb37559f0a0d5a5"
+    },
+    {
+      "path": "touchpad/uxr/fitts-law.js",
+      "source_path": "data/fitts/uxr/fitts-law.js",
+      "source": "touchpad",
+      "sha256": "50c70369149336990baafb86d27b45399b3ad6095c397761483db940cf338960"
+    },
+    {
+      "path": "touchpad/uxr/index.html",
+      "source_path": "data/fitts/uxr/index.html",
+      "source": "touchpad",
+      "sha256": "c14a9469018cfa08815156845fb66ed7ca42ac904860c4d7fa3184209f3687be"
+    },
+    {
+      "path": "touchpad/uxr/jquery-ui.css",
+      "source_path": "data/fitts/uxr/jquery-ui.css",
+      "source": "touchpad",
+      "sha256": "2170b38cc38e94555419fce746909c870de86c07f05dd7282c18938779be5f51"
+    },
+    {
+      "path": "touchpad/uxr/jquery-ui.min.js",
+      "source_path": "data/fitts/uxr/jquery-ui.min.js",
+      "source": "touchpad",
+      "sha256": "0bb022160465dec45a1e2e6e589a519a4bbf5bd853a1c2458f6bfee1c013cea7"
+    },
+    {
+      "path": "touchpad/uxr/jquery.min.js",
+      "source_path": "data/fitts/uxr/jquery.min.js",
+      "source": "touchpad",
+      "sha256": "f800b399e5c7a5254fc66bb407117fe38dbde0528780e68c9f7c87d299f8486a"
+    },
+    {
+      "path": "touchpad/uxr/readme.md",
+      "source_path": "data/fitts/uxr/readme.md",
+      "source": "touchpad",
+      "sha256": "6bb77ff110bb03af498339790cb5f519291b42797cc91f72b97ead40435247d5"
+    },
+    {
+      "path": "touchpad/uxr/reset.css",
+      "source_path": "data/fitts/uxr/reset.css",
+      "source": "touchpad",
+      "sha256": "e459d43872bf659ffc602eab6fda18eb88539dabd5de5ed57de6af5a3f3b4584"
+    },
+    {
+      "path": "touchpad/uxr/scripts_dc.js",
+      "source_path": "data/fitts/uxr/scripts_dc.js",
+      "source": "touchpad",
+      "sha256": "c141d1da0da74be2ccf3d59750223d5516a67269ec7545305c6bb3456e485253"
+    },
+    {
+      "path": "touchpad/uxr/scroll.html",
+      "source_path": "data/fitts/uxr/scroll.html",
+      "source": "touchpad",
+      "sha256": "4b50fd4fd88a4d92220d8ae22a3452ea104ba85c51da9f7b614da7c4d75f66ab"
+    },
+    {
+      "path": "touchpad/uxr/style.css",
+      "source_path": "data/fitts/uxr/style.css",
+      "source": "touchpad",
+      "sha256": "9a87eeb237322a8fc4ca7d1be390080b357051817ecfe408e5c21f3adee6d4ca"
+    },
+    {
+      "path": "touchpad/uxr/style_dc.css",
+      "source_path": "data/fitts/uxr/style_dc.css",
+      "source": "touchpad",
+      "sha256": "23bd947eb7e8225e62f3f3618a606a972cd4b96dd0b396ce9d84a38527c6f7de"
+    },
+    {
+      "path": "touchpad/uxr/textselection.html",
+      "source_path": "data/fitts/uxr/textselection.html",
+      "source": "touchpad",
+      "sha256": "7adbbf8506b1d789f4f97068766975d244344c1b26a79c7b3b8041a42c7412f9"
+    },
+    {
+      "path": "touchpad/uxr/zoom.html",
+      "source_path": "data/fitts/uxr/zoom.html",
+      "source": "touchpad",
+      "sha256": "5383f9266d64f8d905732eb81647630ddb22f567bb845c99ac94970c83bd34ae"
+    },
+    {
+      "path": "touchpad/uxr/zoom.js",
+      "source_path": "data/fitts/uxr/zoom.js",
+      "source": "touchpad",
+      "sha256": "a0510b9caf6495bc482e89588f32bb59ab2ad87d9360242afc82d16339033379"
+    },
+    {
+      "path": "touchpad/zoom.html",
+      "source_path": "data/fitts/zoom.html",
+      "source": "touchpad",
+      "sha256": "a038d6296e8217aa6c5b2400683d92e2b5164058a5b7b84bde96db12595e268d"
+    },
+    {
+      "path": "touchpad/zoom.js",
+      "source_path": "data/fitts/zoom.js",
+      "source": "touchpad",
+      "sha256": "316598eb0f495a920da548d08db74904aae33835b4c04608760f2d9578c94f32"
+    },
+    {
+      "path": "touchpad/images/ui-bg_diagonals-thick_18_b81900_40x40.png",
+      "source": "jquery-ui-images",
+      "source_path": "ui-bg_diagonals-thick_18_b81900_40x40.png",
+      "source_url": "https://code.jquery.com/ui/1.8.6/themes/ui-lightness/images/ui-bg_diagonals-thick_18_b81900_40x40.png",
+      "sha256": "739e6023b3767ffaec0102f2b89818c984b87c771d1bef16c7626ca64c968329"
+    },
+    {
+      "path": "touchpad/uxr/images/ui-bg_diagonals-thick_18_b81900_40x40.png",
+      "source": "jquery-ui-images",
+      "source_path": "ui-bg_diagonals-thick_18_b81900_40x40.png",
+      "source_url": "https://code.jquery.com/ui/1.8.6/themes/ui-lightness/images/ui-bg_diagonals-thick_18_b81900_40x40.png",
+      "sha256": "739e6023b3767ffaec0102f2b89818c984b87c771d1bef16c7626ca64c968329"
+    },
+    {
+      "path": "touchpad/images/ui-bg_diagonals-thick_20_666666_40x40.png",
+      "source": "jquery-ui-images",
+      "source_path": "ui-bg_diagonals-thick_20_666666_40x40.png",
+      "source_url": "https://code.jquery.com/ui/1.8.6/themes/ui-lightness/images/ui-bg_diagonals-thick_20_666666_40x40.png",
+      "sha256": "26d009d09ea27a9e08717c252c6451e473faf3fdabff911e6726c7d143a7afc1"
+    },
+    {
+      "path": "touchpad/uxr/images/ui-bg_diagonals-thick_20_666666_40x40.png",
+      "source": "jquery-ui-images",
+      "source_path": "ui-bg_diagonals-thick_20_666666_40x40.png",
+      "source_url": "https://code.jquery.com/ui/1.8.6/themes/ui-lightness/images/ui-bg_diagonals-thick_20_666666_40x40.png",
+      "sha256": "26d009d09ea27a9e08717c252c6451e473faf3fdabff911e6726c7d143a7afc1"
+    },
+    {
+      "path": "touchpad/images/ui-bg_flat_10_000000_40x100.png",
+      "source": "jquery-ui-images",
+      "source_path": "ui-bg_flat_10_000000_40x100.png",
+      "source_url": "https://code.jquery.com/ui/1.8.6/themes/ui-lightness/images/ui-bg_flat_10_000000_40x100.png",
+      "sha256": "0e1ac198171a7efb4e331b0aa097a8aa1d4ebdbade5b29c4861bb422f95f1be7"
+    },
+    {
+      "path": "touchpad/uxr/images/ui-bg_flat_10_000000_40x100.png",
+      "source": "jquery-ui-images",
+      "source_path": "ui-bg_flat_10_000000_40x100.png",
+      "source_url": "https://code.jquery.com/ui/1.8.6/themes/ui-lightness/images/ui-bg_flat_10_000000_40x100.png",
+      "sha256": "0e1ac198171a7efb4e331b0aa097a8aa1d4ebdbade5b29c4861bb422f95f1be7"
+    },
+    {
+      "path": "touchpad/images/ui-bg_glass_100_f6f6f6_1x400.png",
+      "source": "jquery-ui-images",
+      "source_path": "ui-bg_glass_100_f6f6f6_1x400.png",
+      "source_url": "https://code.jquery.com/ui/1.8.6/themes/ui-lightness/images/ui-bg_glass_100_f6f6f6_1x400.png",
+      "sha256": "29205b2d198ce4eed569d38a5ce0a55ef27a0c8e643473c375d623ced7d24ca8"
+    },
+    {
+      "path": "touchpad/uxr/images/ui-bg_glass_100_f6f6f6_1x400.png",
+      "source": "jquery-ui-images",
+      "source_path": "ui-bg_glass_100_f6f6f6_1x400.png",
+      "source_url": "https://code.jquery.com/ui/1.8.6/themes/ui-lightness/images/ui-bg_glass_100_f6f6f6_1x400.png",
+      "sha256": "29205b2d198ce4eed569d38a5ce0a55ef27a0c8e643473c375d623ced7d24ca8"
+    },
+    {
+      "path": "touchpad/images/ui-bg_glass_100_fdf5ce_1x400.png",
+      "source": "jquery-ui-images",
+      "source_path": "ui-bg_glass_100_fdf5ce_1x400.png",
+      "source_url": "https://code.jquery.com/ui/1.8.6/themes/ui-lightness/images/ui-bg_glass_100_fdf5ce_1x400.png",
+      "sha256": "1cbf4bb8af5ce70ba8228e90a81eddba4733cce35bbbe469e952b8fc7cd49b8d"
+    },
+    {
+      "path": "touchpad/uxr/images/ui-bg_glass_100_fdf5ce_1x400.png",
+      "source": "jquery-ui-images",
+      "source_path": "ui-bg_glass_100_fdf5ce_1x400.png",
+      "source_url": "https://code.jquery.com/ui/1.8.6/themes/ui-lightness/images/ui-bg_glass_100_fdf5ce_1x400.png",
+      "sha256": "1cbf4bb8af5ce70ba8228e90a81eddba4733cce35bbbe469e952b8fc7cd49b8d"
+    },
+    {
+      "path": "touchpad/images/ui-bg_glass_65_ffffff_1x400.png",
+      "source": "jquery-ui-images",
+      "source_path": "ui-bg_glass_65_ffffff_1x400.png",
+      "source_url": "https://code.jquery.com/ui/1.8.6/themes/ui-lightness/images/ui-bg_glass_65_ffffff_1x400.png",
+      "sha256": "f0e6cd91b837d5c5644d026e5ffeccd907953317cd5c0f689901733afda260b2"
+    },
+    {
+      "path": "touchpad/uxr/images/ui-bg_glass_65_ffffff_1x400.png",
+      "source": "jquery-ui-images",
+      "source_path": "ui-bg_glass_65_ffffff_1x400.png",
+      "source_url": "https://code.jquery.com/ui/1.8.6/themes/ui-lightness/images/ui-bg_glass_65_ffffff_1x400.png",
+      "sha256": "f0e6cd91b837d5c5644d026e5ffeccd907953317cd5c0f689901733afda260b2"
+    },
+    {
+      "path": "touchpad/images/ui-bg_gloss-wave_35_f6a828_500x100.png",
+      "source": "jquery-ui-images",
+      "source_path": "ui-bg_gloss-wave_35_f6a828_500x100.png",
+      "source_url": "https://code.jquery.com/ui/1.8.6/themes/ui-lightness/images/ui-bg_gloss-wave_35_f6a828_500x100.png",
+      "sha256": "2aa19a6b7b63f81542cbf7cf17d06f80b2b103f3e4ecec2540d2704b0b366c52"
+    },
+    {
+      "path": "touchpad/uxr/images/ui-bg_gloss-wave_35_f6a828_500x100.png",
+      "source": "jquery-ui-images",
+      "source_path": "ui-bg_gloss-wave_35_f6a828_500x100.png",
+      "source_url": "https://code.jquery.com/ui/1.8.6/themes/ui-lightness/images/ui-bg_gloss-wave_35_f6a828_500x100.png",
+      "sha256": "2aa19a6b7b63f81542cbf7cf17d06f80b2b103f3e4ecec2540d2704b0b366c52"
+    },
+    {
+      "path": "touchpad/images/ui-bg_highlight-soft_100_eeeeee_1x100.png",
+      "source": "jquery-ui-images",
+      "source_path": "ui-bg_highlight-soft_100_eeeeee_1x100.png",
+      "source_url": "https://code.jquery.com/ui/1.8.6/themes/ui-lightness/images/ui-bg_highlight-soft_100_eeeeee_1x100.png",
+      "sha256": "41ff65fb4f9b6f2fa9c9d025c2e9b0c9e09a2aee6f32266d19ee93c8af4dacbf"
+    },
+    {
+      "path": "touchpad/uxr/images/ui-bg_highlight-soft_100_eeeeee_1x100.png",
+      "source": "jquery-ui-images",
+      "source_path": "ui-bg_highlight-soft_100_eeeeee_1x100.png",
+      "source_url": "https://code.jquery.com/ui/1.8.6/themes/ui-lightness/images/ui-bg_highlight-soft_100_eeeeee_1x100.png",
+      "sha256": "41ff65fb4f9b6f2fa9c9d025c2e9b0c9e09a2aee6f32266d19ee93c8af4dacbf"
+    },
+    {
+      "path": "touchpad/images/ui-bg_highlight-soft_75_ffe45c_1x100.png",
+      "source": "jquery-ui-images",
+      "source_path": "ui-bg_highlight-soft_75_ffe45c_1x100.png",
+      "source_url": "https://code.jquery.com/ui/1.8.6/themes/ui-lightness/images/ui-bg_highlight-soft_75_ffe45c_1x100.png",
+      "sha256": "1e1cfb209f291f1ebe33adf0301d27f03089d77db5a59d2288c54cde5d044973"
+    },
+    {
+      "path": "touchpad/uxr/images/ui-bg_highlight-soft_75_ffe45c_1x100.png",
+      "source": "jquery-ui-images",
+      "source_path": "ui-bg_highlight-soft_75_ffe45c_1x100.png",
+      "source_url": "https://code.jquery.com/ui/1.8.6/themes/ui-lightness/images/ui-bg_highlight-soft_75_ffe45c_1x100.png",
+      "sha256": "1e1cfb209f291f1ebe33adf0301d27f03089d77db5a59d2288c54cde5d044973"
+    },
+    {
+      "path": "touchpad/images/ui-icons_222222_256x240.png",
+      "source": "jquery-ui-images",
+      "source_path": "ui-icons_222222_256x240.png",
+      "source_url": "https://code.jquery.com/ui/1.8.6/themes/ui-lightness/images/ui-icons_222222_256x240.png",
+      "sha256": "a2ccfdc001858222885a9df39200840ac7a3f479ba889727d32a10398db7918a"
+    },
+    {
+      "path": "touchpad/uxr/images/ui-icons_222222_256x240.png",
+      "source": "jquery-ui-images",
+      "source_path": "ui-icons_222222_256x240.png",
+      "source_url": "https://code.jquery.com/ui/1.8.6/themes/ui-lightness/images/ui-icons_222222_256x240.png",
+      "sha256": "a2ccfdc001858222885a9df39200840ac7a3f479ba889727d32a10398db7918a"
+    },
+    {
+      "path": "touchpad/images/ui-icons_228ef1_256x240.png",
+      "source": "jquery-ui-images",
+      "source_path": "ui-icons_228ef1_256x240.png",
+      "source_url": "https://code.jquery.com/ui/1.8.6/themes/ui-lightness/images/ui-icons_228ef1_256x240.png",
+      "sha256": "7fcb45b214701ac9a13209fc351800f108a05a860b12fd9b785bdb22536313a2"
+    },
+    {
+      "path": "touchpad/uxr/images/ui-icons_228ef1_256x240.png",
+      "source": "jquery-ui-images",
+      "source_path": "ui-icons_228ef1_256x240.png",
+      "source_url": "https://code.jquery.com/ui/1.8.6/themes/ui-lightness/images/ui-icons_228ef1_256x240.png",
+      "sha256": "7fcb45b214701ac9a13209fc351800f108a05a860b12fd9b785bdb22536313a2"
+    },
+    {
+      "path": "touchpad/images/ui-icons_ef8c08_256x240.png",
+      "source": "jquery-ui-images",
+      "source_path": "ui-icons_ef8c08_256x240.png",
+      "source_url": "https://code.jquery.com/ui/1.8.6/themes/ui-lightness/images/ui-icons_ef8c08_256x240.png",
+      "sha256": "8fb54f7bc96ce47cf75c1978a2958f69973fc382a40b049f68bf8bebc839a853"
+    },
+    {
+      "path": "touchpad/uxr/images/ui-icons_ef8c08_256x240.png",
+      "source": "jquery-ui-images",
+      "source_path": "ui-icons_ef8c08_256x240.png",
+      "source_url": "https://code.jquery.com/ui/1.8.6/themes/ui-lightness/images/ui-icons_ef8c08_256x240.png",
+      "sha256": "8fb54f7bc96ce47cf75c1978a2958f69973fc382a40b049f68bf8bebc839a853"
+    },
+    {
+      "path": "touchpad/images/ui-icons_ffd27a_256x240.png",
+      "source": "jquery-ui-images",
+      "source_path": "ui-icons_ffd27a_256x240.png",
+      "source_url": "https://code.jquery.com/ui/1.8.6/themes/ui-lightness/images/ui-icons_ffd27a_256x240.png",
+      "sha256": "760d0ee1bd1bfcb2a4532706edcd34dfe7313789d16cf6dbc28705e139096fb0"
+    },
+    {
+      "path": "touchpad/uxr/images/ui-icons_ffd27a_256x240.png",
+      "source": "jquery-ui-images",
+      "source_path": "ui-icons_ffd27a_256x240.png",
+      "source_url": "https://code.jquery.com/ui/1.8.6/themes/ui-lightness/images/ui-icons_ffd27a_256x240.png",
+      "sha256": "760d0ee1bd1bfcb2a4532706edcd34dfe7313789d16cf6dbc28705e139096fb0"
+    },
+    {
+      "path": "touchpad/images/ui-icons_ffffff_256x240.png",
+      "source": "jquery-ui-images",
+      "source_path": "ui-icons_ffffff_256x240.png",
+      "source_url": "https://code.jquery.com/ui/1.8.6/themes/ui-lightness/images/ui-icons_ffffff_256x240.png",
+      "sha256": "5481ff09a63fde681b23c842a9acd3181b6998dc711f675c529f028dd3020ad5"
+    },
+    {
+      "path": "touchpad/uxr/images/ui-icons_ffffff_256x240.png",
+      "source": "jquery-ui-images",
+      "source_path": "ui-icons_ffffff_256x240.png",
+      "source_url": "https://code.jquery.com/ui/1.8.6/themes/ui-lightness/images/ui-icons_ffffff_256x240.png",
+      "sha256": "5481ff09a63fde681b23c842a9acd3181b6998dc711f675c529f028dd3020ad5"
+    }
+  ]
+}

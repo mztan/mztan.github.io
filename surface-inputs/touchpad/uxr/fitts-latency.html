@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+	<title>Fitts's Test</title>
+	<script type="text/javascript" src="d3.v2.js"></script>
+	<script type="text/javascript" src="jquery.min.js"></script>
+	<script type="text/javascript" src="jquery-ui.min.js"></script>
+
+	<link type="text/css" rel="stylesheet" href="reset.css" />
+	<link type="text/css" rel="stylesheet" href="style.css" />
+	<style>
+		/* Hide the real cursor in the test area */
+		#experience-screen {
+			cursor: none;
+		}
+
+		/* Styling for the latency control */
+		.latency-control {
+			margin-top: 20px;
+			padding: 10px;
+			border: 1px solid #ccc;
+			border-radius: 5px;
+			background-color: #f5f5f5;
+		}
+
+		.latency-control label {
+			display: block;
+			margin-bottom: 5px;
+			font-weight: bold;
+		}
+
+		.latency-control input[type="range"] {
+			width: 100%;
+		}
+
+		.latency-value {
+			margin-top: 5px;
+			font-weight: bold;
+			text-align: center;
+		}
+	</style>
+</head>
+
+<body>
+	<div class="start-screen" id="start-screen">
+		<div class="start-controls">
+			<div class="button-pad">
+				<input type="text" id="button-pad-id" placeholder="ID #" disabled>
+				<div class="row">
+					<button>1</button>
+					<button>2</button>
+					<button>3</button>
+				</div>
+				<div class="row">
+					<button>4</button>
+					<button>5</button>
+					<button>6</button>
+				</div>
+				<div class="row">
+					<button>7</button>
+					<button>8</button>
+					<button>9</button>
+				</div>
+				<div class="row">
+					<button class="hidden-button">H</button>
+					<button>0</button>
+					<button>C</button>
+				</div>
+			</div>
+		</div>
+
+		<div class="start-controls">
+			<select name="condition" id="condition">
+				<option value="1">Condition: 1</option>
+				<option value="2">Condition: 2</option>
+				<option value="3">Condition: 3</option>
+				<option value="4">Condition: 4</option>
+			</select>
+			<br>
+			<!-- Latency control slider -->
+			<div class="latency-control">
+				<label for="latency-slider">Cursor Latency (ms):</label>
+				<input type="range" id="latency-slider" min="0" max="300" step="10" value="100"
+					   oninput="updateCursorLatency(this.value)">
+				<div class="latency-value" id="latency-value">200ms</div>
+			</div>
+			<br>
+			<button id="start-button">Start</button>
+		</div>
+		<div class="start-controls">
+			<p id="start-text" style="font-size: 1.5rem"></p>
+		</div>
+	</div>
+
+	<div id="experience-screen" class="experience-screen" style="display: none;">
+		<div id="test-area" class="sans"></div>
+		<div id="timer" class="timer" style="display: none;"></div>
+	</div>
+
+	<script type="text/javascript" src="fitts-law-latency.js"></script>
+
+	</div> <!-- container12 end -->
+
+	<form
+		action="https://docs.google.com/forms/d/e/1FAIpQLSeBhiDed65ub35BFt1irK73__qxToY1WTGI8HvSL-SzAG6CSw/formResponse"
+		target="_self" id="bootstrapForm" method="POST" style="display:none;">
+
+		<input id="device_os" type="text" name="entry.1366025332" class="form-control">
+		<input id="device_browser" type="text" name="entry.1979876681" class="form-control">
+		<input id="participant_id" type="text" name="entry.1761654424" class="form-control">
+		<input id="trial_num" type="text" name="entry.1116494097" class="form-control">
+		<input id="condition_num" type="text" name="entry.314909039" class="form-control">
+		<input id="index_of_difficulty" type="text" name="entry.1603410657" class="form-control">
+		<input id="effective_id" type="text" name="entry.2014507591" class="form-control">
+		<input id="throughput" type="text" name="entry.482504453" class="form-control">
+		<input id="time_to_complete" type="text" name="entry.1300493740" class="form-control">
+		<input id="clicks_total" type="text" name="entry.1743506047" class="form-control">
+		<input id="clicks_on_target" type="text" name="entry.111776489" class="form-control">
+		<input id="target_entries" type="text" name="entry.1776583123" class="form-control">
+		<input id="drag_count" type="text" name="entry.373127537" class="form-control">
+
+		<input type="hidden" name="fvv" value="1">
+		<input type="hidden" name="fbzx" value="-5178698855452395568">
+		<input type="hidden" name="pageHistory" value="0">
+
+		<input class="btn btn-primary" type="submit" value="Submit">
+	</form>
+
+</body>
+
+</html>

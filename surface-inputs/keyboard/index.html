@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>Typing Test App</title>
+    <link rel="icon" href="favicon-32x32.png" type="image/png">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="app-wrapper">
+        <div class="container">
+            <button id="kc-exit-btn" class="kc-exit-btn" style="display: none;" title="Exit full screen"
+                aria-label="Exit full screen">&#10005;</button>
+            <h1>Typing Test App</h1>
+            <p class="instructions">Type the text shown below. Press Enter when you finish a prompt to move to the next
+                one.</p>
+
+            <div class="test-container">
+                <div class="progress-indicator" style="text-align: center; margin-bottom: 10px; color: #7f8c8d;">
+                    Prompt <span id="current-prompt">1</span> of <span id="total-prompts">0</span>
+                </div>
+                <div class="sample-text" id="sample-text"></div>
+                <div class="sample-text-highlighted" id="sample-text-highlighted" style="display: none;"></div>
+
+                <div class="error-message" id="qa-error-message" style="display: none;">
+                    QA Mode Error: Your text must match the prompt exactly (100%). Please correct your input and try
+                    again.
+                </div>
+
+                <div class="error-message" id="length-error-message" style="display: none;">
+                    Typed text too short.
+                </div>
+
+                <textarea class="input-area" id="input-area" placeholder="Start typing here..." autocomplete="off"
+                    autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
+
+                <button class="button" id="start-button">Reset Test</button>
+            </div>
+
+            <div class="results" id="results">
+                <h2>Your Average Results</h2>
+                <div id="text-metrics">
+                    <div class="primary-metric-container">
+                        <div class="metric primary-metric">Adjusted WPM (AWPM): <span id="awpm">0</span></div>
+                    </div>
+                    <div class="metric">Words per minute (WPM): <span id="wpm">0</span></div>
+                    <div class="metric">Accuracy: <span id="accuracy">0%</span></div>
+                    <div class="metric">Uncorrected Error Rate (UER): <span id="uer">0%</span></div>
+                    <div class="metric">Corrected Error Rate (CER): <span id="cer">0%</span></div>
+                    <div class="metric">Total Error Rate (TER): <span id="ter">0%</span></div>
+                </div>
+                <div id="shortcut-metrics" style="display: none;">
+                    <div class="primary-metric-container">
+                        <div class="metric primary-metric">Average accuracy: <span id="kc-accuracy">0%</span></div>
+                    </div>
+                    <div class="metric">Total time: <span id="kc-time">0</span> s</div>
+                    <div class="metric">Average time per prompt: <span id="kc-avg-time">0</span> s</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-panel">
+            <h2>Settings</h2>
+            <div class="settings-group" id="user-id-group" style="display: none;">
+                <label for="user-id">User ID (numbers only):</label>
+                <input type="number" id="user-id" class="user-id-input" placeholder="Enter your user ID">
+            </div>
+            <div class="settings-group" id="unix-name-group" style="display: none;">
+                <label for="unix-name">Enter unix name:</label>
+                <input type="text" id="unix-name" class="user-id-input" placeholder="Enter your unix name" pattern="[a-zA-Z0-9]+">
+            </div>
+
+            <div class="settings-group">
+                <label class="settings-label">Select Dataset:</label>
+                <div class="radio-group">
+                    <div class="radio-option">
+                        <input type="radio" id="practice" name="dataset" value="practice" checked>
+                        <label for="practice">Practice</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="natural-language" name="dataset" value="natural-language">
+                        <label for="natural-language">Natural Language</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="natural-language-punct" name="dataset" value="natural-language-punct">
+                        <label for="natural-language-punct">Natural Language with Punctuation</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="emails" name="dataset" value="emails">
+                        <label for="emails">Emails</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="passwords" name="dataset" value="passwords">
+                        <label for="passwords">Passwords</label>
+                    </div>
+                    <!-- Metal Keys hidden from the UI but kept selectable via
+                         ?dataset=metal-keys (dataset + prompts retained). -->
+                    <div class="radio-option" style="display: none;">
+                        <input type="radio" id="metal-keys" name="dataset" value="metal-keys">
+                        <label for="metal-keys">Metal Keys</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="shortcuts" name="dataset" value="shortcuts">
+                        <label for="shortcuts">Shortcuts</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="arrows" name="dataset" value="arrows">
+                        <label for="arrows">Arrows</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <label class="settings-label">Number of Prompts:</label>
+                <div class="prompt-count-control">
+                    <input type="number" id="prompt-count" min="1" max="20" value="5">
+                    <button id="increase-prompts" class="prompt-count-button">+</button>
+                    <button id="decrease-prompts" class="prompt-count-button">-</button>
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <label class="settings-label">Input Type:</label>
+                <div class="radio-group">
+                    <div class="radio-option">
+                        <input type="radio" id="physical-keyboard" name="input-type" value="physical-keyboard" checked>
+                        <label for="physical-keyboard">Physical Keyboard</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="floating-keyboard" name="input-type" value="floating-keyboard">
+                        <label for="floating-keyboard">Floating Keyboard</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="skb" name="input-type" value="skb">
+                        <label for="skb">SKB</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="phone" name="input-type" value="phone">
+                        <label for="phone">Phone</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="tablet" name="input-type" value="tablet">
+                        <label for="tablet">Tablet</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <label class="settings-label">Autocorrect Mode:</label>
+                <div class="radio-group">
+                    <div class="radio-option">
+                        <input type="radio" id="autocorrect-off" name="autocorrect-mode" value="off">
+                        <label for="autocorrect-off">Off</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="autocorrect-system" name="autocorrect-mode" value="system" checked>
+                        <label for="autocorrect-system">System</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="autocorrect-custom" name="autocorrect-mode" value="custom">
+                        <label for="autocorrect-custom">Custom</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-group">
+                <label class="settings-label">
+                    QA Mode:
+                    <span class="info-icon"
+                        data-tooltip="QA Mode requires 100% accuracy to proceed. When enabled, autocorrect is disabled and you must type the prompt exactly as shown. Real-time highlighting shows correct (green) and incorrect (red) characters.">?</span>
+                </label>
+                <div class="radio-group">
+                    <div class="radio-option">
+                        <input type="radio" id="qa-mode-off" name="qa-mode" value="off" checked>
+                        <label for="qa-mode-off">Off</label>
+                    </div>
+                    <div class="radio-option">
+                        <input type="radio" id="qa-mode-on" name="qa-mode" value="on">
+                        <label for="qa-mode-on">On</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="keyboard-layout.js"></script>
+    <script src="script.js"></script>
+
+    </div>
+
+    <form
+        action="https://docs.google.com/forms/d/e/1FAIpQLSekMCXFKdGD_GiwkBFWeEKCnRsLW2c_8LL8Vz_LonQgOViMgA/formResponse"
+        target="_self" id="resultForm" method="POST" style="display:none;">
+
+        <input id="result_user_id" type="text" name="entry.1101754675" class="form-control">
+        <input id="result_corpus" type="text" name="entry.1953745264" class="form-control">
+        <input id="result_input_type" type="text" name="entry.856345141" class="form-control">
+        <input id="result_auto_correct" type="text" name="entry.1913121261" class="form-control">
+        <input id="result_expected_prompt" type="text" name="entry.1936058992" class="form-control">
+        <input id="result_typed_prompt" type="text" name="entry.890041425" class="form-control">
+        <input id="result_wpm" type="text" name="entry.1603515859" class="form-control">
+        <input id="result_awpm" type="text" name="entry.42550895" class="form-control">
+        <input id="result_accuracy" type="text" name="entry.1281998858" class="form-control">
+        <input id="result_time_spent_ms" type="text" name="entry.1830385955" class="form-control">
+        <input id="result_uer" type="text" name="entry.4641434" class="form-control">
+        <input id="result_cer" type="text" name="entry.951712535" class="form-control">
+        <input id="result_ter" type="text" name="entry.1264971265" class="form-control">
+        <input id="result_total_chars" type="text" name="entry.823977115" class="form-control">
+        <input id="result_total_key_presses" type="text" name="entry.667977053" class="form-control">
+        <input id="result_total_corrected_errors" type="text" name="entry.1985337742" class="form-control">
+        <input id="result_total_uncorrected_errors" type="text" name="entry.821144588" class="form-control">
+        <input id="result_surface_difference_mm" type="text" name="entry.638270327" class="form-control">
+        <input id="result_platform" type="text" name="entry.1126511715" class="form-control">
+        <input id="result_condition_id" type="text" name="entry.507318665" class="form-control">
+        <input id="result_condition_value" type="text" name="entry.1918701194" class="form-control">
+        <input id="result_qr_height" type="text" name="entry.1327823490" class="form-control">
+        <input id="result_session_id" type="text" name="entry.1768020147" class="form-control">
+        <input class="btn btn-primary" type="submit" value="Submit">
+    </form>
+
+    <form
+        action="https://docs.google.com/forms/d/e/1FAIpQLSef7jmYGEEUAtiZ6s1_w5B8lDd5b9bfdmwf6AzUDmABB5ZZrg/formResponse"
+        target="_self" id="dfResultForm" method="POST" style="display:none;">
+
+        <input id="df_result_user_id" type="text" name="entry.1101754675" class="form-control">
+        <input id="df_result_corpus" type="text" name="entry.1953745264" class="form-control">
+        <input id="df_result_input_type" type="text" name="entry.856345141" class="form-control">
+        <input id="df_result_auto_correct" type="text" name="entry.1913121261" class="form-control">
+        <input id="df_result_expected_prompt" type="text" name="entry.1936058992" class="form-control">
+        <input id="df_result_typed_prompt" type="text" name="entry.890041425" class="form-control">
+        <input id="df_result_wpm" type="text" name="entry.1603515859" class="form-control">
+        <input id="df_result_awpm" type="text" name="entry.42550895" class="form-control">
+        <input id="df_result_accuracy" type="text" name="entry.1281998858" class="form-control">
+        <input id="df_result_time_spent_ms" type="text" name="entry.1830385955" class="form-control">
+        <input id="df_result_uer" type="text" name="entry.4641434" class="form-control">
+        <input id="df_result_cer" type="text" name="entry.951712535" class="form-control">
+        <input id="df_result_ter" type="text" name="entry.1264971265" class="form-control">
+        <input id="df_result_total_chars" type="text" name="entry.823977115" class="form-control">
+        <input id="df_result_total_key_presses" type="text" name="entry.667977053" class="form-control">
+        <input id="df_result_total_corrected_errors" type="text" name="entry.1985337742" class="form-control">
+        <input id="df_result_total_uncorrected_errors" type="text" name="entry.821144588" class="form-control">
+        <input id="df_result_surface_difference_mm" type="text" name="entry.638270327" class="form-control">
+        <input id="df_result_platform" type="text" name="entry.1126511715" class="form-control">
+        <input id="df_result_condition_id" type="text" name="entry.507318665" class="form-control">
+        <input id="df_result_condition_value" type="text" name="entry.1918701194" class="form-control">
+        <input id="df_result_qr_height" type="text" name="entry.1327823490" class="form-control">
+        <input id="df_result_session_id" type="text" name="entry.1768020147" class="form-control">
+        <input class="btn btn-primary" type="submit" value="Submit">
+    </form>
+
+</body>
+
+</html>

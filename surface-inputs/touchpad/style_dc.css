@@ -1,0 +1,319 @@
+/**
+ * (c) Meta Platforms, Inc. and affiliates. Confidential and proprietary.
+ */
+
+* {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+.start-screen {
+    background: white;
+    justify-content:center;
+    align-items: center;
+    height: 100vh;
+    display: flex;
+}
+
+#start-explanation {
+    font-size: 1.5rem;
+    width: 50vw;
+}
+
+.start-screen button,
+.start-screen select,
+.start-screen p {
+    font-size: 4rem;
+    padding: 1.5rem 1.75rem;
+    text-align: center;
+}
+
+.start-screen button {
+    margin: 1rem;
+}
+
+.start-controls {
+    display: flex;
+    flex-direction: column;
+    justify-content:center;
+    align-items: center;
+}
+
+.target-button {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    background-color: #008CBA;
+    border-radius: 10px;
+}
+
+.target-button.hold-short {
+    background-color: rgb(151, 229, 255);
+}
+
+.target-button.hold-long {
+    background-color: #F57C5B;
+}
+
+button {
+    cursor: pointer;
+}
+
+.container-outline {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    margin-right: -50%;
+    transform: translate(-50%, -50%);
+    width: 95vw; /* % of the viewport width */
+    height: 95vh; /* % of the viewport height */
+    border: 2px solid #ccc;
+    border-radius: 5px;
+    background-color: #fafafa; /* Change this to the color you want */
+    z-index: -1; /* This ensures the box stays in the background */
+}
+
+.text-top-left,
+.text-top-right,
+.text-bottom-left,
+.text-bottom-right {
+    position: absolute;
+    color: #c0c0c0;
+    font-size: 2rem;
+    user-select: none;
+}
+
+.text-top-left {
+    top: 0rem;
+    left: 1rem;
+}
+
+.text-top-right {
+    top: 1rem;
+    right: 1rem;
+}
+
+
+.text-bottom-left {
+    bottom: 1rem;
+    left: 1rem;
+}
+
+.text-bottom-right {
+    bottom: 1rem;
+    right: 1rem;
+}
+
+
+#scroll-body {
+    width: 100vw;
+    height: 100vh;
+    background: #EFEFEF;
+    display: flex;
+    justify-content: center; /* Center horizontally */
+    align-items: center;    /* Center vertically */
+}
+
+.scroll-container {
+    border: 2px solid #ccc;
+    border-radius: 5px;
+    padding: 2rem;
+    width: 700px;
+    height: auto;
+    margin: auto;
+    background: #FFF;
+    font-size: 2rem;
+    line-height: 1.5;
+    overflow: auto;
+}
+
+.scrollable {
+    width: 100%;
+    height: 520px;
+    font-size: 2rem;
+    line-height: 1.5;
+    /* Improve touch selection on mobile */
+    -webkit-touch-callout: default;
+    -webkit-user-select: text;
+    -khtml-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+}
+
+.scroll-container p {
+    margin-bottom: 1rem;
+}
+
+.highlight {
+    background: #edff78;
+}
+
+.targetbox {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    transform: translate(0%, -50%);
+    height: 9.4rem;
+    background-color: #b86dc2;
+    opacity: 0.5;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.targetarrowup {
+    position: absolute;
+    top: 40%;
+    left: 20%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    font-size: 4.25rem;
+}
+
+.targetarrowdown {
+    position: absolute;
+    top: 60%;
+    left: 20%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    font-size: 4.25rem;
+}
+
+.textselection-body {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100vw;
+    height: 100vh;
+    background: #EFEFEF;
+    position: relative;
+}
+
+.textselection-container {
+    border: 2px solid #ccc;
+    border-radius: 5px;
+    padding: 2rem;
+    width: 750px;
+    height: 600px;
+    margin: auto;
+    background: #FFF;
+}
+
+::-moz-selection {
+    /* Code for Firefox */
+    background: rgba(0, 116, 255, 0.3);
+}
+
+::selection {
+    background: rgba(0, 116, 255, 0.3);
+}
+
+.instruction-container {
+    border: 2px solid #ccc;
+    border-radius: 5px;
+    padding: 2rem;
+    width: 1400px;
+    /* height: calc(70vh - 2rem); */
+    margin: auto;
+    background: #FFF;
+    margin-top: 4rem;
+    margin-bottom: 4rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+.instruction-container p {
+    font-size: 1.5rem;
+    text-align: center;
+    margin-bottom: 1rem;
+    max-width: 80rem;
+}
+
+.instruction-container video {
+  width: 100%;
+  height: auto;
+}
+
+.instruction-body {
+    display: flex;
+    flex-wrap: wrap;
+    width: 100vw;
+    /* height: 100vh; */
+    background: #EFEFEF;
+    position: relative;
+}
+
+.button-pad {
+    padding: 3rem;
+}
+
+.button-pad .row {
+    display: flex; /* Use flexbox for the row */
+    justify-content: center; /* Center the buttons horizontally */
+    margin-bottom: 0.1rem;
+}
+
+.button-pad button:hover {
+    background-color: #cccccc;
+}
+
+.button-pad button {
+    width: 2rem;
+    height: 2rem;
+    display: inline-flex; /* Use inline-flex to keep buttons inline */
+    justify-content: center; /* Center horizontally */
+    align-items: center; /* Center vertically */
+    font-size: 1.5rem;
+    margin: 0.2rem;
+    padding: 0.5rem;
+}
+
+#button-pad-id {
+    font-size: 1.5rem;
+    width: 15rem;
+    text-align: center;
+    margin: 2rem 0.5rem;
+}
+
+.hidden-button {
+    visibility: hidden; /* Makes the button invisible */
+    pointer-events: none; /* Disables click events */
+}
+
+#zoom-body {
+    width: 100vw;
+    height: 100vh;
+    background: #EFEFEF;
+    position: relative;
+    touch-action: none;
+}
+
+.zoom-target-outline {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: transparent;
+    pointer-events: none;
+    z-index: 2;
+}
+
+#zoom-target-outline-outer {
+    border: 3px solid #555;
+}
+
+#zoom-target-outline-inner {
+    border: 3px solid #555;
+}
+
+.zoom-inner-square {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #7ec8e3;
+    z-index: 1;
+}

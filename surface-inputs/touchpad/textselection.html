@@ -1,0 +1,116 @@
+<!--
+    (c) Meta Platforms, Inc. and affiliates. Confidential and proprietary.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Text Selection</title>
+    <link rel="stylesheet" href="style_dc.css">
+    <script type="text/javascript" src="event-logger.js"></script>
+    <script type="text/javascript" src="scripts_dc.js"></script>
+</head>
+
+<body oncontextmenu="return false;">
+    <div class="textselection-body" id="textselection-body" style="display: none;">
+        <div id="text-top-left" class="text-top-left" style="display: none;"></div>
+        <div class="textselection-container text center" id="textselection-container">
+            <div class="scrollable" id="scroller">
+                <p class="selection-text">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
+                    incididunt ut labore
+                    et dolore magna aliqua. Scelerisque dictum non consectetur a erat nam at. Risus commodo viverra
+                    maecenas.</p>
+                <p class="selection-text">Massa tincidunt dui
+                    ut ornare lectus sit amet est. Nulla aliquet enim tortor at auctor urna. Bibendum arcu vitae
+                    elementum curabitur vitae nunc sed velit. Velit dignissim sodales ut eu sem integer vitae.</p>
+                <p class="selection-text">Purus gravida quis blandit turpis cursus in. Consectetur lorem donec massa
+                    sapien faucibus. Iaculis
+                    urna id volutpat lacus. Penatibus et magnis dis parturient montes. Diam donec adipiscing tristique
+                    risus nec feugiat. Eu volutpat odio facilisis mauris sit. Platea dictumst vestibulum rhoncus est
+                    pellentesque elit ullamcorper dignissim. Elementum nisi quis eleifend quam. Porta non pulvinar neque
+                    laoreet suspendisse interdum. Vulputate odio ut enim blandit volutpat maecenas volutpat blandit
+                    aliquam. Venenatis a condimentum vitae sapien.</p>
+                <p class="selection-text">Nullam vehicula ipsum a arcu cursus. Vel eros donec ac odio tempor orci
+                    dapibus ultrices. Faucibus in
+                    ornare quam viverra orci sagittis. Euismod quis viverra nibh cras pulvinar. Hac habitasse platea
+                    dictumst quisque sagittis purus sit. Consequat semper viverra nam libero justo laoreet. Velit
+                    aliquet sagittis id consectetur. Ut sem viverra aliquet eget.</p>
+                <p class="selection-text">Ac ut consequat semper viverra nam
+                    libero. Egestas diam in arcu cursus. Adipiscing elit duis tristique sollicitudin nibh. Massa
+                    tincidunt nunc pulvinar sapien. Tempus urna et pharetra pharetra. Vulputate sapien nec sagittis
+                    aliquam malesuada bibendum. In hac habitasse platea dictumst vestibulum rhoncus est.</p>
+                <p class="selection-text">Egestas tellus rutrum tellus pellentesque eu tincidunt tortor aliquam nulla.
+                    Sagittis nisl rhoncus
+                    mattis rhoncus urna. Sit amet consectetur adipiscing elit ut aliquam purus. Egestas diam in arcu
+                    cursus euismod quis viverra nibh cras. Nibh sed pulvinar proin gravida hendrerit. Condimentum vitae
+                    sapien pellentesque habitant morbi tristique senectus. Purus in massa tempor nec feugiat. Auctor
+                    neque vitae tempus quam pellentesque nec.</p>
+                <p class="selection-text">Quam lacus suspendisse faucibus interdum posuere. Nisi est
+                    sit amet facilisis magna etiam tempor orci eu. Id consectetur purus ut faucibus pulvinar elementum
+                    integer enim. Rhoncus est pellentesque elit ullamcorper. Sit amet massa vitae tortor condimentum
+                    lacinia. Ornare suspendisse sed nisi lacus sed viverra. Libero volutpat sed cras ornare arcu.
+                    Gravida rutrum quisque non tellus. Integer eget aliquet nibh praesent. Elementum nibh tellus
+                    molestie nunc non blandit massa enim nec.</p>
+                <p class="selection-text">Enim facilisis gravida neque convallis a cras semper. Rhoncus est pellentesque
+                    elit ullamcorper
+                    dignissim cras tincidunt lobortis. Feugiat nibh sed pulvinar proin gravida hendrerit. Sagittis eu
+                    volutpat odio facilisis mauris sit amet massa. Felis imperdiet proin fermentum leo vel orci. Vel
+                    risus commodo viverra maecenas accumsan. Id semper risus in hendrerit gravida rutrum quisque non.
+                    Tellus cras adipiscing enim eu turpis.</p>
+                <p class="selection-text">Potenti nullam ac tortor vitae purus. Neque ornare aenean
+                    euismod elementum nisi. Massa placerat duis ultricies lacus sed turpis tincidunt id aliquet. Eget
+                    duis at tellus at urna condimentum mattis. Ac tortor dignissim convallis aenean. Diam vulputate ut
+                    pharetra sit amet aliquam id diam. Purus viverra accumsan in nisl nisi scelerisque eu ultrices
+                    vitae. Quis enim lobortis scelerisque fermentum dui faucibus in ornare quam. Nam libero justo
+                    laoreet sit amet cursus sit amet. In ornare quam viverra orci sagittis.</p>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="start-screen" id="start-screen">
+        <div class="start-controls">
+            <input type="text" id="button-pad-id" placeholder="User ID">
+            <p id="start-title" style="display: none;"></p>
+            <p id="start-explanation" style="width: 20rem;"></p>
+            <button id="start-button" onclick="isPractice = false; startTextSelectionExperience()">Start</button>
+            <button id="practice-button" onclick="isPractice = true; startTextSelectionExperience()">Practice</button>
+        </div>
+
+		<div class="start-controls">
+			<p id="start-text" style="font-size: 1.5rem"></p>
+		</div>
+    </div>
+
+	<form
+		action="https://docs.google.com/forms/d/e/1FAIpQLScA6iwIpK4GIHNoskIV7OzFSacucQL8fviNgdVKMgcGltaNbw/formResponse"
+		target="_self" id="bootstrapForm" method="POST" style="display:none;">
+
+		<input id="device_os" type="text" name="entry.1366025332">
+		<input id="device_browser" type="text" name="entry.1979876681">
+		<input id="participant_id" type="text" name="entry.1761654424">
+		<input id="trial_num" type="text" name="entry.1116494097">
+		<input id="time_to_complete" type="text" name="entry.1300493740">
+		<input id="gesture_count" type="text" name="entry.1234127850">
+		<input id="session_id" type="text" name="entry.941328986">
+		<input type="hidden" name="fvv" value="1">
+		<input type="hidden" name="fbzx" value="6933167903009835764">
+		<input type="hidden" name="pageHistory" value="0">
+
+		<input class="btn btn-primary" type="submit" value="Submit">
+	</form>
+
+    <script type="text/javascript">
+        const EXPERIENCE_NAME = "Text Selection";
+        const EXPLANATION = 'Select the highlighted text.';
+        setExperienceTitle(EXPERIENCE_NAME, EXPLANATION);
+    </script>
+
+
+</body>
+
+</html>
