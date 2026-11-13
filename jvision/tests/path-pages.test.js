@@ -1,5 +1,5 @@
 'use strict';
-// Loads the real Menus page scripts against a minimal fake DOM/canvas and drives them
+// Loads the real Menus/Circles page scripts against a minimal fake DOM/canvas and drives them
 // with pointer events. Covers event → trial state → page text → completion → local save wiring.
 // It does not prove canvas rendering, layout or physical touchpad behavior.
 const test = require('node:test');
@@ -59,6 +59,48 @@ function page(canvasId) {
     const saved = () => JSON.parse(storage.get('jvision-path-results-v1') || '[]');
     return { win, element, radios, form, pointer, flush, saved, tick: ms => { clock += ms; } };
 }
+
+test('circle page: six hovered laps open the rating dialog and save local results', () => {
+    const p = page('circle-canvas');
+    const cx = 500, cy = 300, r = 600 * 0.36;
+    for (let lap = 0; lap < 6; lap++) {
+        for (let deg = 0; deg <= 360; deg += 3) {
+            const a = deg * Math.PI / 180, wobble = lap === 2 ? 6 * Math.sin(5 * a) : 0;
+            p.pointer('pointermove', cx + (r + wobble) * Math.cos(a), cy + (r + wobble) * Math.sin(a));
+        }
+    }
+    assert.equal(p.element('laps').textContent, 'Clockwise circles · 6 of 6 complete');
+    assert.equal(p.element('completion').hidden, true);
+    p.flush();
+    assert.equal(p.element('completion').hidden, false);
+    assert.equal(p.element('completion-title').textContent, 'Circles complete');
+    p.radios[3].checked = true;
+    p.element('completion-comment').value = 'smooth';
+    p.form.submit();
+    const [run] = p.saved();
+    assert.equal(run.task, 'stp_circle_tracing');
+    assert.equal(run.ease, 4);
+    assert.equal(run.comment, 'smooth');
+    assert.deepEqual(run.targets.map(t => t.status), Array(6).fill('completed'));
+    assert.ok(run.targets[2].metrics.stp_circle_radial_rms_px > 3);
+    assert.ok(run.targets[0].metrics.stp_circle_radial_rms_px < 0.5);
+    assert.match(p.element('completion-status').textContent, /Saved in this browser/);
+});
+
+test('circle page: touch input and leaving the area interrupt the lap', () => {
+    const p = page('circle-canvas');
+    const cx = 500, cy = 300, r = 216;
+    for (let deg = 0; deg <= 90; deg += 3) p.pointer('pointermove', cx + r * Math.cos(deg * Math.PI / 180), cy + r * Math.sin(deg * Math.PI / 180));
+    p.pointer('pointermove', cx, cy + r, { pointerType: 'touch' });
+    assert.match(p.element('status').textContent, /interrupted/);
+    // Clicking during a lap is counted, and pressed motion is not treated as hover.
+    p.pointer('pointermove', cx + r, cy);
+    p.pointer('pointerdown', cx + r, cy, { buttons: 1 });
+    p.pointer('pointerup', cx + r, cy);
+    p.element('circle-canvas').dispatch({ type: 'pointerleave' });
+    assert.match(p.element('status').textContent, /interrupted/);
+    assert.equal(p.element('laps').textContent, 'Clockwise circles · 0 of 6 complete');
+});
 
 test('menu page: wrong pick, two paths, skip rating and save local results', () => {
     const p = page('menu-canvas');
