@@ -1,4 +1,18 @@
-# Surface Inputs web tests
+# Surface Inputs web tests — jvision preview
+
+`jvision/` is a personal preview copied from `surface-inputs-dev/`, published at https://mztan.github.io/jvision/. It keeps dev's behavior for the existing tasks (including the same Google Forms collection) and adds two touchpad tasks ported from the native Surface Inputs QA app stack D131663691 → D131670572:
+
+- [Menus](touchpad/menu.html) (`stp_cascading_menu`): open the menu and select a 3-level path, then a 5-level path (menu widths 10/4/4/4/2). Hover opens submenus; a click selects; a click on empty space dismisses. Measures attempts, wrong selections, dismissals, deepest level reached, first-attempt success, clicks and cursor travel.
+- [Circles](touchpad/circle.html) (`stp_circle_tracing`): starting at the blue marker, trace six clockwise laps with the cursor, without clicking. Measures per-lap radial RMS/P95 error, closure error, bounding radius, center shift from the first lap, attempts, interruptions and accidental clicks.
+
+Trial logic is in `path-tasks.js`, a line-for-line port of `SurfaceInputsQaMenuTrials` / `SurfaceInputsQaCircleTrials`, with the native unit tests ported in `tests/path-tasks.test.js`. Differences from the native app: browser pointer events replace Android hover/touch events. A touchpad that the browser reports as a mouse counts as hover; touch or pen input invalidates the trace. Two-finger pan classification isn't visible to the page.
+
+**The new tasks don't upload anything.** Their results and optional 1–5 ease rating are saved in this browser's localStorage (`jvision-path-results-v1`, at most 50 runs) and can be downloaded with **Export saved results**. They send no native WebView telemetry: the APK only loads the production/dev URLs, and its sink has no activity IDs for these tasks. Feedback for the existing tasks is stored under `jvision-feedback-v1`, separate from dev's.
+
+Run the checks with `node --test jvision/tests/*.test.js` from the repository root.
+
+The rest of this README is inherited from dev.
+
 
 This folder consolidates the existing public keyboard and touchpad web test implementations. Task code and assets are copied from the pinned upstream commits recorded in `UPSTREAM.json`; no task rules or measurement formulas are changed.
 
@@ -14,7 +28,7 @@ The [start page](index.html) presents Targeting, Scrolling, and Typing with the 
 
 The alternate upstream [UXR touchpad variants](touchpad/uxr/index.html) and keyboard `exec_demo` sources are retained for completeness. The targeting and scrolling pages above correspond to the exact root-level pages supplied for this migration, not the alternate `uxr/` protocols.
 
-For local use, run a static HTTP server at the repository root, for example `python3 -m http.server 8000`, and open `/surface-inputs-dev/keyboard/` or a dev touchpad page. Use HTTP rather than opening HTML files directly, since the keyboard loads prompt files with `fetch`.
+For local use, run a static HTTP server at the repository root, for example `python3 -m http.server 8000`, and open `/jvision/` or one of its pages. Use HTTP rather than opening HTML files directly, since the keyboard loads prompt files with `fetch`.
 
 ## Development visual themes
 

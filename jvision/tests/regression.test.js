@@ -67,7 +67,8 @@ test('launcher negotiates the APK ready handshake without changing browser links
         'touchpad/index.html?session_id=df_202611',
         'touchpad/scroll.html?session_id=df_202611',
         'keyboard/?setting_preset=df&amp;num_prompts=3&amp;session_id=df_202611',
-        'touchpad/menu.html'
+        'touchpad/menu.html',
+        'touchpad/circle.html'
     ]);
 });
 

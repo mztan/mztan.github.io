@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Start the Surface Inputs targeting, scrolling, typing, or menu test.">
+  <meta name="description" content="Start the Surface Inputs targeting, scrolling, typing, menu, or circle test.">
   <title>Surface Inputs Arcade</title>
   <script src="../environment.js" defer></script>
   <script src="transport.js"></script>
@@ -135,6 +135,14 @@
             <path d="M8 16H16M8 24H16M8 32H16M28 24H36" stroke="currentColor" stroke-width="2" stroke-linecap="square"/>
           </svg>
           <span class="name" id="menus-title">Menus</span>
+        </a>
+        <a class="test-link" href="touchpad/circle.html" aria-labelledby="circles-title">
+          <svg class="test-icon" viewBox="0 0 48 48" fill="none" aria-hidden="true" focusable="false">
+            <circle cx="24" cy="24" r="16" stroke="currentColor" stroke-width="2"/>
+            <circle cx="40" cy="24" r="3" fill="currentColor"/>
+            <path d="M20 19A6 6 0 1 1 18 26" stroke="currentColor" stroke-width="2"/>
+          </svg>
+          <span class="name" id="circles-title">Circles</span>
         </a>
       </nav>
     </section>
