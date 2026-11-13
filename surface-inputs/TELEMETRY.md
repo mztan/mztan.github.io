@@ -2,7 +2,7 @@
 
 ## Browser behavior
 
-The keyboard and touchpad pages keep their original browser identity controls, Google Forms, test logic, geometry, timings and public corpora. URL parameters do not select native mode. The launcher `index.html` is outside this change.
+The keyboard and touchpad pages keep their original browser identity controls, Google Forms, test logic, geometry, timings and public corpora. URL parameters do not select native mode. The launcher also loads the handshake transport so its links are usable after the APK's input gate is released; standalone browser links remain unchanged.
 
 ## Native capability handshake
 

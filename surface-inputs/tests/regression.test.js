@@ -48,6 +48,26 @@ test('all supported entry pages load shared transport before producers with vali
     }
 });
 
+test('launcher negotiates the APK ready handshake without changing browser links', () => {
+    const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+    const scripts = [...html.matchAll(/<script[^>]*\bsrc="([^"]+)"/g)].map(value => value[1]);
+    assert.deepEqual(scripts, ['transport.js', 'transport-ui.js']);
+    const e = environment();
+    scripts.forEach(script => e.load(script));
+    assert.equal(e.win.SurfaceInputsTransport.getMode(), 'browser');
+    e.handshake();
+    assert.deepEqual(e.port.sent[0], { version: 1, type: 'ready' });
+    e.port.receive({ version: 1, type: 'ready' });
+    assert.equal(e.win.SurfaceInputsTransport.isNative(), true);
+    assert.equal(e.requests.length, 0);
+    const links = [...html.matchAll(/<a[^>]*href="([^"]+)"/g)].map(value => value[1]);
+    assert.deepEqual(links, [
+        'touchpad/index.html?session_id=df_202611',
+        'touchpad/scroll.html?session_id=df_202611',
+        'keyboard/?setting_preset=df&amp;num_prompts=3&amp;session_id=df_202611'
+    ]);
+});
+
 test('identity hiding is only installed after real private port ready reply, not URL or untrusted dispatch', () => {
     const e = environment('?native=true&setting_preset=df');
     const get = e.doc.getElementById, append = e.doc.head.appendChild;
