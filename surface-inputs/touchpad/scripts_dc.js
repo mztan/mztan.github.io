@@ -321,6 +321,7 @@ function highlightRandomPhraseScroll() {
         }
         trialNum += 1;
     } else {
+        SurfaceInputsTouchpad.beginScroll(isPractice);
         EventLogger.setIsInTarget(false);
     }
 }
@@ -423,6 +424,7 @@ function _getScrollPositionData() {
 }
 
 function onScrollCallback() {
+    SurfaceInputsTouchpad.scrollMove();
     trackGesture(100, 'scroll', _getScrollPositionData);
     var scrollData = _getScrollPositionData();
     EventLogger.updateTrace('scrollPosition', {
@@ -447,6 +449,7 @@ function onScrollCallback() {
     if (inTarget) {
         highlightTimeout = setTimeout(() => {
             if (isHighlightInTargetbox()) {
+                if (!SurfaceInputsTouchpad.finishScroll()) return;
                 successfulClicks += 1;
                 console.log(`click ${successfulClicks}`);
                 EventLogger.logEvent('scroll_success', Object.assign({ targetIndex: successfulClicks }, _getScrollPositionData()));
@@ -550,6 +553,7 @@ function highlightRandomPhraseSelection() {
 
         // Temporarily insert the highlight into the paragraph
         randomParagraph.innerHTML = beforeText + highlight.outerHTML + afterText;
+        SurfaceInputsTouchpad.beginSelection(isPractice);
         break;
     }
 }
@@ -596,6 +600,7 @@ function selectionChangedHandler() {
     // console.log(selection.length, targetText.length, indexOfSelection, indexOfSelection + targetText.length);
 
     if (selection === targetText) { // Check if the user's selection exactly matches the highlighted text
+        if (!SurfaceInputsTouchpad.finishSelection()) return;
         console.log('User selected the highlighted text! Getting a new phrase.');
         suppressNextSelectionChange = true;
         lastSelectionMissText = null;
@@ -744,6 +749,7 @@ function startTimer() {
 }
 
 function submitForm(trial, ttc, gestures) {
+    if (SurfaceInputsTransport.usesNative()) return;
     const form = document.getElementById('bootstrapForm');
 
     if (!form.dataset.submitHandlerAdded) {

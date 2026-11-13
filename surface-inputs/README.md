@@ -24,10 +24,12 @@ For local use, run a static HTTP server at the repository root, for example `pyt
 
 Existing upstream notices, comments, license text, libraries, and source README files are preserved. See `touchpad/uxr/readme.md` and the individual vendored library headers for the notices supplied upstream. No new blanket license is asserted for copied code.
 
-The upstream jQuery UI 1.8.6 stylesheet referenced theme images that were absent from its repository. Matching `ui-lightness` images from the official jQuery CDN are bundled under both touchpad variants; their source URLs and hashes are recorded in `UPSTREAM.json`. The original stylesheet and task scripts remain unchanged.
+The upstream jQuery UI 1.8.6 stylesheet referenced theme images that were absent from its repository. Matching `ui-lightness` images from the official jQuery CDN are bundled under both touchpad variants; their source URLs and hashes are recorded in `UPSTREAM.json`. Original stylesheets, task rules and legacy calculations remain unchanged; narrow telemetry hooks are described below.
 
 ## Collection boundary
 
-This is source consolidation only. Existing upstream Google Forms logging endpoints remain unchanged. This migration does not configure a new collection backend, publish participant data, implement the shortened dogfooding sequence, or add the Android WebView bridge. Static validation does not run test sessions or submit forms.
+Browser Google Forms endpoints and identity controls remain unchanged. The keyboard main page and root/UXR touchpad targeting, scrolling, selection and zoom pages now support the private native MessagePort handshake and typed intent observations. Native attribution and collection are host-owned; there is no new web backend or feedback UI. `exec_demo` and the UXR Fitts latency variant remain browser-only.
 
-Public task assets and private feedback/results must remain separate when the collection integration is added.
+See [the telemetry contract](TELEMETRY.md) for handshake, bounds, ACK/retry behavior, populated metrics and unavailable measurements. Run the offline transport/producer checks with `node --test surface-inputs/tests/*.test.js` from the repository root. These checks use fake sinks and never submit Forms. Generate receiver fixtures with `node surface-inputs/tests/generate-fixtures.js`.
+
+Public task assets and private feedback/results remain separate. The native queue is document-local and is not a server-upload guarantee.

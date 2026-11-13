@@ -149,6 +149,7 @@ var fittsTest = {
 	generateTarget: function() {
 		this.target = this.isoPositions[this.currentPosition];
 		this.target.distance = this.isoParams.distance;
+		SurfaceInputsTouchpad.beginCursor(this.target, false);
 
 		var target = testAreaSVG.selectAll('#target').data([this.target]);
 
@@ -219,6 +220,7 @@ var fittsTest = {
 
 	mouseClicked: function(x, y) {
 		var isHit = distance({ x: x, y: y }, this.target) < (this.target.w / 2);
+		if (!SurfaceInputsTouchpad.cursorClick(x, y, isHit)) return;
 		this.clicksTotal++;
 		//updateClickCounts(isHit); // Update the click counts
 
@@ -261,6 +263,7 @@ var fittsTest = {
 	},
 
 	mouseMoved: function(x, y) {
+		SurfaceInputsTouchpad.cursorMove(x, y);
 		if (this.active) {
 			// Skip if the mouse did not move
 			if (x == this.last.x && y == this.last.y) {
@@ -451,6 +454,7 @@ var testAreaSVG = d3.select('#test-area').append('svg')
 	.attr('height', testDimension.height)
 	.style('pointer-events', 'all')
     .on('mousemove', mouseMoved)
+	.on('mouseleave', function() { SurfaceInputsTouchpad.cursorExit(); })
 	.on('mousedown', mouseClicked)
 	.call(bgRect, testDimension);
 
@@ -516,6 +520,7 @@ function startExperience() {
 }
 
 function endExperience() {
+	SurfaceInputsTouchpad.resetCursor();
 	experienceScreen.style.display = "none";
 	startScreen.style.display = "";
 
@@ -631,6 +636,7 @@ function endExperience() {
 }
 
 function submitForm(trial, condition, id, ide, tp, ttc, ct, cot, te, tcd) {
+    if (SurfaceInputsTransport.usesNative()) return;
     const form = document.getElementById('bootstrapForm');
     if (!form.dataset.submitHandlerAdded) {
         form.addEventListener('submit', (e) => {

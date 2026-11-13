@@ -1,4 +1,34 @@
 document.addEventListener('DOMContentLoaded', async function () {
+    const transport = window.SurfaceInputsTransport;
+    const capture = window.SurfaceInputsKeyboardCapture.createCapture(reason => {
+        window.dispatchEvent(new CustomEvent('surface-inputs-transport-error', { detail: { reason } }));
+    }, () => transport.usesNative());
+    const nativeBound = () => transport.usesNative();
+    function nativePromptId(index) {
+        const dataset = (document.querySelector('input[name="dataset"]:checked') || {}).value || 'practice';
+        return dataset + '_' + index;
+    }
+    function nativeActivity() {
+        const dataset = (document.querySelector('input[name="dataset"]:checked') || {}).value;
+        return { 'practice': 'keyboard_natural_language', 'natural-language': 'keyboard_natural_language',
+            'natural-language-punct': 'keyboard_punctuation', 'emails': 'keyboard_email',
+            'passwords': 'keyboard_password', 'metal-keys': 'keyboard_punctuation',
+            'shortcuts': 'keyboard_shortcuts', 'arrows': 'keyboard_arrows' }[dataset];
+    }
+    function emitNativePrompt(prompt, finalText, elapsedMs, promptId, format) {
+        if (!nativeBound()) return true;
+        try {
+            const observation = capture.complete(prompt, finalText, format);
+            transport.submitKeyboard(Object.assign(observation, {
+                activity_id: nativeActivity(), prompt_id: promptId,
+                elapsed_ms: Math.max(0, Math.round(elapsedMs))
+            }));
+            return true;
+        } catch (error) {
+            window.dispatchEvent(new CustomEvent('surface-inputs-transport-error', { detail: { reason: error.message } }));
+            return false; // Keep this prompt, its full stream and the existing scores unchanged.
+        }
+    }
     function getURLParameter(name) {
         const urlParams = new URLSearchParams(window.location.search);
         return urlParams.get(name);
@@ -513,14 +543,20 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
     async function startShortcutRun() {
+        if (nativeBound() && !transport.isNative()) {
+            window.dispatchEvent(new CustomEvent('surface-inputs-transport-error', {
+                detail: { reason: 'Wait for the native telemetry ready reply before starting shortcuts.' }
+            }));
+            return;
+        }
         // In DF/UXR mode, require the identifier before starting so form
         // submissions are attributable (keychord mode bypasses the textarea
         // gate that normally enforces this).
-        if (uxrModeEnabled && !document.getElementById('user-id').value.trim()) {
+        if (!nativeBound() && uxrModeEnabled && !document.getElementById('user-id').value.trim()) {
             alert('Please enter a User ID first.');
             return;
         }
-        if (dfModeEnabled && !document.getElementById('unix-name').value.trim()) {
+        if (!nativeBound() && dfModeEnabled && !document.getElementById('unix-name').value.trim()) {
             alert('Please enter your unix name first.');
             return;
         }
@@ -530,6 +566,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         kcResults = [];
         kcWrongAttempts = 0;
         kcTyped = [];
+        capture.reset();
         kcKeysDown.clear();
         detailedLogEvents = [];
         detailedLogAccumulated = [];
@@ -550,7 +587,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             fsOk = false;
         }
 
-        if (!fsOk) {
+        if (!fsOk && !transport.isNative()) {
             // No fullscreen (e.g. selection came from a synthetic event with no
             // user gesture) -> stay idle and let the user start with a click.
             startButton.style.display = 'block';
@@ -667,6 +704,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             kcStepIndex = 0;
             kcWrongAttempts = 0;
             kcTyped = [];
+            capture.reset();
             kcPromptStartedAt = null; // timer starts on the first key of the new prompt
             updateKeychordProgress();
             renderKeychordTarget();
@@ -737,8 +775,15 @@ document.addEventListener('DOMContentLoaded', async function () {
         const chord = parseChord(expected);
         const matched = chordMatches(e, chord);
         logKeychordEvent('keydown', e, { expectedCombo: expected, stepIndex: kcStepIndex, matched: matched });
+        if (!capture.appendLabel(eventToComboLabel(e))) return;
         kcTyped.push(eventToComboLabel(e)); // what was actually pressed (incl. wrong)
         if (matched) {
+            if (nativeBound() && kcStepIndex === seq.length - 1 &&
+                !emitNativePrompt(seq.join(' '), kcTyped.join(' '),
+                    kcPromptStartedAt ? Date.now() - kcPromptStartedAt : 0,
+                    nativePromptId(currentPromptIndex), 'keychord_labels_v1')) {
+                return;
+            }
             kcStepIndex += 1;
             renderKeychordTarget(); // turn the just-completed combo green
             if (kcStepIndex >= seq.length) {
@@ -762,7 +807,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     // If the user leaves fullscreen mid-run (hold Esc), reset back to idle so
     // they can restart with the Start button.
     document.addEventListener('fullscreenchange', function () {
-        if (currentMode === 'keychord' && keychordActive && !document.fullscreenElement) {
+        if (currentMode === 'keychord' && keychordActive && !document.fullscreenElement && !transport.isNative()) {
             keychordActive = false;
             if (keychordLocked && navigator.keyboard && navigator.keyboard.unlock) {
                 try { navigator.keyboard.unlock(); } catch (e) { /* ignore */ }
@@ -1346,6 +1391,11 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     // Function to check if input area should be disabled based on UXR/DF mode and user ID/unix name
     function checkAndUpdateInputAreaState() {
+        if (nativeBound()) {
+            inputArea.disabled = !transport.isNative();
+            inputArea.placeholder = transport.isNative() ? 'Start typing here...' : 'Waiting for native telemetry ready reply...';
+            return;
+        }
         if (uxrModeEnabled) {
             const userIdInput = document.getElementById('user-id');
             const userIdValue = userIdInput.value.trim();
@@ -1437,6 +1487,11 @@ document.addEventListener('DOMContentLoaded', async function () {
     // Apply URL parameter overrides after presets are applied
     applyURLParameterOverrides();
 
+    window.addEventListener('surface-inputs-mode', () => {
+        if (!testActive && promptResults.length === 0) checkAndUpdateInputAreaState();
+    });
+    checkAndUpdateInputAreaState();
+
     // Ensure the correct mode UI (text vs key-chord) is shown on load.
     updateModeUI();
 
@@ -1485,7 +1540,16 @@ document.addEventListener('DOMContentLoaded', async function () {
     // shrunk (delete). Stays at most 1 because new keydowns supersede
     // unresolved ones (a 229 tap that produced no input event was a no-op).
     // Handle all input events in a single handler for better cross-browser compatibility
-    inputArea.addEventListener('input', function () {
+    inputArea.addEventListener('beforeinput', event => {
+        if (nativeBound()) capture.beforeInput(event, inputArea.value, inputArea.selectionStart, inputArea.selectionEnd);
+    });
+    inputArea.addEventListener('paste', event => {
+        if (nativeBound()) capture.paste(event, inputArea.value, inputArea.selectionStart, inputArea.selectionEnd);
+    });
+    inputArea.addEventListener('compositionstart', () => capture.compositionStart(inputArea.value));
+    inputArea.addEventListener('compositionend', () => capture.compositionEnd(inputArea.value));
+    inputArea.addEventListener('input', function (event) {
+        capture.input(inputArea.value, event);
         if (!testActive) {
             startTest();
             previousInputLength = 0;
@@ -1578,6 +1642,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     // Handle key presses for Enter key
     inputArea.addEventListener('keydown', function (e) {
+        if (!capture.key(e)) return;
         // Detailed logging: log every keydown except the submit Enter.
         let keydownEntry = null;
         if (e.key !== 'Enter') {
@@ -1663,6 +1728,10 @@ document.addEventListener('DOMContentLoaded', async function () {
             qaErrorElement.style.display = 'none';
             lengthErrorElement.style.display = 'none';
 
+            // Enqueue the complete observation before any scoring/form event or advance.
+            if (!emitNativePrompt(promptText, typedText, endTime - startTime,
+                nativePromptId(getCurrentPromptOriginalIndex()))) return;
+
             // Calculate results for the current prompt
             const promptResult = calculatePromptResult();
             promptResults.push(promptResult);
@@ -1680,6 +1749,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                 currentPromptIndex++;
                 updateCurrentPrompt();
                 inputArea.value = '';
+                capture.reset();
                 promptTimingStarted = false; // Reset timing flag for new prompt
                 previousInputValue = ''; // Reset input value for new prompt
                 previousInputLength = 0; // Reset input length for new prompt
@@ -1756,6 +1826,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                             // input events, so manually emit a textChange so the
                             // custom-autocorrect replacement appears in the log.
                             logTextChange(preCorrectionValue, inputArea.value);
+                            capture.programmaticEdit(preCorrectionValue, inputArea.value);
 
                             return true; // Correction was made
                         }
@@ -1802,6 +1873,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         testActive = false;
 
         inputArea.value = '';
+        capture.reset();
         inputArea.disabled = false;
         startButton.textContent = 'Reset Test';
         results.style.display = 'none';
@@ -1950,6 +2022,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
     function submitPromptResultToGoogleForm(data) {
+        if (nativeBound()) return;
         const form = document.getElementById('resultForm');
         if (!form.dataset.submitHandlerAdded) {
             form.addEventListener('submit', (e) => {
@@ -2002,6 +2075,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
     function submitPromptResultToDFGoogleForm(data) {
+        if (nativeBound()) return;
         const form = document.getElementById('dfResultForm');
         if (!form.dataset.submitHandlerAdded) {
             form.addEventListener('submit', (e) => {

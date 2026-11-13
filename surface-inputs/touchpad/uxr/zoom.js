@@ -158,6 +158,8 @@ function generateZoomTarget() {
     innerOutline.style.width = `${innerOutlineSize}px`;
     innerOutline.style.height = `${innerOutlineSize}px`;
 
+    SurfaceInputsTouchpad.beginZoom(zoomCurrentScale, zoomTargetSize / zoomInnerBaseSize,
+        zoomMinSize / zoomInnerBaseSize, zoomMaxSize / zoomInnerBaseSize, false);
     updateZoomUI();
 }
 
@@ -211,6 +213,7 @@ function zoomTouchMoveHandler(e) {
 
 function onZoomSuccess() {
     if (successfulClicks >= MAX_ZOOM_TRIALS) return;
+    if (!SurfaceInputsTouchpad.finishZoom()) return;
     successfulClicks += 1;
     playChime(true);
     if (_warnIfNoEventLogger()) EventLogger.logEvent('zoom_success', { targetIndex: successfulClicks, zoomCurrentScale: zoomCurrentScale, currentSize: zoomInnerBaseSize * zoomCurrentScale, zoomTargetSize: zoomTargetSize, successfulClicks: successfulClicks });
