@@ -6,7 +6,7 @@
  * Signature: flat 2px edges, restrained uppercase labels, simple circle/pointer icon.
  * Anti-model: no neon glow, bullseyes, decorative trails, gradients, extra scores or lives.
  * Motion: controls use brief color/border feedback; target transitions remain task-owned.
- * Geometry: no SVG sizing, transforms, target radii, hit areas or experience layout changes.
+ * Geometry: fixed 620x400 SVG and task-owned target geometry. Viewport placement is corrected below.
  */
 :root {
   color-scheme: dark;
@@ -26,7 +26,23 @@ body {
   color: var(--arcade-cream);
   font-family: var(--arcade-body);
 }
-/* Only the setup screen is rearranged. The measured playfield retains its original placement. */
+/* The inherited 200px bottom margin cropped the 400px playfield on short panels.
+ * Safe alignment keeps oversized content at a reachable scroll origin instead of centering it
+ * beyond the viewport. No SVG dimensions, scaling or task coordinate rules are changed.
+ * Scope to this page: Scrolling imports this stylesheet for its setup theme only. */
+.arcade-targeting-page .experience-screen {
+  margin-bottom: 0;
+  overflow: auto;
+  align-items: safe center;
+  justify-content: safe center;
+}
+.arcade-targeting-page #test-area { flex: none; }
+.arcade-targeting-page .start-screen {
+  overflow: auto;
+  align-items: safe center;
+  justify-content: safe center;
+}
+/* Setup layout and controls. */
 .start-screen {
   margin-bottom: 0;
   gap: 32px;
