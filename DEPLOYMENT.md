@@ -37,9 +37,24 @@ Use a normal Git revert to roll back a published change. Do not force-push share
 
 - Standalone browser tests ask for the upstream identity where required and use their existing Google Forms flow.
 - A compatible APK negotiates the native MessagePort transport and emits observations through its telemetry sinks without asking for identity already provided by native telemetry.
-- The APK's default URL is a separate source-code choice. It currently points to production. This dev path does not automatically switch it. The APK's page/origin allowlist must explicitly support dev before loading dev inside it; otherwise use a normal browser for dev.
-- `arcade_debugger=true` is an APK boolean launch extra on a debuggable build, not a web query parameter or deployment environment. In the preflight implementation it previews the calibration screen and lets Calibrate skip it, without sending a calibration request. It does not disable telemetry. A connected Java debugger at Activity creation also enables that preview. The website cannot create that native opt-in.
+- The APK defaults to production. In a compatible **debuggable** APK, launch with `--ez arcade_dev true` to open dev. Release APKs ignore that extra. Website navigation and native telemetry ports remain restricted to the selected environment for the Activity lifetime; use a fresh launch to switch. Dev continues emitting telemetry through the same sinks.
+- `arcade_debugger=true` is an independent APK boolean launch extra on a debuggable build, not a web query parameter or deployment environment. In the preflight implementation it previews the calibration screen and lets Calibrate skip it, without sending a calibration request. It does not disable telemetry. A connected Java debugger at Activity creation also enables that preview. The website cannot create that native opt-in.
 - Adding dev does not authorize APK deployment, release-channel publication, source landing or changing production defaults.
+
+### APK launch commands
+
+These require an APK containing the dev-selection implementation; older builds only load production.
+
+```bash
+# Dev with the ordinary Surface Keyboard readiness check.
+adb shell am start -S -n com.meta.surfaceinputsarcade/.SurfaceInputsArcadeActivity --ez arcade_dev true
+# Dev with calibration preview; Calibrate skips the real request.
+adb shell am start -S -n com.meta.surfaceinputsarcade/.SurfaceInputsArcadeActivity --ez arcade_dev true --ez arcade_debugger true
+# Default production launch.
+adb shell am start -S -n com.meta.surfaceinputsarcade/.SurfaceInputsArcadeActivity
+```
+
+The `-S` option stops the existing activity so the new launch options take effect. `SHOW_MENU` returns to the selected environment; it does not switch environments. Neither launch extra changes device preferences or disables uploads.
 
 ## Credentials
 
