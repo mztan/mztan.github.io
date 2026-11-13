@@ -59,7 +59,6 @@
       text-transform: uppercase;
     }
     h1 span { display: block; color: var(--red); }
-    .intro { margin: 16px 0 0; color: var(--muted); font-size: 14px; }
     nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
     .test-link {
       display: flex;
@@ -83,24 +82,10 @@
       letter-spacing: 0.04em;
       text-transform: uppercase;
     }
-    .description { display: block; margin-top: 8px; color: var(--caption); font-size: 14px; }
-    .kind {
-      display: block;
-      margin-top: auto;
-      padding-top: 20px;
-      color: var(--mint);
-      font-family: var(--display);
-      font-size: 12px;
-      font-weight: 500;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-    }
     .test-link:hover { border-color: var(--red); }
     .test-link:hover .test-icon { color: var(--cream); }
     .test-link:active { background: var(--mint); border-color: var(--cream); color: var(--navy); }
-    .test-link:active .test-icon,
-    .test-link:active .description,
-    .test-link:active .kind { color: var(--navy); }
+    .test-link:active .test-icon { color: var(--navy); }
     .test-link:focus-visible { outline: 3px solid var(--mint); outline-offset: 4px; }
     @media (max-width: 700px) {
       main { padding: 24px; }
@@ -109,8 +94,6 @@
       .test-link { min-height: 104px; padding: 20px; position: relative; padding-left: 92px; }
       .test-icon { position: absolute; top: 24px; left: 20px; margin: 0; }
       .name { font-size: 20px; }
-      .description { margin-top: 4px; }
-      .kind { margin-top: 8px; padding-top: 0; }
     }
     @media (prefers-reduced-motion: reduce) { .test-link { transition: none; } }
   </style>
@@ -120,34 +103,27 @@
     <section class="panel" aria-labelledby="page-title">
       <header>
         <h1 id="page-title">Surface Inputs <span>Arcade</span></h1>
-        <p class="intro">Choose a test to begin.</p>
       </header>
       <nav aria-label="Surface Inputs tests">
-        <a class="test-link" href="touchpad/index.html?session_id=df_202611" aria-labelledby="targeting-title" aria-describedby="targeting-description">
+        <a class="test-link" href="touchpad/index.html?session_id=df_202611" aria-labelledby="targeting-title">
           <svg class="test-icon" viewBox="0 0 48 48" fill="none" aria-hidden="true" focusable="false">
             <circle cx="17" cy="17" r="9" stroke="currentColor" stroke-width="2"/>
             <path d="M26 24L28 42L33 35L42 33L26 24Z" fill="currentColor"/>
           </svg>
           <span class="name" id="targeting-title">Targeting</span>
-          <span class="description" id="targeting-description">Move and select a target.</span>
-          <span class="kind">Touchpad</span>
         </a>
-        <a class="test-link" href="touchpad/scroll.html?session_id=df_202611" aria-labelledby="scrolling-title" aria-describedby="scrolling-description">
+        <a class="test-link" href="touchpad/scroll.html?session_id=df_202611" aria-labelledby="scrolling-title">
           <svg class="test-icon" viewBox="0 0 48 48" fill="none" aria-hidden="true" focusable="false">
             <path d="M12 15L20 7L28 15M20 7V33M28 33L36 41L44 33M36 15V41" stroke="currentColor" stroke-width="2" stroke-linecap="square"/>
           </svg>
           <span class="name" id="scrolling-title">Scrolling</span>
-          <span class="description" id="scrolling-description">Align the highlighted text.</span>
-          <span class="kind">Touchpad</span>
         </a>
-        <a class="test-link" href="keyboard/?setting_preset=df&amp;num_prompts=3&amp;session_id=df_202611" aria-labelledby="typing-title" aria-describedby="typing-description">
+        <a class="test-link" href="keyboard/?setting_preset=df&amp;num_prompts=3&amp;session_id=df_202611" aria-labelledby="typing-title">
           <svg class="test-icon" viewBox="0 0 48 48" fill="none" aria-hidden="true" focusable="false">
             <rect x="4" y="11" width="40" height="26" rx="2" stroke="currentColor" stroke-width="2"/>
             <path d="M11 18H13M19 18H21M27 18H29M35 18H37M11 25H13M19 25H21M27 25H29M35 25H37M15 31H33" stroke="currentColor" stroke-width="2" stroke-linecap="square"/>
           </svg>
           <span class="name" id="typing-title">Typing</span>
-          <span class="description" id="typing-description">Copy the prompted text.</span>
-          <span class="kind">Keyboard</span>
         </a>
       </nav>
     </section>
