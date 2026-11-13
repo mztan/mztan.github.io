@@ -11,6 +11,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Scroll</title>
     <link rel="stylesheet" href="style_dc.css">
+    <link rel="stylesheet" href="arcade-scroll.css">
     <script src="../transport.js"></script>
     <script src="../transport-ui.js"></script>
     <script src="../metrics.js"></script>
@@ -109,15 +110,27 @@
     </div>
 
     <div class="start-screen" id="start-screen">
-        <div class="start-controls">
-            <input type="text" id="button-pad-id" placeholder="User ID">
+        <div class="start-controls arcade-setup">
+            <header>
+                <div class="arcade-brand">Surface Inputs <span>Arcade</span></div>
+                <svg class="arcade-task-icon" viewBox="0 0 48 48" fill="none" aria-hidden="true" focusable="false">
+                    <path d="M12 15L20 7L28 15M20 7V33M28 33L36 41L44 33M36 15V41" stroke="currentColor" stroke-width="2" />
+                </svg>
+                <h1>Scrolling</h1>
+            </header>
+            <div id="user-id-group">
+                <label for="button-pad-id">User ID</label>
+                <input type="text" id="button-pad-id" placeholder="User ID">
+            </div>
             <p id="start-title" style="display: none;"></p>
             <p id="start-explanation" style="display: none;"></p>
-            <button id="start-button" onclick="isPractice = false; startScrollExperience()">Start</button>
-            <button id="practice-button" onclick="isPractice = true; startScrollExperience()">Practice</button>
+            <div class="arcade-actions">
+                <button id="start-button" onclick="isPractice = false; startScrollExperience()">Start</button>
+                <button id="practice-button" onclick="isPractice = true; startScrollExperience()">Practice</button>
+            </div>
         </div>
 
-        <div class="start-controls">
+        <div class="start-controls arcade-history">
 			<p id="start-text" style="font-size: 1.5rem"></p>
 		</div>
     </div>

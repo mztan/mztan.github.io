@@ -14,7 +14,13 @@ The [start page](index.html) presents Targeting, Scrolling, and Typing with the 
 
 The alternate upstream [UXR touchpad variants](touchpad/uxr/index.html) and keyboard `exec_demo` sources are retained for completeness. The targeting and scrolling pages above correspond to the exact root-level pages supplied for this migration, not the alternate `uxr/` protocols.
 
-For local use, run a static HTTP server at the repository root, for example `python3 -m http.server 8000`, and open `/surface-inputs/keyboard/` or a touchpad page. Use HTTP rather than opening HTML files directly, since the keyboard loads prompt files with `fetch`.
+For local use, run a static HTTP server at the repository root, for example `python3 -m http.server 8000`, and open `/surface-inputs-dev/keyboard/` or a dev touchpad page. Use HTTP rather than opening HTML files directly, since the keyboard loads prompt files with `fetch`.
+
+## Development visual themes
+
+Targeting, Scrolling and Typing use the Arcade navy/card surfaces, cream text, coral actions and mint feedback. Page-specific override stylesheets are loaded after the original styles; shared task engines, prompt corpora, calculations and telemetry behavior are unchanged. Scrolling keeps its original text font metrics, scroll range, highlight geometry and acceptance band. Typing keeps prompt/input typography, editor behavior, settings and metric calculations. Narrow-screen settings panels stay inside the viewport.
+
+The alternate `touchpad/uxr/` and `keyboard/exec_demo/` pages are not restyled by these overrides. Development uses the same collection destinations as production; there is no upload blocking. See [the deployment workflow](../DEPLOYMENT.md) before publishing. A dev theme change does not promote to `surface-inputs/` or change an Android APK's default URL.
 
 ## Upstream provenance
 

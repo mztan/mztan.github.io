@@ -1,0 +1,123 @@
+/*
+ * Directions: authentic Arcade panel; vintage typewriter desk; editorial input console.
+ * Selected: authentic Arcade panel, continuous with Targeting and Scrolling.
+ * Navy/card surfaces, cream prompts, mint focus/results, coral primary controls.
+ * Condensed labels and the original monospace typing text provide distinct roles.
+ * Signature: flat two-pixel corners, quiet settings rail, two-line Arcade wordmark.
+ * Anti-model: no gradients, drop shadows, new score formulas or gameplay decoration.
+ * Motion stays on controls; prompt/input font metrics and task logic are retained.
+ */
+:root {
+  color-scheme: dark;
+  --arcade-navy: #0d1b2a;
+  --arcade-card: #142338;
+  --arcade-border: #1f3550;
+  --arcade-cream: #f2e8d0;
+  --arcade-coral: #e63d2e;
+  --arcade-mint: #4db9a5;
+  --arcade-muted: #9aafc0;
+  --arcade-display: "Arial Narrow", "Roboto Condensed", "Liberation Sans Narrow", sans-serif;
+}
+body { background: var(--arcade-navy); color: var(--arcade-cream); }
+.container, .settings-panel {
+  background: var(--arcade-card);
+  border-radius: 2px;
+  box-shadow: none;
+  outline: 1px solid var(--arcade-border);
+}
+.arcade-brand {
+  margin-bottom: 16px;
+  color: var(--arcade-cream);
+  font: 700 28px/1.05 var(--arcade-display);
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
+.arcade-brand span { display: block; color: var(--arcade-coral); }
+h1, h2, .settings-label {
+  color: var(--arcade-cream);
+  font-family: var(--arcade-display);
+}
+h1 { font-size: 24px; letter-spacing: .08em; text-transform: uppercase; text-align: left; }
+.settings-panel h2 { color: var(--arcade-cream); text-align: left; text-transform: uppercase; letter-spacing: .06em; }
+.instructions { color: var(--arcade-muted); text-align: left; }
+.progress-indicator { color: var(--arcade-muted) !important; font-variant-numeric: tabular-nums; }
+.sample-text, .sample-text-highlighted {
+  background: var(--arcade-navy);
+  color: var(--arcade-cream);
+  border-left-color: var(--arcade-mint);
+  border-radius: 2px;
+}
+.input-area {
+  background: var(--arcade-navy);
+  color: var(--arcade-cream);
+  border-color: var(--arcade-border);
+  border-radius: 2px;
+  caret-color: var(--arcade-mint);
+}
+.input-area::placeholder { color: var(--arcade-muted); opacity: 1; }
+.input-area:focus { border-color: var(--arcade-mint); }
+.input-area.disabled { background: var(--arcade-navy); opacity: .6; }
+.button, .prompt-count-button {
+  background: var(--arcade-coral);
+  color: var(--arcade-cream);
+  border-radius: 2px;
+  font-family: var(--arcade-display);
+  font-weight: 700;
+}
+.button { text-transform: uppercase; letter-spacing: .06em; }
+.button:hover, .prompt-count-button:hover { background: #b93329; }
+.button:active, .prompt-count-button:active { background: var(--arcade-mint); color: var(--arcade-navy); }
+.button:disabled { background: var(--arcade-border); color: var(--arcade-muted); }
+button:focus-visible, textarea:focus-visible, input:focus-visible {
+  outline: 3px solid var(--arcade-mint);
+  outline-offset: 3px;
+}
+.radio-option input:focus-visible + label { outline: 3px solid var(--arcade-mint); outline-offset: 3px; }
+.settings-group label, .settings-label { color: var(--arcade-muted); }
+.radio-option label {
+  background: var(--arcade-navy);
+  color: var(--arcade-cream);
+  border-color: var(--arcade-border);
+  border-radius: 2px;
+}
+.radio-option label:hover { background: #1a3044; color: var(--arcade-cream); border-color: var(--arcade-mint); }
+.radio-option input[type="radio"]:checked + label {
+  background: var(--arcade-mint);
+  border-color: var(--arcade-mint);
+  color: var(--arcade-navy);
+}
+.user-id-input, #prompt-count {
+  background: var(--arcade-navy);
+  color: var(--arcade-cream);
+  border-color: var(--arcade-border);
+  border-radius: 2px;
+}
+.user-id-input:focus, #prompt-count:focus { border-color: var(--arcade-mint); }
+.results { background: var(--arcade-navy); border-radius: 2px; }
+.results h2, .primary-metric { color: var(--arcade-cream); }
+.metric span, .primary-metric span { color: var(--arcade-mint); font-variant-numeric: tabular-nums; }
+.primary-metric-container { background: var(--arcade-card); border-color: var(--arcade-mint); border-radius: 2px; box-shadow: none; }
+.timer { color: var(--arcade-cream); font-variant-numeric: tabular-nums; }
+.error-message { background: #371c22; color: #ffb4aa; border-color: var(--arcade-coral); border-radius: 2px; }
+.char-correct { background: #173d37; color: #9de4cc; }
+.char-incorrect { background: #371c22; color: #ffb4aa; }
+.char-untyped { color: var(--arcade-cream); }
+.info-icon { background: var(--arcade-mint); color: var(--arcade-navy); }
+.info-icon:hover { background: #9de4cc; }
+.info-icon::before { background: var(--arcade-navy); color: var(--arcade-cream); border-radius: 2px; box-shadow: none; }
+.debug-info { background: var(--arcade-navy); border-color: #eac36f; border-radius: 2px; }
+.debug-info h3, .debug-metric, .debug-metric span { color: #eac36f; }
+.kc-key { background: var(--arcade-navy); color: var(--arcade-cream); border-color: var(--arcade-border); border-radius: 2px; }
+.kc-combo.kc-current { outline-color: var(--arcade-mint); }
+.kc-combo.kc-done .kc-key { background: #173d37; border-color: var(--arcade-mint); color: #9de4cc; }
+.kc-sep { color: var(--arcade-muted); }
+.sample-text.kc-wrong { background: #371c22; border-left-color: var(--arcade-coral); }
+.kc-exit-btn { background: var(--arcade-card); color: var(--arcade-cream); border-radius: 2px; }
+.kc-exit-btn:hover { background: var(--arcade-border); }
+.container:fullscreen { background: var(--arcade-card); }
+@media (max-width: 960px) {
+  .settings-panel { box-sizing: border-box; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .input-area, .button, .radio-option label, .info-icon, .prompt-count-button, .user-id-input, #prompt-count { transition: none; }
+}
