@@ -1,0 +1,189 @@
+[
+  {
+    "name": "keyboard_1",
+    "message": {
+      "prompt_text": "world⏎",
+      "input_event_stream": "world⏎",
+      "details": {
+        "details_version": 1,
+        "replay_eligible": true,
+        "final_text": "world"
+      },
+      "activity_id": "keyboard_natural_language",
+      "prompt_id": "natural-language_1",
+      "elapsed_ms": 0,
+      "version": 1,
+      "type": "keyboard",
+      "id": "web_00000000-0000-4000-8000-000000000001_1"
+    }
+  },
+  {
+    "name": "shortcuts_1",
+    "message": {
+      "prompt_text": "Ctrl+C Ctrl+V",
+      "input_event_stream": "Ctrl+C Ctrl+V",
+      "details": {
+        "details_version": 1,
+        "stream_format": "keychord_labels_v1",
+        "final_text": "Ctrl+C Ctrl+V"
+      },
+      "activity_id": "keyboard_shortcuts",
+      "prompt_id": "shortcuts_0",
+      "elapsed_ms": 100,
+      "version": 1,
+      "type": "keyboard",
+      "id": "web_00000000-0000-4000-8000-000000000002_1"
+    }
+  },
+  {
+    "name": "targeting_1",
+    "message": {
+      "activity_id": "touchpad_targeting",
+      "metric_family": "cursor_movement",
+      "elapsed_ms": 200,
+      "details": {
+        "details_version": 1,
+        "cursor_trace": "observed"
+      },
+      "stp_cursor_movement_target_radius_px": 19,
+      "stp_cursor_movement_start_distance_px": 482.5974481593781,
+      "stp_cursor_movement_time_ms": 200,
+      "stp_cursor_movement_stroke_count": 1,
+      "stp_cursor_movement_first_stroke_share": 1,
+      "stp_cursor_movement_small_strokes_far_from_target": 0,
+      "stp_cursor_movement_small_strokes_near_target": 0,
+      "stp_cursor_movement_target_entries": 1,
+      "stp_cursor_movement_total_cursor_distance_px": 501.5974481593781,
+      "stp_cursor_movement_index_of_difficulty_bits": 3.8278122019032432,
+      "stp_cursor_movement_overshoot_count": 0,
+      "stp_cursor_movement_endpoint_error_px": 0,
+      "version": 1,
+      "type": "touchpad",
+      "id": "web_00000000-0000-4000-8000-000000000003_1"
+    }
+  },
+  {
+    "name": "targeting_2",
+    "message": {
+      "activity_id": "touchpad_targeting",
+      "metric_family": "clicks",
+      "elapsed_ms": 200,
+      "details": {
+        "details_version": 1
+      },
+      "stp_clicks_target_count": 1,
+      "stp_clicks_completed_count": 1,
+      "stp_clicks_total": 1,
+      "stp_clicks_on_target": 1,
+      "stp_clicks_miss_count": 0,
+      "version": 1,
+      "type": "touchpad",
+      "id": "web_00000000-0000-4000-8000-000000000003_2"
+    }
+  },
+  {
+    "name": "scrolling_1",
+    "message": {
+      "activity_id": "touchpad_scrolling",
+      "metric_family": "scrolling",
+      "elapsed_ms": 400,
+      "details": {
+        "details_version": 1
+      },
+      "stp_scrolling_start_distance_px": 80.25,
+      "stp_scrolling_stroke_count": -1,
+      "stp_scrolling_dial_in_stroke_count": -1,
+      "stp_scrolling_empty_stroke_count": -1,
+      "stp_scrolling_first_stroke_share": -1,
+      "stp_scrolling_overshoot_count": 0,
+      "stp_scrolling_overshoot_max_px": 0,
+      "stp_scrolling_time_ms": 400,
+      "stp_scrolling_direction": "down",
+      "stp_scrolling_cursor_travel_without_scroll_px": -1,
+      "version": 1,
+      "type": "touchpad",
+      "id": "web_00000000-0000-4000-8000-000000000004_1"
+    }
+  },
+  {
+    "name": "selection_1",
+    "message": {
+      "activity_id": "touchpad_selection",
+      "metric_family": "drag",
+      "elapsed_ms": 500,
+      "details": {
+        "details_version": 1,
+        "completion": "exact_selection"
+      },
+      "stp_drag_target_text": "prescribed phrase",
+      "version": 1,
+      "type": "touchpad",
+      "id": "web_00000000-0000-4000-8000-000000000005_1"
+    }
+  },
+  {
+    "name": "zoom_1",
+    "message": {
+      "activity_id": "touchpad_zoom",
+      "metric_family": "zooming",
+      "elapsed_ms": 700,
+      "details": {
+        "details_version": 1,
+        "lower_scale": 1.4,
+        "upper_scale": 1.6
+      },
+      "stp_zooming_time_ms": 700,
+      "stp_zooming_direction": "in",
+      "stp_zooming_required_change_percent": 50,
+      "stp_zooming_pinch_count": -1,
+      "stp_zooming_dial_in_pinch_count": -1,
+      "stp_zooming_empty_pinch_count": -1,
+      "stp_zooming_first_pinch_share": -1,
+      "stp_zooming_overshoot_count": -1,
+      "stp_zooming_overshoot_max_percent": -1,
+      "stp_zooming_cursor_travel_while_zooming_px": -1,
+      "stp_zooming_cursor_travel_without_zoom_px": -1,
+      "version": 1,
+      "type": "touchpad",
+      "id": "web_00000000-0000-4000-8000-000000000006_1"
+    }
+  },
+  {
+    "name": "feedback_1",
+    "message": {
+      "activity_id": "touchpad_scrolling",
+      "scope": "task",
+      "round_id": "scroll_round_1",
+      "ratings": {
+        "ease": 4,
+        "satisfaction": 4,
+        "frustration": 2,
+        "control": 4,
+        "fatigue": 2,
+        "accuracy": 5,
+        "lag": 3,
+        "likelihood": 4
+      },
+      "comment": "The prescribed scroll target was easy to reach.",
+      "pain_points": [
+        "overshoot",
+        "lag"
+      ],
+      "version": 1,
+      "type": "feedback",
+      "id": "web_00000000-0000-4000-8000-000000000007_1"
+    }
+  },
+  {
+    "name": "feedback_2",
+    "message": {
+      "activity_id": "session",
+      "scope": "session",
+      "ratings": {},
+      "comment": "Freeform session feedback.",
+      "version": 1,
+      "type": "feedback",
+      "id": "web_00000000-0000-4000-8000-000000000007_2"
+    }
+  }
+]

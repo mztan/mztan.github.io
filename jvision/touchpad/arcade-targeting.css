@@ -1,0 +1,171 @@
+/*
+ * Directions: authentic Arcade panel; retro cabinet scoreboard; editorial training console.
+ * Selected: authentic Arcade panel, matching the existing home and native Arcade palette.
+ * Navy/card surfaces, warm cream type, coral active targets, mint control feedback.
+ * Condensed display headings, readable system body, monospace result history.
+ * Signature: flat 2px edges, restrained uppercase labels, simple circle/pointer icon.
+ * Anti-model: no neon glow, bullseyes, decorative trails, gradients, extra scores or lives.
+ * Motion: controls use brief color/border feedback; target transitions remain task-owned.
+ * Geometry: fixed 620x400 SVG and task-owned target geometry. Viewport placement is corrected below.
+ */
+:root {
+  color-scheme: dark;
+  --arcade-navy: #0d1b2a;
+  --arcade-card: #142338;
+  --arcade-border: #1f3550;
+  --arcade-cream: #f2e8d0;
+  --arcade-coral: #e63d2e;
+  --arcade-mint: #4db9a5;
+  --arcade-muted: #9aafc0;
+  --arcade-idle: #6b8da8;
+  --arcade-display: "Arial Narrow", "Roboto Condensed", "Liberation Sans Narrow", sans-serif;
+  --arcade-body: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+body {
+  background: var(--arcade-navy);
+  color: var(--arcade-cream);
+  font-family: var(--arcade-body);
+}
+/* The inherited 200px bottom margin cropped the 400px playfield on short panels.
+ * Safe alignment keeps oversized content at a reachable scroll origin instead of centering it
+ * beyond the viewport. No SVG dimensions, scaling or task coordinate rules are changed.
+ * Scope to this page: Scrolling imports this stylesheet for its setup theme only. */
+.arcade-targeting-page .experience-screen {
+  margin-bottom: 0;
+  overflow: auto;
+  align-items: safe center;
+  justify-content: safe center;
+}
+.arcade-targeting-page #test-area { flex: none; }
+.arcade-targeting-page .start-screen {
+  overflow: auto;
+  align-items: safe center;
+  justify-content: safe center;
+}
+/* Setup layout and controls. */
+.start-screen {
+  margin-bottom: 0;
+  gap: 32px;
+  padding: 32px;
+  box-sizing: border-box;
+}
+.arcade-setup {
+  align-items: stretch;
+  flex: 0 1 360px;
+  min-width: 0;
+}
+.arcade-brand {
+  margin: 0 0 24px;
+  color: var(--arcade-cream);
+  font-family: var(--arcade-display);
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
+.arcade-brand span { display: block; color: var(--arcade-coral); }
+.arcade-task-icon { width: 44px; height: 44px; color: var(--arcade-mint); margin-bottom: 16px; }
+.arcade-task-icon path { fill: currentColor; stroke: none; }
+.arcade-setup h1 {
+  margin: 0 0 8px;
+  font-family: var(--arcade-display);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.start-screen .arcade-instruction {
+  padding: 0;
+  margin: 0 0 24px;
+  font-size: 15px;
+  line-height: 1.5;
+  text-align: left;
+  color: var(--arcade-muted);
+}
+.arcade-setup label {
+  font-size: 12px;
+  line-height: 1.4;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--arcade-muted);
+}
+#button-pad-id {
+  width: 100%;
+  height: 48px;
+  box-sizing: border-box;
+  margin: 8px 0 16px;
+  padding: 12px;
+  border: 1px solid var(--arcade-border);
+  border-radius: 2px;
+  background: var(--arcade-card);
+  color: var(--arcade-cream);
+  font: 16px var(--arcade-body);
+  text-align: left;
+}
+#button-pad-id::placeholder { color: var(--arcade-muted); opacity: 1; }
+.start-screen button {
+  min-height: 48px;
+  margin: 0;
+  padding: 12px 20px;
+  box-sizing: border-box;
+  border: 2px solid var(--arcade-border);
+  border-radius: 2px;
+  background: var(--arcade-card);
+  color: var(--arcade-mint);
+  font-family: var(--arcade-display);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color 150ms, border-color 150ms, color 150ms;
+}
+.arcade-actions { display: flex; align-items: stretch; gap: 12px; }
+.arcade-actions button { flex: 1; }
+#start-button { background: var(--arcade-coral); color: var(--arcade-cream); border-color: var(--arcade-coral); font-size: 20px; }
+.start-screen button:hover { border-color: var(--arcade-cream); }
+.start-screen button:active { color: var(--arcade-navy); background: var(--arcade-mint); border-color: var(--arcade-mint); }
+.start-screen button:disabled { opacity: .55; cursor: default; }
+.start-screen button:focus-visible, #button-pad-id:focus-visible { outline: 3px solid var(--arcade-mint); outline-offset: 4px; }
+.arcade-history { flex: 0 1 380px; min-width: 0; align-items: stretch; }
+#start-text {
+  padding: 0;
+  margin: 0;
+  color: var(--arcade-muted);
+  font: 12px/1.8 ui-monospace, "SFMono-Regular", Consolas, monospace !important;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 340px;
+  overflow-y: auto;
+}
+.arcade-history:has(#start-text:empty) { display: none; }
+/* These colors are targeting-only: style.css is shared with other touchpad tasks. */
+#test-area .back { fill: var(--arcade-card); stroke: var(--arcade-border); }
+#test-area circle.iso { fill: var(--arcade-idle); }
+/* D3 sets inline red fill. Override paint only; r/cx/cy remain unchanged. */
+#test-area #target { fill: var(--arcade-coral) !important; }
+.timer { color: var(--arcade-cream); font-family: var(--arcade-display); font-variant-numeric: tabular-nums; }
+#download-log-btn {
+  border: 1px solid var(--arcade-border);
+  border-radius: 2px;
+  background: var(--arcade-card);
+  color: var(--arcade-mint);
+}
+#download-log-btn:focus-visible { outline: 3px solid var(--arcade-mint); outline-offset: 3px; }
+@media (max-width: 700px) {
+  .start-screen { flex-direction: column; align-items: stretch; gap: 24px; padding: 24px; }
+  .arcade-setup, .arcade-history { flex-basis: auto; width: 100%; max-width: 420px; margin: 0 auto; }
+  .arcade-brand { font-size: 28px; margin-bottom: 20px; }
+  #start-text { max-height: 144px; }
+}
+@media (max-height: 520px) {
+  .start-screen { padding-top: 16px; padding-bottom: 16px; }
+  .arcade-brand { margin-bottom: 12px; font-size: 24px; }
+  .arcade-task-icon { display: none; }
+  .start-screen .arcade-instruction { margin-bottom: 16px; }
+}
+@media (prefers-reduced-motion: reduce) { .start-screen button { transition: none; } }

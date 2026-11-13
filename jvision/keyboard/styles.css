@@ -1,0 +1,545 @@
+html {
+    font-size: 20px;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 25px;
+    background-color: #f5f5f5;
+    color: #333;
+    min-height: 100vh;
+}
+
+.app-wrapper {
+    display: flex;
+    gap: 25px;
+    max-width: 1500px;
+    margin: 0 auto;
+    align-items: flex-start;
+}
+
+.container {
+    flex: 1;
+    padding: 2rem;
+    border-radius: 12px;
+    background-color: white;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+    text-align: center;
+    color: #2c3e50;
+    margin-bottom: 1.5rem;
+}
+
+.test-container {
+    margin-bottom: 1.5rem;
+}
+
+.sample-text {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 5px;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+    line-height: 1.6;
+    border-left: 5px solid #3498db;
+    font-family: monospace;
+    color: #333;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.sample-text-highlighted {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 5px;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+    line-height: 1.6;
+    border-left: 5px solid #3498db;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    font-family: monospace;
+    color: #333;
+}
+
+.char-correct {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.char-incorrect {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.char-untyped {
+    background-color: transparent;
+    color: #000000;
+}
+
+.input-area {
+    width: 100%;
+    padding: 1rem;
+    font-size: 1.1rem;
+    border: 2px solid #ddd;
+    border-radius: 5px;
+    resize: none;
+    margin-bottom: 1rem;
+    transition: border-color 0.3s;
+    box-sizing: border-box;
+}
+
+.input-area:focus {
+    outline: none;
+    border-color: #3498db;
+}
+
+.input-area.disabled {
+    background-color: #f5f5f5;
+    cursor: not-allowed;
+}
+
+.timer {
+    font-size: 1.5rem;
+    text-align: center;
+    margin-bottom: 1rem;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.button {
+    display: block;
+    width: 250px;
+    margin: 0 auto;
+    padding: 0.8rem;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.button:hover {
+    background-color: #2980b9;
+}
+
+.button:disabled {
+    background-color: #95a5a6;
+    cursor: not-allowed;
+}
+
+/* Debug Info Styles */
+.debug-info {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background-color: #fff3cd;
+    border-radius: 5px;
+    border-left: 5px solid #ffc107;
+    margin-bottom: 1.5rem;
+}
+
+.debug-info h3 {
+    margin-top: 0;
+    color: #856404;
+    font-size: 1.1rem;
+}
+
+.debug-metric {
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+    color: #856404;
+}
+
+.debug-metric span {
+    font-weight: bold;
+    color: #856404;
+}
+
+.results {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    display: none;
+}
+
+.results h2 {
+    margin-top: 0;
+    color: #2c3e50;
+}
+
+.metric {
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+}
+
+.metric span {
+    font-weight: bold;
+    color: #3498db;
+}
+
+.primary-metric-container {
+    background-color: #eaf2f8;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    border-radius: 8px;
+    border-left: 6px solid #3498db;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.primary-metric {
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin: 0;
+    color: #2c3e50;
+}
+
+.primary-metric span {
+    color: #3498db;
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+.instructions {
+    text-align: center;
+    margin-bottom: 1rem;
+    color: #7f8c8d;
+}
+
+.error-message {
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    border: 1px solid #f5c6cb;
+    border-radius: 5px;
+    border-left: 5px solid #dc3545;
+    font-size: 0.95rem;
+    line-height: 1.4;
+    text-align: center;
+}
+
+/* Settings Panel Styles */
+.settings-panel {
+    width: 350px;
+    background-color: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    height: fit-content;
+    position: sticky;
+    top: 25px;
+}
+
+.settings-panel h2 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    color: #2c3e50;
+    font-size: 1.3rem;
+    text-align: center;
+}
+
+.settings-group {
+    margin-bottom: 1.5rem;
+}
+
+.settings-group:last-child {
+    margin-bottom: 0;
+}
+
+.settings-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.settings-label {
+    display: block;
+    margin-bottom: 0.8rem;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.user-id-input {
+    width: 100%;
+    padding: 0.6rem;
+    font-size: 1rem;
+    border: 2px solid #ddd;
+    border-radius: 5px;
+    transition: border-color 0.3s;
+    box-sizing: border-box;
+}
+
+.user-id-input:focus {
+    outline: none;
+    border-color: #3498db;
+}
+
+.radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.radio-option {
+    display: flex;
+    align-items: center;
+}
+
+.radio-option input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+}
+
+.radio-option label {
+    display: block;
+    width: 100%;
+    margin-bottom: 0;
+    padding: 0.6rem 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    color: #333;
+    background-color: #f0f0f0;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    text-align: center;
+    transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.radio-option label:hover {
+    background-color: #e0edf7;
+    border-color: #3498db;
+    color: #2c3e50;
+}
+
+.radio-option input[type="radio"]:checked + label {
+    background-color: #3498db;
+    border-color: #3498db;
+    color: white;
+    font-weight: 600;
+}
+
+.info-icon {
+    display: inline-block;
+    margin-left: 0.5rem;
+    font-size: 0.8rem;
+    cursor: help;
+    position: relative;
+    background-color: #3498db;
+    color: white;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 22px;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+.info-icon:hover {
+    background-color: #2980b9;
+}
+
+.info-icon::before {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 130%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #333;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: normal;
+    white-space: normal;
+    width: max-content;
+    max-width: 350px;
+    line-height: 1.3;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.1s, visibility 0.1s;
+    z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.info-icon:hover::before {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Prompt count control styles */
+.prompt-count-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.prompt-count-button {
+    width: 38px;
+    height: 38px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s;
+}
+
+.prompt-count-button:hover {
+    background-color: #2980b9;
+}
+
+#prompt-count {
+    width: 75px;
+    padding: 0.5rem;
+    font-size: 1rem;
+    border: 2px solid #ddd;
+    border-radius: 5px;
+    text-align: center;
+    transition: border-color 0.3s;
+}
+
+#prompt-count:focus {
+    outline: none;
+    border-color: #3498db;
+}
+
+/* Shortcut (key-chord) mode styles */
+.kc-key {
+    display: inline-block;
+    background-color: #ffffff;
+    border: 2px solid #ccc;
+    border-bottom-width: 4px;
+    border-radius: 8px;
+    padding: 0.15rem 0.6rem;
+    margin: 0 0.1rem;
+    font-family: monospace;
+    font-weight: 700;
+    color: #2c3e50;
+}
+
+/* One combo within a sequence prompt. */
+.kc-combo {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px 4px;
+    border-radius: 6px;
+    vertical-align: middle;
+}
+
+/* The combo the user should press next. */
+.kc-combo.kc-current {
+    outline: 2px solid #3498db;
+    outline-offset: 2px;
+}
+
+/* A combo already completed in the current sequence: turn its keys green. */
+.kc-combo.kc-done .kc-key {
+    background-color: #d4edda;
+    border-color: #2ecc71;
+    color: #155724;
+}
+
+.kc-sep {
+    margin: 0 0.5rem;
+    color: #7f8c8d;
+    font-weight: 700;
+}
+
+.sample-text.kc-wrong {
+    border-left-color: #e74c3c;
+    background-color: #fdecea;
+    transition: background-color 0.1s, border-color 0.1s;
+}
+
+/* Exit (X) button shown while a shortcut run is in full-screen. */
+.kc-exit-btn {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    font-size: 1.2rem;
+    line-height: 44px;
+    text-align: center;
+    cursor: pointer;
+    z-index: 2000;
+}
+
+.kc-exit-btn:hover {
+    background-color: rgba(0, 0, 0, 0.78);
+}
+
+/* When the test card is full-screen for shortcut capture, fill and center. */
+.container:fullscreen {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background-color: #ffffff;
+    overflow: auto;
+    padding: 2rem;
+}
+
+/* Responsive design */
+@media (max-width: 960px) {
+    body {
+        padding: 12px;
+    }
+
+    .app-wrapper {
+        flex-direction: column;
+        gap: 19px;
+    }
+
+    .settings-panel {
+        width: 100%;
+        position: static;
+        order: 2;
+    }
+
+    .container {
+        padding: 1.5rem;
+        order: 1;
+    }
+
+    .radio-group {
+        gap: 0.5rem;
+    }
+}
+
+@media (max-width: 600px) {
+    .container {
+        padding: 1rem;
+    }
+
+    .settings-panel {
+        padding: 1rem;
+    }
+
+    h1 {
+        font-size: 1.5rem;
+    }
+}

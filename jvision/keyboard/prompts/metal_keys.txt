@@ -1,0 +1,98 @@
+Check C:\Program Files\app.exe
+My user_name is john_doe
+Array [1, 2, 3] looks good
+Use / in web URLs please
+x = y + 2; // equation
+Add the semicolon; it's needed
+File.txt is a text file
+I can't believe it's done!
+Path: /etc/config.json
+Use {} for code blocks
+git push origin/master now
+She asked, "What time?"
+Is (x > y) true?
+Password has upper/lower case
+Pattern: [a-z_]+\.jpg
+Use | to pipe commands
+margin-top: 10px;
+{"name": "value"} is JSON
+<div class="container">
+Windows uses \ as separator
+condition ? true : false
+// This is a comment
+SELECT * FROM users;
+[link](https://example.com)
+${USER}_backup.zip
+feature/login-page branch
+Version v2.0.3-beta
+IP: 192.168.1.1
+Email: name@example.com
+calculate(x, y);
+div > p:first-child
+--verbose=true option
+<user id="123"></user>
+?search=keyword&page=2
+~/Documents/report.pdf
+Call (555) 123-4567
+Date: YYYY-MM-DD
+Range [1-100] only
+Press Ctrl+Shift+P
+Color: #FF5733
+Binary: 0b1010_1100
+Find *.txt files
+&copy; 2023 Company
+font-family: "Arial";
+git commit -m "Fix #123"
+{"key": "value"}
+chmod 755 script.sh
+https://example.com/path/
+WHERE id > 100
+{name: "John", age: 30}
+user@host:~$ prompt
+<img src="image.jpg">
+@media (max-width: 768px)
+$HOME/documents path
+[a-z0-9_-]+ regex
+git checkout -b feature/ui
+<!-- Comment here -->
+JOIN users ON id = user_id
+a:hover { color: blue; }
+echo "Hello, $USER!"
+array.map(x => x * 2)
+<!DOCTYPE html>
+COUNT(*) AS total
+@keyframes fade {}
+modified: index.html
+<form action="/submit">
+display: flex;
+for i in {1..5}; do echo $i; done
+new Promise((resolve) => {})
+<meta charset="UTF-8">
+ORDER BY created_at DESC
+display: grid;
+commit a1b2c3d4
+<input type="text">
+--primary-color: #3498db;
+if [ $count -gt 10 ]; then echo "High"; fi
+function add(a, b) { return a + b; }
+<ul><li>Item 1</li></ul>
+GROUP BY category
+transition: all 0.3s;
++Added -Removed
+<table><tr><td>Data</td></tr></table>
+position: absolute;
+command > output.txt 2>&1
+class User { constructor() {} }
+<script src="app.js"></script>
+BEGIN; INSERT; COMMIT;
+.container > .item:nth-child(2n)
+origin https://github.com/user/repo.git
+<a href="https://example.com">Link</a>
+@media print { .no-print { display: none; } }
+function backup() { cp "$1" "$1.bak"; }
+import { useState } from 'react';
+<style>.container{}</style>
+CREATE INDEX idx ON table(col);
+box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+git tag -a v1.0
+<canvas width="200"></canvas>

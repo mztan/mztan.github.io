@@ -1,0 +1,31 @@
+/*
+ * Directions explored: authentic Arcade panel, retro cabinet scoreboard, editorial console.
+ * Selected: authentic Arcade panel, matching the home and Targeting task.
+ * Navy/card surfaces, warm cream text, mint destination band, gold prescribed text.
+ * Condensed headings contrast with the original Arial task text and monospace history.
+ * Signature: flat two-pixel edges, two-line wordmark, small direction glyph.
+ * Anti-model: no neon, gradients, new task targets or decorative motion.
+ * Setup controls share the Targeting theme; measured scroll text and band geometry stay intact.
+ */
+@import url("arcade-targeting.css");
+
+.start-screen { background: var(--arcade-navy); }
+#scroll-body { background: var(--arcade-navy); }
+.scroll-container {
+  background: var(--arcade-card);
+  color: var(--arcade-cream);
+  border-color: var(--arcade-border);
+  border-radius: 2px;
+}
+#scroll-body .highlight {
+  background: #eac36f;
+  color: var(--arcade-navy);
+}
+#scroll-body .targetbox {
+  background-color: rgba(77, 185, 165, .16);
+  opacity: 1;
+  box-shadow: inset 0 2px 0 var(--arcade-mint), inset 0 -2px 0 var(--arcade-mint);
+}
+.targetarrowup, .targetarrowdown { color: var(--arcade-cream); }
+.text-top-left { color: var(--arcade-muted); }
+.arcade-task-icon path { fill: none; stroke: currentColor; }
