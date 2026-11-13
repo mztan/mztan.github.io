@@ -78,7 +78,12 @@
                 text(payload.prompt_text, 512, 'prompt_text', true);
                 text(payload.input_event_stream, 2048, 'input_event_stream');
                 requireValue(!/[\u0000-\u001f\u007f]/.test(payload.prompt_text + payload.input_event_stream), 'Use canonical visible control tokens');
-                exactKeys(payload.details, ['details_version', 'stream_format', 'final_text']);
+                exactKeys(payload.details, ['details_version', 'stream_format', 'final_text', 'replay_eligible', 'replay_ineligible']);
+                if (payload.details.replay_eligible !== undefined) requireValue(typeof payload.details.replay_eligible === 'boolean', 'replay_eligible must be a boolean');
+                if (payload.details.replay_ineligible !== undefined) {
+                    requireValue(Array.isArray(payload.details.replay_ineligible), 'replay_ineligible must be an array');
+                    payload.details.replay_ineligible.forEach(reason => requireValue(['non_terminal_edit', 'cursor_navigation', 'control_key'].includes(reason), 'Unknown replay exclusion'));
+                }
                 if (payload.details.stream_format !== undefined) requireValue(payload.details.stream_format === 'keychord_labels_v1', 'Unknown stream_format');
                 if (payload.details.final_text !== undefined) text(payload.details.final_text, 512, 'final_text');
             } else {

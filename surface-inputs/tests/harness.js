@@ -2,6 +2,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const Blob = globalThis.Blob || require('node:buffer').Blob;
 class EventTarget {
     constructor() { this.listeners = new Map(); }
     addEventListener(type, callback) { if (!this.listeners.has(type)) this.listeners.set(type, []); this.listeners.get(type).push(callback); }

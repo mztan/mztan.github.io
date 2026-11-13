@@ -18,11 +18,12 @@
         while (start < before.length && start < after.length && before[start] === after[start]) start++;
         while (suffix < before.length - start && suffix < after.length - start &&
             before[before.length - 1 - suffix] === after[after.length - 1 - suffix]) suffix++;
-        return { removed: before.slice(start, before.length - suffix).join(''), inserted: after.slice(start, after.length - suffix).join('') };
+        return { removed: before.slice(start, before.length - suffix).join(''), inserted: after.slice(start, after.length - suffix).join(''), terminal: suffix === 0 };
     }
     function createCapture(report, enforce = () => true) {
         let stream = '', invalid = false, previous = '', composing = false, compositionBase = '';
         let pendingControl = '';
+        const replayReasons = new Set();
         function append(token, limit = 2045) {
             if (invalid) return false;
             // Reserve the successful submit Enter before accepting any edit/press.
@@ -33,6 +34,7 @@
         function input(value, event = {}) {
             if (composing || event.isComposing) return true;
             const edit = delta(previous, value);
+            if (!edit.terminal) replayReasons.add('non_terminal_edit');
             const token = pendingControl === '⌫' && edit.removed ? '' : '⌫'.repeat(Array.from(edit.removed).length);
             pendingControl = '';
             previous = value;
@@ -41,7 +43,7 @@
             return ok;
         }
         return {
-            reset(value = '') { stream = ''; invalid = false; previous = value; pendingControl = ''; composing = false; },
+            reset(value = '') { stream = ''; invalid = false; previous = value; pendingControl = ''; composing = false; replayReasons.clear(); },
             beforeInput(event, value, selectionStart, selectionEnd) {
                 if (invalid) { if (event.cancelable) event.preventDefault(); return false; }
                 // IME provisional edits are not committed. Check their potential final size,
@@ -74,6 +76,8 @@
                 const token = keyToken(event);
                 if (!token || event.isComposing || event.keyCode === 229) return !invalid;
                 if (!append(token, event.key === 'Enter' ? 2048 : 2045)) { event.preventDefault(); return false; }
+                if (event.key.startsWith('Arrow') || event.key === 'Delete') replayReasons.add('cursor_navigation');
+                else if (!['Enter', 'Backspace'].includes(event.key)) replayReasons.add('control_key');
                 pendingControl = token;
                 return true;
             },
@@ -90,6 +94,10 @@
                 const expected = streamFormat ? prompt : canonical(prompt) + '⏎';
                 if (bytes(expected) > 512) throw new Error('Prompt exceeds native 512-byte bound. Browser corpus is unchanged.');
                 const details = { details_version: 1 };
+                if (!streamFormat) {
+                    details.replay_eligible = replayReasons.size === 0;
+                    if (replayReasons.size) details.replay_ineligible = Array.from(replayReasons).sort();
+                }
                 if (streamFormat) details.stream_format = streamFormat;
                 if (bytes(JSON.stringify(Object.assign({}, details, { final_text: finalText }))) <= 512) details.final_text = finalText;
                 return { prompt_text: expected, input_event_stream: stream, details };

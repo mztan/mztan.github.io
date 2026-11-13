@@ -13,8 +13,20 @@ test('committed input uses canonical controls without duplicate hardware edits',
     const complete = capture.complete('a', 'a');
     assert.equal(complete.prompt_text, 'a⏎');
     assert.equal(complete.input_event_stream, 'ab⌫⇤←␛⏎');
-    assert.deepEqual(complete.details, { details_version: 1, final_text: 'a' });
+    assert.deepEqual(complete.details, { details_version: 1, replay_eligible: false, replay_ineligible: ['control_key', 'cursor_navigation'], final_text: 'a' });
     assert.equal(errors.length, 0);
+});
+
+test('nonlinear edits and cursor navigation mark replay eligibility honestly', () => {
+    const capture = createCapture(() => {});
+    capture.input('teh ');
+    capture.programmaticEdit('teh ', 'the ');
+    const complete = capture.complete('the ', 'the ');
+    assert.equal(complete.details.replay_eligible, false);
+    assert.deepEqual(complete.details.replay_ineligible, ['non_terminal_edit']);
+    assert.equal(complete.details.final_text, 'the ');
+    capture.reset(); capture.input('hello');
+    assert.equal(capture.complete('hello', 'hello').details.replay_eligible, true);
 });
 
 test('IME commits once and custom/browser autocorrect is represented as committed replacement', () => {
@@ -45,7 +57,7 @@ test('bounds are checked before edit/press; noncancelable overflow invalidates h
     assert.equal(capture.stream(), ''); assert.match(errors.at(-1), /noncancelable/);
     capture.reset(); capture.input('done'); assert.equal(capture.valid(), true);
     assert.throws(() => capture.complete('x'.repeat(510), 'done'), /512-byte/);
-    const bounded = capture.complete('done', 'x'.repeat(512)); assert.deepEqual(bounded.details, { details_version: 1 });
+    const bounded = capture.complete('done', 'x'.repeat(512)); assert.deepEqual(bounded.details, { details_version: 1, replay_eligible: true });
 });
 
 async function loadKeyboard(native, search = '?setting_preset=df') {

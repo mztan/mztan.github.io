@@ -6,6 +6,7 @@
       "input_event_stream": "world⏎",
       "details": {
         "details_version": 1,
+        "replay_eligible": true,
         "final_text": "world"
       },
       "activity_id": "keyboard_natural_language",
