@@ -735,6 +735,9 @@ document.addEventListener('DOMContentLoaded', async function () {
         startButton.textContent = 'Start New Test';
 
         flushDetailedLogs(); // download the per-prompt JSON (no-op if logging off)
+        // BEGIN POST-TASK FEEDBACK HOOK
+        if (window.SurfaceInputsFeedback) window.SurfaceInputsFeedback.complete(nativeActivity());
+        // END POST-TASK FEEDBACK HOOK
     }
 
     function releaseKeychordLock() {
@@ -1867,6 +1870,9 @@ document.addEventListener('DOMContentLoaded', async function () {
         if (!uxrModeEnabled && !dfModeEnabled) {
             results.style.display = 'block';
         }
+        // BEGIN POST-TASK FEEDBACK HOOK
+        if (window.SurfaceInputsFeedback) window.SurfaceInputsFeedback.complete(nativeActivity());
+        // END POST-TASK FEEDBACK HOOK
     }
 
     function resetTest() {

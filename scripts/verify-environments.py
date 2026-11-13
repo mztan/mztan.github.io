@@ -3,6 +3,7 @@
 
 from html.parser import HTMLParser
 from pathlib import Path
+import re
 import subprocess
 from urllib.parse import urlsplit, unquote
 
@@ -51,9 +52,19 @@ def main():
             if target.is_dir():
                 target /= 'index.html'
             assert target.is_file(), (entry, ref)
-    for name in ('transport.js', 'transport-ui.js', 'keyboard/script.js',
-                 'touchpad/event-logger.js', 'touchpad/fitts-law.js', 'touchpad/scripts_dc.js'):
-        assert (DEV / name).read_bytes() == (PROD / name).read_bytes(), (name, 'Collection or engine changed')
+    for name in ('transport.js', 'transport-ui.js', 'touchpad/event-logger.js'):
+        assert (DEV / name).read_bytes() == (PROD / name).read_bytes(), (name, 'Collection code changed')
+    hooks = {'keyboard/script.js': ('nativeActivity()', 2),
+             'touchpad/fitts-law.js': ("'touchpad_targeting'", 1),
+             'touchpad/scripts_dc.js': ("'touchpad_scrolling'", 1)}
+    for name, (argument, count) in hooks.items():
+        source = (DEV / name).read_text()
+        pattern = (r'^[ \t]*// BEGIN POST-TASK FEEDBACK HOOK\n'
+                   r'[ \t]*if \(window\.SurfaceInputsFeedback\) window\.SurfaceInputsFeedback\.complete\('
+                   + re.escape(argument) + r'\);\n[ \t]*// END POST-TASK FEEDBACK HOOK\n')
+        original, removed = re.subn(pattern, '', source, flags=re.MULTILINE)
+        assert removed == count, (name, 'Unexpected feedback completion hooks')
+        assert original == (PROD / name).read_text(), (name, 'Task engine changed outside completion hooks')
     assert not (DEV / 'dev-bootstrap.js').exists()
     assert not (ROOT / 'development-tools').exists()
     assert (DEV / 'touchpad/arcade-targeting.css').is_file()
@@ -62,7 +73,7 @@ def main():
         assert 'surface-inputs-dev/' in text and 'surface-inputs/' in text
     result = subprocess.run(['python3', 'scripts/sync-dev.py'], cwd=ROOT, capture_output=True, text=True)
     assert result.returncode != 0 and 'Dev already exists' in result.stderr
-    print('10 dev entry points retain environment-local assets; telemetry/engine code unchanged.')
+    print('10 dev entry points retain environment-local assets; collection code and task engines unchanged except explicit post-task feedback hooks.')
     print('Development labeling and non-overwrite sync behavior verified. Production diff is empty.')
     print('No task was run and no telemetry or Google Form request was sent by this check.')
 

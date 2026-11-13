@@ -22,6 +22,14 @@ Targeting, Scrolling and Typing use the Arcade navy/card surfaces, cream text, c
 
 The alternate `touchpad/uxr/` and `keyboard/exec_demo/` pages are not restyled by these overrides. Development uses the same collection destinations as production; there is no upload blocking. See [the deployment workflow](../DEPLOYMENT.md) before publishing. A dev theme change does not promote to `surface-inputs/` or change an Android APK's default URL.
 
+## Post-task feedback
+
+After a complete Targeting, Scrolling or Typing task, a shared Arcade dialog asks **How easy or difficult was this task?** on a 1–5 scale, from Very difficult to Very easy. It also asks **What worked well, or what could be improved?** as optional freeform text. This is original Arcade wording, not Jason's verbatim questionnaire. No rating is preselected, and Skip is available.
+
+A response is bounded to 1,024 UTF-8 comment bytes and the existing 2,048-byte native payload/details limit. It is saved locally before native enqueue; native status distinguishes pending, rejection and sink acceptance. Browser feedback stays on the browser because no feedback collector is configured; use **Export saved feedback** to keep a private copy. At most 50 responses are retained without silent eviction. Clear requires explicit confirmation after export. This adds no telemetry/upload guard and does not change objective task Forms.
+
+See [the telemetry contract](TELEMETRY.md#post-task-feedback-ui) for completion boundaries, retention and the limited meaning of feedback-block IDs.
+
 ## Upstream provenance
 
 - Keyboard: [fbotros/si_eval_app](https://github.com/fbotros/si_eval_app), commit `082f9d740ba2e65a6a2714c4b40065082c28e58e`.

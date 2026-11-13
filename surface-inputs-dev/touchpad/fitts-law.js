@@ -610,6 +610,9 @@ function endExperience() {
 	timer.innerText = "";
 	testAreaSVG.selectAll('line').remove(); // remove all cursor trails
 	//fittsTest.advanceParams();
+	// BEGIN POST-TASK FEEDBACK HOOK
+	if (window.SurfaceInputsFeedback) window.SurfaceInputsFeedback.complete('touchpad_targeting');
+	// END POST-TASK FEEDBACK HOOK
 }
 
 function submitForm(trial, condition, id, ide, tp, ttc, ct, cot, te, tcd) {

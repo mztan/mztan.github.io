@@ -48,7 +48,7 @@ Selection emits the actual prescribed target text and exact-selection completion
 
 ### Feedback API
 
-`window.SurfaceInputsTransport.submitFeedback(payload)` supports future UI without adding any UI now:
+`window.SurfaceInputsTransport.submitFeedback(payload)` is used by the development post-task UI:
 
 - `activity_id`: prescribed task activity, or `session` for session feedback.
 - `scope`: `task` or `session`; task feedback requires `round_id` (at most 64 ASCII bytes).
@@ -57,7 +57,19 @@ Selection emits the actual prescribed target text and exact-selection completion
 - Optional `pain_points`: at most eight nonempty strings, each at most 64 UTF-8 bytes.
 - The complete serialized feedback message is at most 2048 UTF-8 bytes.
 
-Native feedback uses the private port. Browser feedback requires `setBrowserFeedbackCallback(callback)` wired explicitly to an existing form. Without that callback the API throws; it does not invent an endpoint or fall back to native.
+Native feedback uses the private port. The post-task widget checks both the message and the receiver's final details object against 2048 UTF-8 encoded bytes; escape-heavy comments are rejected visibly, never truncated. Browser feedback through the transport API still requires an explicitly configured callback. There is no configured browser collector in this deployment, so the widget saves browser feedback locally and offers JSON export without calling a guessed form.
+
+### Post-task feedback UI
+
+The root development Targeting and Scrolling pages and keyboard main page load a shared feedback dialog. It opens after nine targeting hits, six scrolling targets, or the full selected typing/shortcut/arrow block. Practice completions also get feedback. Task calculations and timing finish before opening it; individual targets or prompts do not open it.
+
+The new Arcade wording is **How easy or difficult was this task?**, with 1 Very difficult, 2 Difficult, 3 Neither easy nor difficult, 4 Easy, 5 Very easy. The freeform prompt is **What worked well, or what could be improved?** and is optional. No rating is preselected. Users can skip without manufacturing a zero or an answer.
+
+The widget assigns an ASCII feedback-block identifier. It identifies that local completed-task feedback context; it is not an objective observation attempt ID and does not prove a join to individual intent events. Keyboard observations remain independent and carry no added attempt/order metadata.
+
+Each response is persisted before native enqueue under `surface-inputs-dev-feedback-v1`. Up to 50 responses are retained on the same browser/origin, with no silent eviction. Save reports local-only, pending-native, rejected, or native-sink-accepted honestly. Retries reuse the exact ID and payload. ACK status is retained even after closing the dialog. Reloaded native pending/rejected responses can be retried with **Retry saved native feedback** in the next completed task's dialog, after native readiness, using their original IDs and payloads. Exported files contain written responses and should be kept private. Clearing is an explicit confirmation action enabled after export and removes only that exported snapshot's IDs, never later or unexported responses. Local storage failure keeps the entered response visible and reports that it was not saved.
+
+Existing objective Google Forms submissions, collection destinations, native handshake and task code are unchanged except guarded post-completion hooks. Development does not block those writes.
 
 ## Delivery and failures
 
