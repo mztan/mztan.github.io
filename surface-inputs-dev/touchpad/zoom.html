@@ -1,0 +1,71 @@
+<!--
+    (c) Meta Platforms, Inc. and affiliates. Confidential and proprietary.
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Zoom</title>
+    <link rel="stylesheet" href="style_dc.css">
+    <script src="../transport.js"></script>
+    <script src="../transport-ui.js"></script>
+    <script src="../metrics.js"></script>
+    <script src="../touchpad-observer.js"></script>
+    <script type="text/javascript" src="event-logger.js"></script>
+    <script type="text/javascript" src="scripts_dc.js"></script>
+    <script type="text/javascript" src="zoom.js"></script>
+</head>
+
+<body oncontextmenu="return false;">
+    <div id="zoom-body" style="display: none;">
+        <div id="text-top-left" class="text-top-left" style="display: none;"></div>
+        <div id="container-outline" class="container-outline"></div>
+        <div class="zoom-target-outline" id="zoom-target-outline-outer"></div>
+        <div class="zoom-target-outline" id="zoom-target-outline-inner"></div>
+        <div class="zoom-inner-square" id="zoom-inner-square"></div>
+    </div>
+
+    <div class="start-screen" id="start-screen">
+        <div class="start-controls">
+            <input type="text" id="button-pad-id" placeholder="User ID">
+            <p id="start-title" style="display: none;"></p>
+            <p id="start-explanation" style="display: none;"></p>
+            <button id="start-button" onclick="isPractice = false; startZoomExperience()">Start</button>
+            <button id="practice-button" onclick="isPractice = true; startZoomExperience()">Practice</button>
+        </div>
+
+        <div class="start-controls">
+            <p id="start-text" style="font-size: 1.5rem"></p>
+        </div>
+    </div>
+
+    <form
+        action="https://docs.google.com/forms/d/e/1FAIpQLSfi36h8lPJJ-7Qwhonjj9z9dgU-E8gzR03DUnUkuM6xWE7ZtA/formResponse"
+        target="_self" id="bootstrapForm" method="POST" style="display:none;">
+
+        <input id="device_os" type="text" name="entry.1366025332">
+        <input id="device_browser" type="text" name="entry.1979876681">
+        <input id="participant_id" type="text" name="entry.1761654424">
+        <input id="trial_num" type="text" name="entry.1116494097">
+        <input id="time_to_complete" type="text" name="entry.1300493740">
+        <input id="gesture_count" type="text" name="entry.1840365285">
+        <input id="session_id" type="text" name="entry.877942014">
+        <input type="hidden" name="fvv" value="1">
+        <input type="hidden" name="fbzx" value="3370711476967520141">
+        <input type="hidden" name="pageHistory" value="0">
+
+        <input class="btn btn-primary" type="submit" value="Submit">
+    </form>
+
+    <script type="text/javascript">
+        const EXPERIENCE_NAME = "Zoom";
+        const EXPLANATION = 'Pinch to zoom until the blue square matches the purple outline.';
+        setExperienceTitle(EXPERIENCE_NAME, EXPLANATION);
+    </script>
+</body>
+
+</html>

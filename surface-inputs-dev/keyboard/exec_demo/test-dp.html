@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test DP Autocorrect</title>
+</head>
+<body>
+    <h1>Testing "dp" autocorrect</h1>
+    <pre id="output"></pre>
+
+    <script src="dictionary-loader.js"></script>
+    <script src="keyboard-layout.js"></script>
+    <script src="TrieDictionary.js"></script>
+    <script src="AutocorrectEngine.js"></script>
+    <script>
+        const output = document.getElementById('output');
+        
+        function log(msg) {
+            output.textContent += msg + '\n';
+            console.log(msg);
+        }
+
+        async function test() {
+            log('=== Loading dictionary ===');
+            const words = await loadDictionary();
+            log(`Loaded ${words.length} words`);
+
+            log('\n=== Initializing AutocorrectEngine ===');
+            const engine = new AutocorrectEngine({
+                baseWords: words,
+                keyboardNeighbors: keyboardNeighbors
+            });
+
+            log(`TrieDictionary available: ${!!engine.trieDictionary}`);
+            
+            log('\n=== Testing "dp" ===');
+            log(`Is "do" in dictionary? ${engine.hasWord('do')}`);
+            log(`Is "dp" in dictionary? ${engine.hasWord('dp')}`);
+            log(`Are 'p' and 'o' neighbors? ${engine.areNeighboringKeys('p', 'o')}`);
+            log(`Is 'p' an edge key? ${engine.edgeKeys.has('p')}`);
+            log(`Is 'o' an edge key? ${engine.edgeKeys.has('o')}`);
+            
+            const cost = engine.levenshteinCost('dp', 'do');
+            log(`\nCost of "dp" -> "do": ${cost}`);
+            
+            const threshold = engine.useLengthAdaptiveThreshold
+                ? Math.max(engine.minCostThreshold, 'dp'.length * engine.lengthAdaptiveThresholdPercent)
+                : engine.maxCostThreshold;
+            log(`Cost threshold: ${threshold}`);
+            log(`Passes threshold? ${cost < threshold}`);
+            
+            log('\n=== Finding closest word ===');
+            const result = engine.findClosestWord('dp');
+            log(`Result: "${result}"`);
+            log(`Expected: "do"`);
+            log(`Test ${result === 'do' ? 'PASSED ✅' : 'FAILED ❌'}`);
+
+            // Test preview too
+            log('\n=== Testing preview ===');
+            const preview = engine.findClosestWordForPreview('dp');
+            log(`Preview result: "${preview}"`);
+        }
+
+        test().catch(err => {
+            log(`ERROR: ${err.message}`);
+            console.error(err);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,204 @@
+/**
+ * (c) Meta Platforms, Inc. and affiliates. Confidential and proprietary.
+ */
+
+@import url("jquery-ui.css");
+
+body {
+    font-size: 16px;
+    font-family: sans-serif;
+    font-weight: 400;
+}
+
+h1 {
+    display: block;
+    font-size: 3em;
+    font-weight: 300;
+    margin-bottom: 0.3333333em;
+    margin-top: 0.333333em;
+}
+
+h2 {
+    display: block;
+    font-size: 1.3333333em;
+    font-weight: 700;
+    margin-bottom: 0.3333333em;
+    margin-top: 0.5em;
+}
+
+p {
+    margin-bottom: 1em;
+}
+
+h1 strong {
+    font-weight: 400;
+}
+
+strong {
+    font-weight: 600;
+    font-size: 0.91em;
+}
+
+.sans {
+    font-weight: 700;
+    font-size: 0.8em;
+}
+
+p.caption {
+    font-weight: 700;
+    font-size: 0.8em;
+}
+
+p.note {
+    font-weight: 600;
+    background-color: #EDE6B2;
+    border-radius: 15px;
+    font-size: 0.8em;
+    padding: 15px;
+}
+
+.border {
+    border: solid black 1px;
+}
+
+hr {
+    height: 1px;
+    background-color: #ccc;
+    margin: 15px;
+}
+
+div.msg {
+    width: 200px;
+    /* height: 40px;*/
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    margin-left: -100px;
+    background-color: #FFE736;
+    border-radius: 10px;
+    padding: 10px;
+    color: #fff;
+    text-align: center;
+    vertical-align: center;
+    font-weight: 700;
+}
+
+div.math {
+    padding: 20px;
+}
+
+
+
+
+/*SVG styles*/
+
+line {
+    stroke: black;
+    /* shape-rendering: crispEdges;*/
+}
+
+.back {
+    fill: #ededed;
+    stroke: #000;
+    stroke-width: 2px;
+    shape-rendering: crispEdges;
+}
+
+#plot-scatter circle {
+    fill: red;
+    opacity: 0.5;
+}
+
+.axis path,
+.axis line {
+    fill: none;
+    stroke: #ccc;
+    shape-rendering: crispEdges;
+}
+
+path {
+    fill: none;
+    stroke: #000;
+}
+
+circle.iso {
+    fill: #cacaca;
+    opacity: 0.5;
+}
+
+.start-screen,
+.experience-screen {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 200px;
+    /* adjust the value as needed */
+}
+
+.start-screen button,
+.start-screen select,
+.start-screen p {
+    font-size: 2rem;
+    padding: 1rem 1rem;
+    text-align: center;
+}
+
+.start-screen button {
+    margin-bottom: 1rem;
+}
+
+.start-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.timer {
+    position: absolute;
+    color: #dddddd;
+    font-size: 4rem;
+    top: 1rem;
+    left: 1rem;
+}
+
+.button-pad {
+    padding: 3rem;
+}
+
+.button-pad .row {
+    display: flex; /* Use flexbox for the row */
+    justify-content: center; /* Center the buttons horizontally */
+    margin-bottom: 0.1rem;
+}
+
+.button-pad button:hover {
+    background-color: #cccccc;
+}
+
+.button-pad button {
+    width: 2rem;
+    height: 2rem;
+    display: inline-flex; /* Use inline-flex to keep buttons inline */
+    justify-content: center; /* Center horizontally */
+    align-items: center; /* Center vertically */
+    font-size: 1.5rem;
+    margin: 0.2rem;
+    padding: 0.5rem;
+}
+
+#button-pad-id {
+    font-size: 1.5rem;
+    width: 15rem;
+    text-align: center;
+    margin: 2rem 0.5rem;
+}
+
+.hidden-button {
+    visibility: hidden; /* Makes the button invisible */
+    pointer-events: none; /* Disables click events */
+}
