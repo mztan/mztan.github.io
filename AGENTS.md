@@ -7,7 +7,7 @@ Read [DEPLOYMENT.md](DEPLOYMENT.md) before editing or publishing.
 - A push to `main` can publish both directories through GitHub Pages. Check the complete Git diff before pushing; a dev-only request must leave all production files unchanged.
 - Development does **not** block telemetry, Google Forms, or feedback writes. It uses the same collection behavior and destinations as the copied production implementation. Development runs can enter those datasets. Do not introduce an upload guard unless requested.
 - Keep task calculations, geometry, timing, and input behavior unchanged for visual-only requests.
-- Keep assets and launch links relative to their environment directory. Do not point dev links at production tests.
+- Keep assets and launch links relative to their environment directory. The start page may load the shared root `environment.js`; this adds a bottom-right `DEV` pill based only on the URL path and does not change telemetry. Do not point dev links at production tests.
 - The Android APK's default website URL is maintained separately. Creating or promoting a web environment does not authorize changing that default or deploying/landing an APK.
 - Never commit credentials, private keys, participant responses, or private account data. Use repository-scoped credentials kept outside the repository.
 - Preserve upstream attribution and describe intentional modifications. `UPSTREAM.json` identifies the original imported sources, not a promise that later modified files remain byte-identical.

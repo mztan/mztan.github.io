@@ -8,7 +8,7 @@ import shutil
 ROOT = Path(__file__).resolve().parents[1]
 PROD = ROOT / 'surface-inputs'
 DEV = ROOT / 'surface-inputs-dev'
-MARKER = '\n        <p id="development-label" style="margin:12px 0 0;color:#f2e8d0;font:500 12px sans-serif;letter-spacing:.12em">DEVELOPMENT</p>'
+ENVIRONMENT_SCRIPT = '  <script src="../environment.js" defer></script>'
 
 
 def main():
@@ -24,13 +24,19 @@ def main():
     shutil.copytree(PROD, DEV)
     home = DEV / 'index.html'
     html = home.read_text()
-    if '<h1 id="page-title">Surface Inputs <span>Arcade</span></h1>' not in html:
-        raise SystemExit('Production heading changed; add the development label manually before publishing.')
-    html = html.replace('<h1 id="page-title">Surface Inputs <span>Arcade</span></h1>',
-                        '<h1 id="page-title">Surface Inputs <span>Arcade</span></h1>' + MARKER, 1)
-    html = html.replace('<title>Surface Inputs Arcade</title>', '<title>Surface Inputs Arcade · Development</title>', 1)
+    if ENVIRONMENT_SCRIPT not in html:
+        html = html.replace('</head>', ENVIRONMENT_SCRIPT + '\n</head>', 1)
     home.write_text(html)
-    print('Copied surface-inputs/ to surface-inputs-dev/ and added Development label.')
+    # Keep the copied launcher's transport test compatible with the shared environment script.
+    regression = DEV / 'tests' / 'regression.test.js'
+    if regression.is_file():
+        source = regression.read_text()
+        source = source.replace(
+            "const scripts = [...html.matchAll(/<script[^>]*\\bsrc=\"([^\"]+)\"/g)].map(value => value[1]);",
+            "const scripts = [...html.matchAll(/<script[^>]*\\bsrc=\"([^\"]+)\"/g)].map(value => value[1]).filter(value => value !== '../environment.js');",
+        )
+        regression.write_text(source)
+    print('Copied production into dev and linked the URL-derived environment script.')
     print('Telemetry and Google Forms uploads are unchanged; development runs can write to existing collectors.')
     print('No files were committed or deployed. No production files were changed.')
 

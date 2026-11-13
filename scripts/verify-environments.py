@@ -36,8 +36,9 @@ def main():
     subprocess.run(['git', 'diff', '--exit-code', '--', 'surface-inputs/'], cwd=ROOT, check=True)
     subprocess.run(['git', 'diff', '--cached', '--exit-code', '--', 'surface-inputs/'], cwd=ROOT, check=True)
     home = (DEV / 'index.html').read_text()
-    assert 'id="development-label"' in home and 'DEVELOPMENT' in home
-    assert 'Development</title>' in home
+    assert 'src="../environment.js" defer' in home
+    assert 'id="development-label"' not in home
+    assert '<title>Surface Inputs Arcade</title>' in home
     for entry in ENTRIES:
         path = DEV / entry
         parser = Assets()
@@ -46,7 +47,7 @@ def main():
             url = urlsplit(ref)
             assert not url.scheme and not url.netloc, (entry, ref, 'External runtime resource')
             target = (path.parent / unquote(url.path)).resolve()
-            assert target.is_relative_to(DEV), (entry, ref, 'Reference leaves dev environment')
+            assert target.is_relative_to(DEV) or (entry == 'index.html' and target == ROOT / 'environment.js'), (entry, ref, 'Reference leaves dev environment')
             if target.is_dir():
                 target /= 'index.html'
             assert target.is_file(), (entry, ref)
