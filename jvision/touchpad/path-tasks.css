@@ -1,0 +1,100 @@
+/*
+ * Menu and circle task pages in the Arcade theme: navy/card surfaces, cream text,
+ * red wordmark, mint accents, flat 2px edges. Canvas geometry follows the native task.
+ */
+:root {
+  color-scheme: dark;
+  --navy: #0d1b2a;
+  --card: #142338;
+  --border: #1f3550;
+  --cream: #f2e8d0;
+  --red: #e63d2e;
+  --mint: #4db9a5;
+  --muted: #6b8da8;
+  --display: "Arial Narrow", "Roboto Condensed", "Liberation Sans Narrow", sans-serif;
+  --body: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--navy);
+  color: var(--cream);
+  font: 16px/1.5 var(--body);
+  display: flex;
+  flex-direction: column;
+  padding: 16px 24px;
+  gap: 10px;
+}
+header { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+.brand {
+  font: 700 14px/1.1 var(--display);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.brand span { color: var(--red); }
+h1 {
+  margin: 0;
+  font: 700 26px/1.1 var(--display);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.back { margin-left: auto; color: var(--muted); }
+.prompt { margin: 0; font-size: 18px; }
+.prompt strong { color: #eac36f; font-weight: 600; }
+.stage {
+  flex: 1;
+  min-height: 280px;
+  position: relative;
+  border: 2px solid var(--border);
+  border-radius: 2px;
+}
+.stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+.status { margin: 0; color: var(--cream); min-height: 1.5em; }
+.controls { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; color: var(--muted); }
+button {
+  font: 600 15px var(--body);
+  color: var(--navy);
+  background: var(--mint);
+  border: 2px solid var(--mint);
+  border-radius: 2px;
+  padding: 8px 18px;
+  cursor: pointer;
+}
+button.secondary { background: transparent; color: var(--cream); border-color: var(--border); }
+button:disabled { opacity: .45; cursor: default; }
+button:focus-visible, a:focus-visible { outline: 3px solid var(--mint); outline-offset: 3px; }
+#completion {
+  position: fixed;
+  inset: 0;
+  background: rgba(13, 27, 42, .92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#completion[hidden] { display: none; }
+#completion .card {
+  width: min(560px, calc(100% - 32px));
+  background: var(--card);
+  border: 2px solid var(--border);
+  border-radius: 2px;
+  padding: 24px;
+}
+#completion h2 { margin: 0 0 12px; font: 700 22px var(--display); text-transform: uppercase; letter-spacing: .04em; }
+fieldset { border: 0; margin: 0 0 12px; padding: 0; }
+legend { margin-bottom: 8px; }
+.scale { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.scale label {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  border: 2px solid var(--border); border-radius: 2px; padding: 8px 4px;
+  font-size: 12px; text-align: center; cursor: pointer;
+}
+.scale label:has(input:checked) { border-color: var(--mint); }
+.scale b { font-size: 18px; }
+textarea {
+  width: 100%; min-height: 72px; margin: 4px 0 12px;
+  background: var(--navy); color: var(--cream);
+  border: 2px solid var(--border); border-radius: 2px; font: 15px var(--body); padding: 8px;
+}
+.actions { display: flex; gap: 10px; flex-wrap: wrap; }
+#completion-status { margin: 12px 0 0; min-height: 1.5em; color: var(--mint); }
+.note { margin: 12px 0 0; font-size: 13px; color: var(--muted); }
