@@ -25,7 +25,11 @@ function page(canvasId) {
             el.click = () => { if (el.onclick) el.onclick({}); el.dispatch({ type: 'click' }); };
             el.getBoundingClientRect = () => ({ left: 0, top: 0, width: 1000, height: 600 });
             el.fills = [];
-            const ctx = { fillStyle: '', fillRect: (x, y, w, h) => el.fills.push({ style: ctx.fillStyle, x, y, w, h }) };
+            el.paths = [];
+            let points = [];
+            const ctx = { fillStyle: '', fillRect: (x, y, w, h) => el.fills.push({ style: ctx.fillStyle, x, y, w, h }),
+                beginPath: () => { points = []; }, moveTo: (x, y) => points.push({ x, y }), lineTo: (x, y) => points.push({ x, y }),
+                fill: () => el.paths.push({ style: ctx.fillStyle, points: points.slice() }) };
             el.getContext = () => new Proxy(ctx, { get: (t, k) => (k in t ? t[k] : () => {}), set: (t, k, v) => { t[k] = v; return true; } });
             elements.set(id, el);
         }
@@ -193,4 +197,18 @@ test('menu page: the requested path is shaded gray, other rows white, hover blue
     const newTop = 2 * 36 + 1;
     assert.equal(canvas.fills.filter(f => f.x === 201 && f.y === newTop).pop().style, GRAY);
     assert.equal(canvas.fills.filter(f => f.x === 201 && f.y === newTop + 36).pop().style, WHITE);
+});
+
+test('circle page: the blue start marker contains a downward (clockwise) arrow', () => {
+    const p = page('circle-canvas');
+    const r = 600 * 0.36, mx = 500 + r, my = 300, m = r * 0.09;
+    const heads = p.element('circle-canvas').paths.filter(f => f.style === '#fff' && f.points.length === 3);
+    assert.equal(heads.length >= 1, true);
+    const head = heads[heads.length - 1].points;
+    assert.ok(head.every(pt => Math.hypot(pt.x - mx, pt.y - my) < m), 'arrow head stays inside the marker');
+    const apex = head.reduce((a, b) => (b.y > a.y ? b : a));
+    const base = head.filter(pt => pt !== apex);
+    // Clockwise at 3 o'clock is +y on screen: the apex is centered and below the base.
+    assert.ok(Math.abs(apex.x - mx) < 1e-9);
+    assert.ok(base.every(pt => pt.y < apex.y));
 });

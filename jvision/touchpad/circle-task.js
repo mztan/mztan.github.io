@@ -15,6 +15,19 @@
         win.setTimeout(() => win.SurfaceInputsPathResults.complete('stp_circle_tracing', 'Circles', state.targetResults(at)), 300);
     });
 
+    // The marker sits at 3 o'clock, where clockwise travel (y down) is straight down the
+    // screen, so the arrow points down, along the circle's tangent.
+    function drawClockwiseArrow(mx, my, m) {
+        ctx.strokeStyle = '#fff'; ctx.fillStyle = '#fff';
+        ctx.lineWidth = Math.max(2, m * 0.22); ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(mx, my - m * 0.55); ctx.lineTo(mx, my + m * 0.1); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(mx - m * 0.42, my + m * 0.02);
+        ctx.lineTo(mx + m * 0.42, my + m * 0.02);
+        ctx.lineTo(mx, my + m * 0.62);
+        ctx.closePath(); ctx.fill();
+    }
+
     function draw() {
         frame = 0;
         const dpr = win.devicePixelRatio || 1, r = state.radius, cx = state.centerX, cy = state.centerY;
@@ -34,6 +47,7 @@
             }
             ctx.fillStyle = 'rgb(81, 160, 255)';
             ctx.beginPath(); ctx.arc(cx + r, cy, r * 0.09, 0, 2 * Math.PI); ctx.fill();
+            drawClockwiseArrow(cx + r, cy, r * 0.09);
             ctx.fillStyle = '#fff'; ctx.font = '22px system-ui, sans-serif';
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             ctx.fillText('↻', cx, cy);
