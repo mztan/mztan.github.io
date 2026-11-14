@@ -24,7 +24,9 @@ function page(canvasId) {
             el.focus = () => {};
             el.click = () => { if (el.onclick) el.onclick({}); el.dispatch({ type: 'click' }); };
             el.getBoundingClientRect = () => ({ left: 0, top: 0, width: 1000, height: 600 });
-            el.getContext = () => new Proxy({}, { get: () => () => {}, set: () => true });
+            el.fills = [];
+            const ctx = { fillStyle: '', fillRect: (x, y, w, h) => el.fills.push({ style: ctx.fillStyle, x, y, w, h }) };
+            el.getContext = () => new Proxy(ctx, { get: (t, k) => (k in t ? t[k] : () => {}), set: (t, k, v) => { t[k] = v; return true; } });
             elements.set(id, el);
         }
         return elements.get(id);
@@ -170,4 +172,25 @@ test('menu page: direct touch still selects but invalidates that path\'s cursor 
     assert.equal(shallow.trace_valid, false);
     assert.ok(!('total_cursor_distance_px' in shallow.metrics));
     assert.equal(deep.trace_valid, true);
+});
+
+test('menu page: the requested path is shaded gray, other rows white, hover blue', () => {
+    const p = page('menu-canvas');
+    const canvas = p.element('menu-canvas');
+    const GRAY = 'rgb(205, 209, 215)', WHITE = 'rgb(245, 247, 250)', BLUE = 'rgb(194, 222, 255)';
+    // Item fills are inset 1 px; the full-canvas background is drawn at (0, 0).
+    const fillAt = (level, item) => {
+        const rects = canvas.fills.filter(f => f.x === level * 200 + 1 && f.y === item * 36 + 1);
+        return rects.length ? rects[rects.length - 1].style : null;
+    };
+    p.element('menu-button').click();
+    assert.equal(fillAt(0, 2), GRAY); // File
+    assert.equal(fillAt(0, 0), WHITE); // Edit
+    canvas.fills.length = 0;
+    p.pointer('pointermove', 100, 2 * 36 + 18); // hover File: blue wins, its submenu opens
+    assert.equal(fillAt(0, 2), BLUE);
+    assert.equal(fillAt(1, 0), null); // New sits at the parent's row, not row 0
+    const newTop = 2 * 36 + 1;
+    assert.equal(canvas.fills.filter(f => f.x === 201 && f.y === newTop).pop().style, GRAY);
+    assert.equal(canvas.fills.filter(f => f.x === 201 && f.y === newTop + 36).pop().style, WHITE);
 });

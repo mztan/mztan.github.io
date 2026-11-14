@@ -41,6 +41,7 @@ h1 {
 .back { margin-left: auto; color: var(--muted); }
 .prompt { margin: 0; font-size: 18px; }
 .prompt strong { color: #eac36f; font-weight: 600; }
+.prompt .hint { color: #cdd1d7; }
 .stage {
   flex: 1;
   min-height: 280px;

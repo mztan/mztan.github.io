@@ -8,6 +8,7 @@
     const ctx = canvas.getContext('2d');
     const button = doc.getElementById('menu-button');
     const TAP_SLOP_PX = 8;
+    const ITEM_FILL = 'rgb(245, 247, 250)', PATH_FILL = 'rgb(205, 209, 215)', HOVER_FILL = 'rgb(194, 222, 255)';
     const now = () => win.performance.now();
     let width = 0, height = 0, hovered = null, pressed = null, down = null, tap = false, finished = false, frame = 0;
 
@@ -47,7 +48,9 @@
         for (let level = 0; level < state.visibleLevels; level++) {
             for (let item = 0; item < MENU_LABELS[level].length; item++) {
                 const b = itemBounds(level, item);
-                ctx.fillStyle = same(hovered, { level, item }) ? 'rgb(194, 222, 255)' : 'rgb(245, 247, 250)';
+                // Visual aid: the requested path is shaded light gray; hover stays blue on top.
+                const onPath = item === MENU_PATH[level] && level < state.depth;
+                ctx.fillStyle = same(hovered, { level, item }) ? HOVER_FILL : onPath ? PATH_FILL : ITEM_FILL;
                 ctx.fillRect(b.left + 1, b.top + 1, b.right - b.left - 2, b.bottom - b.top - 2);
                 ctx.save();
                 ctx.beginPath(); ctx.rect(b.left, b.top, b.right - b.left, b.bottom - b.top); ctx.clip();
