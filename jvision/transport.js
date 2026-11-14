@@ -10,7 +10,7 @@
         'keyboard_password', 'keyboard_shortcuts', 'keyboard_arrows', 'touchpad_targeting',
         'touchpad_scrolling', 'touchpad_selection', 'touchpad_zoom', 'session']);
     // Path-task touchpad observations named by their dashboard task id (details carry `qa_path_v`/`qa_path`).
-    const PATH_ACTIVITIES = new Set(['stp_photo_crop']);
+    const PATH_ACTIVITIES = new Set(['stp_photo_crop', 'stp_map_landmark']);
     const METRICS = {
         cursor_movement: {
             stp_cursor_movement_target_radius_px: 'number', stp_cursor_movement_start_distance_px: 'number',
