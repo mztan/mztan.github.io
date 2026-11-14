@@ -610,5 +610,547 @@
         }
     }
 
-    return { MENU_LABELS, MENU_PATH, MenuTrials, CircleTrials, FILE_DRAG_FILES, FILE_DRAG_FOLDERS, FILE_DRAG_SPECS, FileDragTrials };
+
+    /* Storefront purchase selection: find a product, choose its variant and quantity, fix and confirm the cart. */
+    const APPAREL = ['S', 'M', 'L', 'XL'], SHOES = ['7', '8', '8.5', '9', '9.5', '10', '11'], ONE_SIZE = ['One size'];
+    const SHIRT_COLORS = ['Gray', 'Navy', 'Blue', 'Green'], RUNNER_COLORS = ['Charcoal', 'Black', 'Blue'];
+    const product = (name, price, colors, sizes) => Object.freeze({ name, price, colors, sizes });
+    const SHOP_PRODUCTS = Object.freeze([
+        product('Basecamp Fleece Jacket', '$64.00', ['Gray', 'Green', 'Navy'], APPAREL),
+        product('Canyon Rain Shell', '$89.00', ['Red', 'Black', 'Blue'], APPAREL),
+        product('Cedar Flannel Shirt', '$38.00', ['Red', 'Green', 'Blue'], APPAREL),
+        product('Ridge Merino Base Layer', '$72.00', ['Black', 'Gray'], APPAREL),
+        product('Summit Daypack 22L', '$54.00', ['Blue', 'Black', 'Orange'], ONE_SIZE),
+        product('Trailhead Hiking Shirt, Long Sleeve', '$36.00', SHIRT_COLORS, APPAREL),
+        product('Trailhead Hiking Shirt', '$32.00', SHIRT_COLORS, APPAREL),
+        product('Trailhead Hiking Shirt, Sleeveless', '$28.00', SHIRT_COLORS, APPAREL),
+        product('Trailhead Kids Hiking Shirt', '$24.00', SHIRT_COLORS, ['S', 'M', 'L']),
+        product('Trailhead Hiking Shorts', '$34.00', ['Khaki', 'Gray', 'Navy'], APPAREL),
+        product('Lakeside Sun Hat', '$22.00', ['Tan', 'Green'], ONE_SIZE),
+        product('Switchback Trekking Poles', '$58.00', ['Black', 'Blue'], ONE_SIZE),
+        product('Glacier Water Bottle 1L', '$18.00', ['Blue', 'Green', 'Gray'], ONE_SIZE),
+        product('Ember Headlamp', '$29.00', ['Black', 'Orange'], ONE_SIZE),
+        product('Pinecrest Camp Chair', '$45.00', ['Green', 'Gray'], ONE_SIZE),
+        product('Alpine Down Vest', '$79.00', ['Black', 'Navy', 'Red'], APPAREL),
+        product('Summit Trail Runner GTX', '$139.00', RUNNER_COLORS, SHOES),
+        product('Summit Trail Runner', '$119.00', RUNNER_COLORS, SHOES),
+        product("Summit Trail Runner, Women's", '$119.00', ['Charcoal', 'Black', 'Teal'], SHOES),
+        product('Summit Approach Shoe', '$109.00', ['Black', 'Brown'], SHOES),
+        product('Riverbed Water Sandal', '$49.00', ['Black', 'Gray'], SHOES),
+        product('Trail Socks 3-Pack', '$19.00', ['Gray', 'Black'], ['M', 'L']),
+        product('Meadow Picnic Blanket', '$35.00', ['Red', 'Blue'], ONE_SIZE),
+        product('Granite Chalk Bag', '$21.00', ['Black', 'Orange'], ONE_SIZE)
+    ]);
+    const shopOrder = (productIndex, color, size, quantity, prompt, condition) => Object.freeze({
+        product: productIndex, color, size, quantity, prompt, condition,
+        text: quantity + ' × ' + SHOP_PRODUCTS[productIndex].name + ' (' + color + ', ' + size + ')'
+    });
+    const SHOP_ORDERS = Object.freeze([
+        shopOrder(6, 'Blue', 'M', 2, 'Add two blue, medium Trailhead Hiking Shirts to your cart, then confirm the cart.',
+            'shirt_mid_list_variant_qty2'),
+        shopOrder(17, 'Black', '9', 1, 'Add one pair of black Summit Trail Runners, size 9, to your cart, then confirm the cart.',
+            'runner_late_list_variant_qty1')
+    ]);
+    const SHOP_MAX_QUANTITY = 5, SHOP_MAX_LINES = 6;
+    const sameVariant = (a, b) => a.product === b.product && a.color === b.color && a.size === b.size;
+    const lineName = line => SHOP_PRODUCTS[line.product].name;
+    const lineVariant = line => line.color + ', ' + line.size;
+    const control = (kind, index = -1) => ({ kind, index });
+    const sameControl = (a, b) => !!a && !!b && a.kind === b.kind && a.index === b.index;
+
+    class StorefrontTrials {
+        constructor(onAllCompleted = () => {}, orders = SHOP_ORDERS) {
+            this.orders = orders;
+            this.onAllCompleted = onAllCompleted;
+            this.targetIndex = 0;
+            this.feedback = 'Select Begin to open the store.';
+            this.headerHeight = 0;
+            this.rowHeight = 0;
+            this.controlHeight = 0;
+            this.listRect = rect(0, 0, 0, 0);
+            this.viewWidth = 0;
+            this.viewHeight = 0;
+            this.density = 0;
+            this.slopPx = 0;
+            this.frozen = false;
+            this.results = [];
+            this.reset();
+        }
+        reset() {
+            this.screen = 'results';
+            this.offset = 0;
+            this.openProduct = null;
+            this.selectedColor = null;
+            this.selectedSize = null;
+            this.selectedQuantity = 1;
+            this.openDropdown = null;
+            this.press = null;
+            this.cart = [];
+            this.startedAtMs = null;
+            this.lastMs = 0;
+            this.clicks = 0; this.noAction = 0; this.cancelledPresses = 0;
+            this.productOpens = 0; this.wrongProductOpens = 0; this.wrongVariantSelects = 0; this.wrongQuantitySelects = 0;
+            this.dropdownOpens = 0; this.dropdownDismissals = 0;
+            this.addAttempts = 0; this.blockedAdds = 0;
+            this.wrongProductAdds = 0; this.wrongVariantAdds = 0; this.wrongQuantityAdds = 0;
+            this.confirmAttempts = 0; this.wrongConfirms = 0;
+            this.corrections = 0; this.removals = 0; this.backtracks = 0;
+            this.firstOpenMs = null; this.itemAddedMs = null; this.wrongSinceMs = null; this.correctionMs = 0;
+            this.variantSelected = false; this.quantitySelected = false; this.itemAdded = false;
+            this.orderingValid = true; this.resized = false; this.directTouch = false;
+            this.cursorObserved = false; this.cursorGap = false; this.cursorX = NaN; this.cursorY = NaN; this.cursorTravel = 0;
+            this.approach = 0; this.lastScrollMs = null; this.scrollDistance = 0; this.scrollDirection = 0;
+            this.oppositeTravel = 0; this.reversals = 0; this.overshoots = 0; this.beyond = false;
+            this.corrective = 0; this.scrollClicks = 0;
+        }
+        get order() { return this.orders[this.targetIndex]; }
+        get targetCount() { return this.orders.length; }
+        get started() { return this.startedAtMs !== null; }
+        get resolved() { return this.results.length > this.targetIndex; }
+        get active() { return this.started && !this.resolved && !this.frozen; }
+        get allCompleted() { return this.results.length === this.orders.length && this.results.every(r => r.status === 'completed'); }
+        get cartCount() { return this.cart.reduce((sum, line) => sum + line.quantity, 0); }
+        get maxOffset() { return Math.max(0, SHOP_PRODUCTS.length * this.rowHeight - this.listRect.height); }
+
+        geometry(width, height, density, slop) {
+            if (this.frozen || !(width > 0) || !(height > 0) || !(density > 0)) return;
+            const rows = this.rowHeight > 0 ? this.offset / this.rowHeight : NaN;
+            if (this.press) this.cancel(this.lastMs);
+            this.viewWidth = width; this.viewHeight = height; this.density = density;
+            this.slopPx = slop > 0 ? slop : 8 * density;
+            this.headerHeight = Math.min(48 * density, height * 0.14);
+            this.rowHeight = Math.min(64 * density, (height - this.headerHeight) / 4);
+            this.controlHeight = Math.min(40 * density, (height - this.headerHeight - 16 * density) / 7);
+            this.listRect = rect(0, this.headerHeight, width, height);
+            if (this.active) {
+                this.resized = true;
+                this.offset = finite(rows) ? Math.min(Math.max(rows * this.rowHeight, 0), this.maxOffset) : 0;
+            }
+        }
+        begin(nowMs) {
+            if (this.frozen || this.started || this.resolved || this.rowHeight <= 0) return;
+            this.startedAtMs = nowMs;
+            this.lastMs = nowMs;
+            this.offset = 0;
+            const [lo, hi] = this.visibleBand();
+            this.approach = this.offset < lo ? 1 : this.offset > hi ? -1 : 0;
+            this.feedback = 'Find ' + SHOP_PRODUCTS[this.order.product].name + '.';
+        }
+
+        get pad() { return 8 * this.density; }
+        cartButtonRect() { const p = this.pad; return rect(this.viewWidth - p - 120 * this.density, p * 0.75, this.viewWidth - p, this.headerHeight - p * 0.75); }
+        backButtonRect() { const p = this.pad; return rect(p, p * 0.75, p + 150 * this.density, this.headerHeight - p * 0.75); }
+        productRowRect(index) {
+            const top = this.listRect.top + index * this.rowHeight - this.offset;
+            return rect(this.listRect.left, top, this.listRect.right, top + this.rowHeight);
+        }
+        detailsLeft() { return this.viewWidth * 0.38; }
+        detailsSlot(slot) {
+            const step = this.controlHeight + this.pad * 0.75, top = this.headerHeight + this.pad + slot * step;
+            const left = this.detailsLeft(), width = Math.min(this.viewWidth - left - this.pad, 300 * this.density);
+            return rect(left, top, left + width, top + this.controlHeight);
+        }
+        detailsImageRect() {
+            const p = this.pad, size = Math.min(this.detailsLeft() - p * 3, this.viewHeight - this.headerHeight - p * 2);
+            return rect(p * 2, this.headerHeight + p, p * 2 + size, this.headerHeight + p + size);
+        }
+        detailsTitleRect() { return this.detailsSlot(0); }
+        detailsPriceRect() { return this.detailsSlot(1); }
+        colorRect() { return this.detailsSlot(2); }
+        sizeRect() { return this.detailsSlot(3); }
+        quantityRect() { return this.detailsSlot(4); }
+        addRect() { return this.detailsSlot(5); }
+        confirmRect() {
+            const p = this.pad;
+            return rect(this.viewWidth - p - 160 * this.density, this.viewHeight - p - this.controlHeight, this.viewWidth - p, this.viewHeight - p);
+        }
+        cartLineRect(line) {
+            const top = this.headerHeight + this.pad;
+            const available = this.viewHeight - top - this.controlHeight - this.pad * 3;
+            const height = Math.min(this.rowHeight, available / SHOP_MAX_LINES);
+            return rect(this.pad, top + line * height, this.viewWidth - this.pad, top + (line + 1) * height);
+        }
+        lineQuantityRect(line) {
+            const row = this.cartLineRect(line), height = Math.min(this.controlHeight, row.height - this.pad * 0.5);
+            return rect(row.right - 220 * this.density, row.centerY - height / 2, row.right - 120 * this.density, row.centerY + height / 2);
+        }
+        deleteRect(line) {
+            const quantity = this.lineQuantityRect(line);
+            return rect(quantity.right + 12 * this.density, quantity.top, this.cartLineRect(line).right, quantity.bottom);
+        }
+        options(dropdown = this.openDropdown) {
+            const item = this.openProduct === null ? null : SHOP_PRODUCTS[this.openProduct];
+            switch (dropdown && dropdown.kind) {
+            case 'color': return item ? item.colors : [];
+            case 'size': return item ? item.sizes : [];
+            case 'quantity': case 'lineQuantity':
+                return Array.from({ length: SHOP_MAX_QUANTITY }, (_, i) => String(i + 1));
+            default: return [];
+            }
+        }
+        dropdownRect(dropdown) {
+            switch (dropdown.kind) {
+            case 'color': return this.colorRect();
+            case 'size': return this.sizeRect();
+            case 'quantity': return this.quantityRect();
+            case 'lineQuantity': return this.lineQuantityRect(dropdown.index);
+            default: return null;
+            }
+        }
+        optionRect(option) {
+            const dropdown = this.openDropdown;
+            const field = dropdown && this.dropdownRect(dropdown);
+            if (!field) return null;
+            const count = this.options(dropdown).length;
+            if (!(option >= 0 && option < count)) return null;
+            const height = Math.min(this.controlHeight, (this.viewHeight - this.headerHeight) / count);
+            const top = Math.max(Math.min(field.bottom, this.viewHeight - count * height), this.headerHeight);
+            return rect(field.left, top + option * height, field.right, top + (option + 1) * height);
+        }
+        controlAt(x, y) {
+            if (!this.started || !finite(x) || !finite(y)) return null;
+            if (this.openDropdown) {
+                const option = this.options().findIndex((_, i) => this.optionRect(i).contains(x, y));
+                return option >= 0 ? control('option', option) : null;
+            }
+            if (this.screen !== 'cart' && this.cartButtonRect().contains(x, y)) return control('cart');
+            if (this.screen !== 'results' && this.backButtonRect().contains(x, y)) return control('back');
+            if (this.screen === 'results') {
+                const index = this.productAt(x, y);
+                return index === null ? null : control('product', index);
+            }
+            if (this.screen === 'details') {
+                const hit = [['color', this.colorRect()], ['size', this.sizeRect()], ['quantity', this.quantityRect()], ['add', this.addRect()]]
+                    .find(([, r]) => r.contains(x, y));
+                return hit ? control(hit[0]) : null;
+            }
+            if (this.cart.length && this.confirmRect().contains(x, y)) return control('confirm');
+            for (let line = 0; line < this.cart.length; line++) {
+                if (this.lineQuantityRect(line).contains(x, y)) return control('lineQuantity', line);
+                if (this.deleteRect(line).contains(x, y)) return control('delete', line);
+            }
+            return null;
+        }
+        productAt(x, y) {
+            if (this.screen !== 'results' || !this.listRect.contains(x, y) || this.rowHeight <= 0) return null;
+            const index = Math.floor((y - this.listRect.top + this.offset) / this.rowHeight);
+            return index >= 0 && index < SHOP_PRODUCTS.length ? index : null;
+        }
+
+        hover(x, y, nowMs) {
+            if (this.active && this.accept(nowMs)) this.trackCursor(x, y);
+        }
+        hoverExit() {
+            if (this.active && this.cursorObserved) this.cursorGap = true;
+            this.cursorX = NaN; this.cursorY = NaN;
+        }
+        scroll(deltaPx, nowMs) {
+            if (!this.active || this.screen !== 'results') return;
+            if (!finite(deltaPx) || deltaPx === 0 || !this.accept(nowMs)) return;
+            this.lastScrollMs = nowMs;
+            const applied = Math.min(Math.max(this.offset + deltaPx, 0), this.maxOffset) - this.offset;
+            if (applied === 0) return;
+            this.offset += applied;
+            this.scrollDistance += Math.abs(applied);
+            const direction = Math.sign(applied);
+            if (this.scrollDirection === 0 || direction === this.scrollDirection) {
+                this.scrollDirection = direction;
+                this.oppositeTravel = 0;
+            } else {
+                this.oppositeTravel += Math.abs(applied);
+                if (this.oppositeTravel >= this.rowHeight * REVERSAL_ROWS) {
+                    this.reversals++;
+                    this.scrollDirection = direction;
+                    this.oppositeTravel = 0;
+                }
+            }
+            if (this.approach !== 0) {
+                const [lo, hi] = this.visibleBand();
+                const past = this.approach > 0 ? this.offset - hi : lo - this.offset;
+                if (past > OVERSHOOT_EPSILON_PX) {
+                    if (!this.beyond) this.overshoots++;
+                    this.beyond = true;
+                } else this.beyond = false;
+                if (this.overshoots > 0 && direction === -this.approach) this.corrective += Math.abs(applied);
+            }
+        }
+        pressAt(x, y, nowMs, independent) {
+            if (!this.active || this.press) return;
+            if (!this.accept(nowMs) || !finite(x) || !finite(y)) return;
+            this.clicks++;
+            if (this.lastScrollMs !== null && nowMs - this.lastScrollMs <= SCROLL_ACTIVE_MS) this.scrollClicks++;
+            if (independent) this.trackCursor(x, y); else this.directTouch = true;
+            this.press = { control: this.controlAt(x, y), downX: x, downY: y, moved: false };
+        }
+        move(x, y, nowMs) {
+            if (!this.press || !this.active) return;
+            if (!this.accept(nowMs) || !finite(x) || !finite(y)) { this.cancel(nowMs); return; }
+            if (!this.directTouch) this.trackCursor(x, y);
+            if (!this.press.moved && Math.hypot(x - this.press.downX, y - this.press.downY) > this.slopPx) this.press.moved = true;
+        }
+        release(x, y, nowMs) {
+            const current = this.press;
+            if (!current || !this.active) return;
+            if (!this.accept(nowMs) || !finite(x) || !finite(y)) { this.cancel(nowMs); return; }
+            this.press = null;
+            if (!this.directTouch) this.trackCursor(x, y);
+            const under = this.controlAt(x, y);
+            if (current.moved || !current.control || !sameControl(under, current.control)) {
+                if (this.openDropdown && !current.moved && under === null) {
+                    this.dropdownDismissals++;
+                    this.openDropdown = null;
+                } else this.noAction++;
+                return;
+            }
+            this.activate(current.control, nowMs);
+        }
+        cancel(nowMs) {
+            if (!this.press) return;
+            this.press = null;
+            if (this.active) this.cancelledPresses++;
+            if (nowMs < this.lastMs) this.orderingValid = false;
+        }
+        focusLost(nowMs) {
+            this.cancel(nowMs);
+            this.openDropdown = null;
+        }
+        activate(target, nowMs) {
+            const dropdown = this.openDropdown;
+            switch (target.kind) {
+            case 'product': this.openProductPage(target.index, nowMs); break;
+            case 'cart':
+                this.screen = 'cart';
+                this.feedback = this.cart.length ? 'Review the cart, then confirm it.' : 'Your cart is empty.';
+                break;
+            case 'back':
+                this.backtracks++;
+                this.screen = 'results';
+                this.openProduct = null;
+                this.feedback = 'Find ' + SHOP_PRODUCTS[this.order.product].name + '.';
+                break;
+            case 'color': case 'size': case 'quantity': case 'lineQuantity':
+                this.dropdownOpens++;
+                this.openDropdown = target;
+                break;
+            case 'option': if (dropdown) this.choose(dropdown, target.index, nowMs); break;
+            case 'add': this.addToCart(nowMs); break;
+            case 'delete': {
+                const [line] = this.cart.splice(target.index, 1);
+                this.removals++;
+                this.corrections++;
+                this.feedback = 'Removed ' + lineName(line) + ' (' + lineVariant(line) + ').';
+                this.cartChanged(nowMs);
+                break;
+            }
+            case 'confirm': this.confirm(nowMs); break;
+            }
+        }
+        openProductPage(index, nowMs) {
+            this.productOpens++;
+            if (index !== this.order.product) this.wrongProductOpens++;
+            else if (this.firstOpenMs === null) this.firstOpenMs = nowMs;
+            this.openProduct = index;
+            const item = SHOP_PRODUCTS[index];
+            this.selectedColor = item.colors[0];
+            this.selectedSize = item.sizes.length === 1 ? item.sizes[0] : null;
+            this.selectedQuantity = 1;
+            this.screen = 'details';
+            this.feedback = this.selectedSize === null ? 'Choose a color, size and quantity.' : 'Choose a color and quantity.';
+        }
+        choose(dropdown, option, nowMs) {
+            const value = this.options(dropdown)[option], order = this.order;
+            this.openDropdown = null;
+            const requested = this.openProduct === order.product;
+            if (dropdown.kind === 'lineQuantity') {
+                const line = this.cart[dropdown.index], quantity = Number(value);
+                if (!line || quantity === line.quantity) return;
+                this.cart[dropdown.index] = Object.assign({}, line, { quantity });
+                this.corrections++;
+                this.feedback = 'Changed ' + lineName(line) + ' (' + lineVariant(line) + ') to ' + quantity + '.';
+                this.cartChanged(nowMs);
+                return;
+            }
+            if (dropdown.kind === 'color') {
+                this.selectedColor = value;
+                if (requested && value !== order.color) this.wrongVariantSelects++;
+            } else if (dropdown.kind === 'size') {
+                this.selectedSize = value;
+                if (requested && value !== order.size) this.wrongVariantSelects++;
+            } else {
+                this.selectedQuantity = Number(value);
+                if (requested && this.selectedQuantity !== order.quantity) this.wrongQuantitySelects++;
+            }
+            if (requested && this.selectedColor === order.color && this.selectedSize === order.size) {
+                this.variantSelected = true;
+                if (this.selectedQuantity === order.quantity) this.quantitySelected = true;
+            }
+        }
+        addToCart(nowMs) {
+            this.addAttempts++;
+            if (this.openProduct === null) return;
+            if (this.selectedSize === null) {
+                this.blockedAdds++;
+                this.feedback = 'Choose a size before adding to the cart.';
+                return;
+            }
+            const order = this.order;
+            const added = { product: this.openProduct, color: this.selectedColor, size: this.selectedSize, quantity: this.selectedQuantity };
+            const existing = this.cart.findIndex(line => sameVariant(line, added));
+            if (existing < 0 && this.cart.length >= SHOP_MAX_LINES) {
+                this.blockedAdds++;
+                this.feedback = 'The cart is full. Remove an item first.';
+                return;
+            }
+            let line = added;
+            if (existing < 0) this.cart.push(added);
+            else {
+                line = Object.assign({}, this.cart[existing], { quantity: Math.min(SHOP_MAX_QUANTITY, this.cart[existing].quantity + added.quantity) });
+                this.cart[existing] = line;
+            }
+            if (added.product !== order.product) this.wrongProductAdds++;
+            else if (added.color !== order.color || added.size !== order.size) this.wrongVariantAdds++;
+            else {
+                if (!this.itemAdded) this.itemAddedMs = nowMs;
+                this.itemAdded = true;
+                if (line.quantity === order.quantity) this.quantitySelected = true; else this.wrongQuantityAdds++;
+            }
+            this.feedback = 'Added ' + added.quantity + ' × ' + lineName(added) + ' (' + lineVariant(added) + '). Cart: ' + this.cartCount + '.';
+            this.cartChanged(nowMs);
+        }
+        confirm(nowMs) {
+            this.confirmAttempts++;
+            const problem = this.cartProblem();
+            if (problem !== null) {
+                this.wrongConfirms++;
+                this.feedback = problem;
+                return;
+            }
+            this.cartChanged(nowMs);
+            this.results.push(this.result('completed', nowMs));
+            this.feedback = '✓ Order confirmed: ' + this.order.text;
+            if (this.allCompleted) this.onAllCompleted(nowMs);
+        }
+        wanted() {
+            const order = this.order;
+            return { product: order.product, color: order.color, size: order.size, quantity: order.quantity };
+        }
+        cartProblem() {
+            const wanted = this.wanted();
+            const extra = this.cart.find(line => !sameVariant(line, wanted));
+            if (extra) return lineName(extra) + ' (' + lineVariant(extra) + ") isn't in the order. Delete it.";
+            const line = this.cart[0];
+            if (!line) return "The cart doesn't have " + this.order.text + ' yet.';
+            return line.quantity !== wanted.quantity
+                ? 'Change the ' + lineName(line) + ' (' + lineVariant(line) + ') quantity to ' + wanted.quantity + '.'
+                : null;
+        }
+        cartChanged(nowMs) {
+            const wrong = this.cart.length > 0 && this.cartProblem() !== null;
+            if (wrong && this.wrongSinceMs === null) this.wrongSinceMs = nowMs;
+            if (!wrong && this.wrongSinceMs !== null) {
+                this.correctionMs += Math.max(0, nowMs - this.wrongSinceMs);
+                this.wrongSinceMs = null;
+            }
+            const wanted = this.wanted();
+            if (this.cart.some(line => sameVariant(line, wanted) && line.quantity === wanted.quantity)) this.quantitySelected = true;
+        }
+        next() {
+            if (!this.resolved || this.targetIndex === this.orders.length - 1 || this.frozen) return;
+            this.targetIndex++;
+            this.reset();
+            this.feedback = 'Select Begin to open the store for the next order.';
+        }
+        snapshot() { return this.metrics(false, this.lastMs); }
+        targetResults(nowMs) {
+            if (!this.frozen) {
+                if (this.press) this.cancel(nowMs);
+                if (this.started && !this.resolved) this.results.push(this.result('abandoned', Math.max(this.lastMs, nowMs)));
+                for (let index = this.results.length; index < this.orders.length; index++) {
+                    this.results.push(row(index, this.orders.length, 'abandoned', 0, false,
+                        { measurement_started: 0 }, this.attributes(index)));
+                }
+                this.frozen = true;
+                this.openDropdown = null;
+            }
+            return this.results.slice();
+        }
+        trackCursor(x, y) {
+            if (!finite(x) || !finite(y)) return;
+            if (finite(this.cursorX)) this.cursorTravel += Math.hypot(x - this.cursorX, y - this.cursorY);
+            this.cursorX = x; this.cursorY = y;
+            this.cursorObserved = true;
+        }
+        visibleBand() {
+            const top = this.order.product * this.rowHeight, max = this.maxOffset;
+            const lo = Math.min(Math.max(top + this.rowHeight - this.listRect.height, 0), max);
+            const hi = Math.min(Math.max(top, 0), max);
+            return [lo, Math.max(lo, hi)];
+        }
+        accept(nowMs) {
+            if (!finite(nowMs) || nowMs < this.lastMs) { this.orderingValid = false; return false; }
+            this.lastMs = nowMs;
+            return true;
+        }
+        get traceValid() {
+            return this.cursorObserved && !this.cursorGap && !this.directTouch && this.orderingValid && !this.resized;
+        }
+        metrics(completed, nowMs) {
+            const start = this.startedAtMs, out = { measurement_started: start !== null ? 1 : 0 };
+            if (start === null) return out;
+            if (this.firstOpenMs !== null) out.stp_shop_find_ms = Math.max(0, this.firstOpenMs - start);
+            if (this.firstOpenMs !== null && this.itemAddedMs !== null) out.stp_shop_configure_ms = Math.max(0, this.itemAddedMs - this.firstOpenMs);
+            Object.assign(out, {
+                stp_shop_correction_ms: this.correctionMs + (this.wrongSinceMs !== null ? Math.max(0, nowMs - this.wrongSinceMs) : 0),
+                stp_shop_product_open_count: this.productOpens,
+                stp_shop_wrong_product_open_count: this.wrongProductOpens,
+                stp_shop_wrong_variant_select_count: this.wrongVariantSelects,
+                stp_shop_wrong_quantity_select_count: this.wrongQuantitySelects,
+                stp_shop_dropdown_open_count: this.dropdownOpens,
+                stp_shop_dropdown_dismiss_count: this.dropdownDismissals,
+                stp_shop_add_attempt_count: this.addAttempts,
+                stp_shop_add_blocked_count: this.blockedAdds,
+                stp_shop_wrong_product_add_count: this.wrongProductAdds,
+                stp_shop_wrong_variant_add_count: this.wrongVariantAdds,
+                stp_shop_wrong_quantity_add_count: this.wrongQuantityAdds,
+                stp_shop_incorrect_add_count: this.wrongProductAdds + this.wrongVariantAdds + this.wrongQuantityAdds,
+                stp_shop_confirm_attempt_count: this.confirmAttempts,
+                stp_shop_wrong_confirm_count: this.wrongConfirms,
+                stp_shop_correction_count: this.corrections,
+                stp_shop_removal_count: this.removals,
+                stp_shop_backtrack_count: this.backtracks,
+                stp_shop_scroll_distance_px: round1(this.scrollDistance),
+                stp_shop_scroll_reversal_count: this.reversals
+            });
+            if (this.approach !== 0) {
+                out.stp_shop_scroll_overshoot_count = this.overshoots;
+                out.stp_shop_corrective_scroll_px = round1(this.corrective);
+            }
+            Object.assign(out, {
+                stp_shop_scroll_click_count: this.scrollClicks,
+                stp_shop_no_action_click_count: this.noAction,
+                stp_shop_cancelled_press_count: this.cancelledPresses,
+                stp_shop_step_product_opened: this.firstOpenMs !== null ? 1 : 0,
+                stp_shop_step_variant_selected: this.variantSelected ? 1 : 0,
+                stp_shop_step_quantity_selected: this.quantitySelected ? 1 : 0,
+                stp_shop_step_item_added: this.itemAdded ? 1 : 0,
+                stp_shop_step_cart_verified: completed ? 1 : 0,
+                clicks_total: this.clicks
+            });
+            if (this.traceValid) out.total_cursor_distance_px = round1(this.cursorTravel);
+            return out;
+        }
+        attributes(index) {
+            const order = this.orders[index];
+            return { stp_target_kind: 'storefront_order', stp_condition: order.condition, stp_measurement: 'app_output',
+                stp_attempt_source: 'delivered_click', stp_order_text: order.text };
+        }
+        result(status, nowMs) {
+            return row(this.targetIndex, this.orders.length, status,
+                this.startedAtMs !== null ? Math.max(0, nowMs - this.startedAtMs) : 0,
+                this.traceValid, this.metrics(status === 'completed', nowMs), this.attributes(this.targetIndex));
+        }
+    }
+
+    return { MENU_LABELS, MENU_PATH, MenuTrials, CircleTrials, FILE_DRAG_FILES, FILE_DRAG_FOLDERS, FILE_DRAG_SPECS, FileDragTrials,
+        SHOP_PRODUCTS, SHOP_ORDERS, StorefrontTrials };
 });
