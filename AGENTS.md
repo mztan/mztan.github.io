@@ -2,7 +2,7 @@
 
 Read [DEPLOYMENT.md](DEPLOYMENT.md) before editing or publishing.
 
-- `surface-inputs/` is production. `surface-inputs-dev/` is the development preview. `jvision/` is a separate personal preview (a copy of dev plus the Menus/Circles/Files tasks); changes there don't touch production or dev.
+- `surface-inputs/` is production. `surface-inputs-dev/` is the development preview. `jvision/` is a separate personal preview (a copy of dev plus the Menus/Circles/Files/Storefront tasks); changes there don't touch production or dev.
 - Make new task and UI changes in dev first. Do not edit or promote into production unless the owner explicitly asks.
 - A push to `main` can publish both directories through GitHub Pages. Check the complete Git diff before pushing; a dev-only request must leave all production files unchanged.
 - Development does **not** block telemetry, Google Forms, or feedback writes. It uses the same collection behavior and destinations as the copied production implementation. Development runs can enter those datasets. Do not introduce an upload guard unless requested.

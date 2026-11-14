@@ -6,7 +6,7 @@ The keyboard and touchpad tests are versioned in this Git repository and publish
 
 - **Production:** [surface-inputs/](https://mztan.github.io/surface-inputs/)
 - **Development:** [surface-inputs-dev/](https://mztan.github.io/surface-inputs-dev/)
-- **jvision preview:** [jvision/](https://mztan.github.io/jvision/) — a copy of dev with the Menus, Circles and Files tasks added; see its README.
+- **jvision preview:** [jvision/](https://mztan.github.io/jvision/) — a copy of dev with the Menus, Circles, Files and Storefront tasks added; see its README.
 
 Dev is a plain sibling copy for fast iteration, not a separate backend. Its small bottom-right **DEV** pill is rendered at runtime from the `surface-inputs-dev` URL path, not hardcoded in its HTML. **Uploads are enabled in both environments.** Dev retains the same Google Forms and APK telemetry behavior as prod, so testing may write to the existing collection destinations.
 
