@@ -24,9 +24,9 @@ The alternate `touchpad/uxr/` and `keyboard/exec_demo/` pages are not restyled b
 
 ## Post-task feedback
 
-After a complete Targeting, Scrolling or Typing task, a shared Arcade dialog asks **How easy or difficult was this task?** on a 1–5 scale, from Very difficult to Very easy. It also asks **What worked well, or what could be improved?** as optional freeform text. This is original Arcade wording, not Jason's verbatim questionnaire. No rating is preselected, and Skip is available.
+After a complete Targeting, Scrolling or Typing task, the shared dialog is titled **Feedback** and asks **How easy or difficult was this task?** on the unchanged 1–5 scale. The freeform question remains **What worked well, or what could be improved?**; blank text is allowed without an optional label. Branding, placeholders, number underlines, the byte counter, export/clear controls and the Skip button are absent. The primary control is **Upload**. Escape remains available for accessibility.
 
-A response is bounded to 1,024 UTF-8 comment bytes and the existing 2,048-byte native payload/details limit. It is saved locally before native enqueue; native status distinguishes pending, rejection and sink acceptance. Browser feedback stays on the browser because no feedback collector is configured; use **Export saved feedback** to keep a private copy. At most 50 responses are retained without silent eviction. Clear requires explicit confirmation after export. This adds no telemetry/upload guard and does not change objective task Forms.
+The existing response bounds, immutable IDs and local persistence remain. Native sink acceptance closes the dialog; it is not a server-upload receipt. Browser responses remain visibly local-only and are never described as uploaded because no feedback collector is configured. Non-UI developer APIs `getSavedFeedback()`, `exportSavedFeedback()` and `clearExportedFeedback()` remain for managing retained browser responses; clearing requires confirmation and only affects the exported snapshot. Task measurements and objective Forms are unchanged.
 
 See [the telemetry contract](TELEMETRY.md#post-task-feedback-ui) for completion boundaries, retention and the limited meaning of feedback-block IDs.
 

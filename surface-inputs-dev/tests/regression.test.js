@@ -44,7 +44,7 @@ test('all supported entry pages load shared transport before producers with vali
         assert.ok(transportIndex >= 0, file);
         const producerIndex = scripts.findIndex(value => /^(?:script|scripts_dc|fitts-law)\.js$/.test(value));
         assert.ok(producerIndex > transportIndex, file);
-        for (const script of scripts) assert.equal(fs.existsSync(path.join(root, path.dirname(file), script)), true, file + ':' + script);
+        for (const script of scripts) assert.equal(fs.existsSync(path.join(root, path.dirname(file), script.split(/[?#]/)[0])), true, file + ':' + script);
     }
 });
 

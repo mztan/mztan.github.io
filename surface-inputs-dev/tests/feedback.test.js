@@ -8,6 +8,16 @@ function memory() {
     const map = new Map();
     return {getItem:key=>map.get(key)||null, setItem:(key,value)=>map.set(key,value), removeItem:key=>map.delete(key)};
 }
+test('feedback UI uses the simplified copy and controls without changing field bounds', () => {
+    const fs=require('node:fs'), path=require('node:path');
+    const source=fs.readFileSync(path.join(__dirname,'../post-task-feedback.js'),'utf8');
+    const template=source.match(/container\.innerHTML = `([\s\S]*?)`;/)[1];
+    assert.match(template,/<h2 id="feedback-title">Feedback<\/h2>/);
+    assert.match(template,/id="feedback-save" type="button">Upload<\/button>/);
+    for(const removed of ['feedback-brand','feedback-continue','feedback-export','feedback-clear','feedback-count','placeholder=','(optional)','Task complete'])assert.equal(template.includes(removed),false,removed);
+    const css=fs.readFileSync(path.join(__dirname,'../post-task-feedback.css'),'utf8');
+    const values=css.match(/\.feedback-value \{([^}]+)\}/)[1];assert.equal(values.includes('border'),false);
+});
 test('post-task ease has five explicit anchors and no preselected rating', () => {
     assert.deepEqual(feedback.labels, ['Very difficult','Difficult','Neither easy nor difficult','Easy','Very easy']);
     assert.throws(()=>feedback.payload('touchpad_targeting','round','response',null,''), /Choose/);
