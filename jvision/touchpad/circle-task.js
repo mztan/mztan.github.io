@@ -1,5 +1,6 @@
-/* Circle-tracing task page. Only cursor hover (pointer moving with no button held) is measured;
- * touch, pen, stale events, leaving the area or losing focus interrupt the current lap. */
+/* Circle-tracing task page. Mouse-type pointer motion is measured, including while a button is
+ * held, so clicking never interrupts a lap. Every click is logged and marked with a red X.
+ * Touch, pen, stale events, leaving the area or losing focus interrupt the current lap. */
 (function (win) {
     'use strict';
     const { CircleTrials } = win.SurfaceInputsPathTasks;
@@ -9,10 +10,13 @@
     const TRAIL_LIMIT = 256, STALE_MS = 250;
     const now = () => win.performance.now();
     let width = 0, height = 0, trail = [], lastLap = 0, mouseDown = false, finished = false, frame = 0;
+    // Every primary click on the canvas, kept relative to the circle so marks survive resizes.
+    const clicks = [], pageStart = now();
 
     const state = new CircleTrials(at => {
         finished = true;
-        win.setTimeout(() => win.SurfaceInputsPathResults.complete('stp_circle_tracing', 'Circles', state.targetResults(at)), 300);
+        win.setTimeout(() => win.SurfaceInputsPathResults.complete('stp_circle_tracing', 'Circles', state.targetResults(at),
+            { clicks: clicks.map(({ x, y, t_ms, lap, in_lap }) => ({ x, y, t_ms, lap, in_lap })) }), 300);
     });
 
     // The marker sits at 3 o'clock, where clockwise travel (y down) is straight down the
@@ -26,6 +30,12 @@
         ctx.lineTo(mx + m * 0.42, my + m * 0.02);
         ctx.lineTo(mx, my + m * 0.62);
         ctx.closePath(); ctx.fill();
+    }
+
+    function drawClickMark(x, y, size) {
+        ctx.strokeStyle = 'rgb(230, 61, 46)'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(x - size, y - size); ctx.lineTo(x + size, y + size); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x + size, y - size); ctx.lineTo(x - size, y + size); ctx.stroke();
     }
 
     function draw() {
@@ -51,10 +61,13 @@
             ctx.fillStyle = '#fff'; ctx.font = '22px system-ui, sans-serif';
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             ctx.fillText('↻', cx, cy);
+            const size = Math.max(6, r * 0.04);
+            clicks.forEach(c => drawClickMark(cx + c.nx * r, cy + c.ny * r, size));
         }
         doc.getElementById('status').textContent = state.feedback;
         doc.getElementById('laps').textContent = 'Clockwise circles · ' + state.completedLaps + ' of ' + state.lapCount + ' complete';
         const rms = state.completedLaps > 0 ? state.snapshot().stp_circle_radial_rms_px : undefined;
+        doc.getElementById('clicks').textContent = 'Clicks: ' + clicks.length;
         doc.getElementById('last-lap').textContent = rms === undefined ? '' : 'Last lap: ' + rms.toFixed(1) + ' px RMS path error';
     }
     const redraw = () => { if (!frame) frame = win.requestAnimationFrame(draw); };
@@ -73,7 +86,6 @@
     canvas.addEventListener('pointermove', event => {
         if (finished) return;
         if (event.pointerType !== 'mouse' || stale(event)) { interrupt(); return; }
-        if (event.buttons !== 0) return; // pressed motion is not hover; the native task ignores it
         const rect = canvas.getBoundingClientRect(), x = event.clientX - rect.left, y = event.clientY - rect.top;
         state.move(x, y, now());
         if (lastLap !== state.completedLaps || !state.active) trail = [];
@@ -91,7 +103,16 @@
     });
     canvas.addEventListener('pointerup', event => {
         if (finished || event.pointerType !== 'mouse' || event.button !== 0) return;
-        if (mouseDown) { state.click(); redraw(); }
+        if (mouseDown) {
+            // Logged and marked, but the lap carries on: no interruption, no reset.
+            const rect = canvas.getBoundingClientRect(), x = event.clientX - rect.left, y = event.clientY - rect.top;
+            const inLap = state.startedAtMs !== null;
+            state.click();
+            clicks.push({ x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, t_ms: Math.round(now() - pageStart),
+                lap: state.completedLaps + 1, in_lap: inLap,
+                nx: (x - state.centerX) / state.radius, ny: (y - state.centerY) / state.radius });
+            redraw();
+        }
         mouseDown = false;
     });
     canvas.addEventListener('pointercancel', () => { mouseDown = false; });

@@ -28,10 +28,10 @@
         };
     }
 
-    function record(task, rows, ease, comment, now = new Date()) {
+    function record(task, rows, ease, comment, now = new Date(), extra = {}) {
         if (ease !== null && !(Number.isInteger(ease) && ease >= 1 && ease <= 5)) throw new Error('Ease must be 1..5 or skipped.');
         return { version: 1, task, recorded_at: now.toISOString(), user_agent: typeof navigator === 'undefined' ? '' : navigator.userAgent,
-            ease, comment: comment || '', targets: rows };
+            ease, comment: comment || '', targets: rows, ...extra };
     }
 
     function mount(win) {
@@ -47,7 +47,7 @@
             win.setTimeout(() => win.URL.revokeObjectURL(link.href), 1000);
         }
         /* Shows the completion panel; rows are frozen task results. */
-        function complete(task, title, rows) {
+        function complete(task, title, rows, extra = {}) {
             const panel = doc.getElementById('completion');
             panel.hidden = false;
             doc.getElementById('completion-title').textContent = title + ' complete';
@@ -56,7 +56,7 @@
             const finish = ease => {
                 try {
                     if (!local) throw new Error('Local storage is unavailable; results were not saved.');
-                    const count = local.save(record(task, rows, ease, doc.getElementById('completion-comment').value));
+                    const count = local.save(record(task, rows, ease, doc.getElementById('completion-comment').value, new Date(), extra));
                     status.textContent = 'Saved in this browser (' + count + ' saved). Use Export to download them.';
                     form.querySelectorAll('input, textarea, button').forEach(el => { el.disabled = true; });
                 } catch (failure) { status.textContent = failure.message; }

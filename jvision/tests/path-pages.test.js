@@ -29,7 +29,9 @@ function page(canvasId) {
             let points = [];
             const ctx = { fillStyle: '', fillRect: (x, y, w, h) => el.fills.push({ style: ctx.fillStyle, x, y, w, h }),
                 beginPath: () => { points = []; }, moveTo: (x, y) => points.push({ x, y }), lineTo: (x, y) => points.push({ x, y }),
-                fill: () => el.paths.push({ style: ctx.fillStyle, points: points.slice() }) };
+                fill: () => el.paths.push({ style: ctx.fillStyle, points: points.slice() }),
+                stroke: () => el.strokes.push({ style: ctx.strokeStyle, points: points.slice() }) };
+            el.strokes = [];
             el.getContext = () => new Proxy(ctx, { get: (t, k) => (k in t ? t[k] : () => {}), set: (t, k, v) => { t[k] = v; return true; } });
             elements.set(id, el);
         }
@@ -211,4 +213,50 @@ test('circle page: the blue start marker contains a downward (clockwise) arrow',
     // Clockwise at 3 o'clock is +y on screen: the apex is centered and below the base.
     assert.ok(Math.abs(apex.x - mx) < 1e-9);
     assert.ok(base.every(pt => pt.y < apex.y));
+});
+
+test('circle page: clicks mid-lap are logged and marked with a red X without interrupting the lap', () => {
+    const p = page('circle-canvas');
+    const canvas = p.element('circle-canvas');
+    const cx = 500, cy = 300, r = 216, RED = 'rgb(230, 61, 46)';
+    const at = deg => [cx + r * Math.cos(deg * Math.PI / 180), cy + r * Math.sin(deg * Math.PI / 180)];
+    for (let lap = 0; lap < 6; lap++) {
+        for (let deg = 0; deg <= 360; deg += 3) {
+            const [x, y] = at(deg);
+            if (lap === 0 && deg === 90) {
+                // Press, keep tracing with the button held, release: one click, lap continues.
+                p.pointer('pointerdown', x, y, { buttons: 1 });
+                for (let d = 93; d <= 120; d += 3) { const [px, py] = at(d); p.pointer('pointermove', px, py, { buttons: 1 }); }
+                const [ux, uy] = at(120);
+                p.pointer('pointerup', ux, uy);
+                deg = 120;
+                continue;
+            }
+            p.pointer('pointermove', x, y);
+            if (lap === 3 && deg === 180) { p.pointer('pointerdown', x, y, { buttons: 1 }); p.pointer('pointerup', x, y); }
+        }
+        assert.doesNotMatch(p.element('status').textContent, /interrupted/);
+    }
+    assert.equal(p.element('clicks').textContent, 'Clicks: 2');
+    const reds = canvas.strokes.filter(st => st.style === RED);
+    assert.ok(reds.length >= 4, 'two strokes per X, two clicks');
+    p.flush();
+    p.element('completion-skip').click();
+    const [run] = p.saved();
+    assert.deepEqual(run.targets.map(t => t.status), Array(6).fill('completed'));
+    assert.equal(run.targets[0].metrics.stp_circle_interruption_count, 0);
+    assert.equal(run.targets[0].metrics.stp_circle_accidental_click_count, 1);
+    assert.equal(run.targets[3].metrics.stp_circle_accidental_click_count, 1);
+    assert.equal(run.clicks.length, 2);
+    assert.deepEqual(run.clicks.map(c => [c.lap, c.in_lap]), [[1, true], [4, true]]);
+    assert.ok(run.clicks.every(c => Number.isFinite(c.x) && Number.isFinite(c.y) && c.t_ms >= 0));
+});
+
+test('circle page: a click before starting a lap is still logged and marked', () => {
+    const p = page('circle-canvas');
+    p.pointer('pointermove', 500, 300 - 216);
+    p.pointer('pointerdown', 500, 300 - 216, { buttons: 1 });
+    p.pointer('pointerup', 500, 300 - 216);
+    assert.equal(p.element('clicks').textContent, 'Clicks: 1');
+    assert.ok(p.element('circle-canvas').strokes.some(st => st.style === 'rgb(230, 61, 46)'));
 });
