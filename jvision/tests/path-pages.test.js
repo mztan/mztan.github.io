@@ -56,6 +56,7 @@ function page(canvasId, globals = {}) {
     }, globals));
     const context = vm.createContext({ window: win, navigator: { userAgent: 'node' } });
     const files = canvasId === 'crop-canvas' ? ['photo-crop.js', 'touchpad/photo-scenes.js', 'path-results.js', 'touchpad/crop-task.js']
+        : canvasId === 'map-canvas' ? ['map-landmark.js', 'touchpad/map-render.js', 'path-results.js', 'touchpad/map-task.js']
         : ['path-tasks.js', 'path-results.js', 'touchpad/' + { 'menu-canvas': 'menu', 'circle-canvas': 'circle', 'files-canvas': 'files',
             'store-canvas': 'storefront' }[canvasId] + '-task.js'];
     for (const file of files) {
@@ -588,5 +589,143 @@ test('crop page: Exit before Start records an unstarted run; blur cancels an act
     const t = p.saved()[0].telemetry;
     assert.equal(t.summary.cancelled_adjustments.resize_e, 1);
     assert.equal(t.events.find(e => e.type === 'adjustment_cancelled').reason, 'focus_lost');
+    assert.equal(t.end_reason, 'exited');
+});
+
+/* Layout twin of the map page's MapLandmarkTrials (1000×600 canvas) mirroring every input. */
+function mapTwin(p) {
+    const Task = require('../map-landmark.js');
+    const twin = new Task.MapLandmarkTrials({ runId: 'twin' });
+    twin.geometry(1000, 600, 8);
+    const S = twin.scenario;
+    const api = {
+        twin, S,
+        start() { p.element('map-start').click(); twin.start(p.now()); },
+        wheel(delta, ctrl, x, y) { p.wheel(delta, { ctrlKey: ctrl, clientX: x, clientY: y }); twin.wheel(0, delta, ctrl, x, y, p.now()); },
+        click(x, y, extra = {}) {
+            p.pointer('pointerdown', x, y, Object.assign({ pointerId: 1 }, extra)); twin.pressAt(x, y, p.now(), extra.pointerType || 'mouse');
+            p.pointer('pointerup', x, y, Object.assign({ pointerId: 1 }, extra)); twin.release(x, y, p.now());
+        },
+        drag(x0, y0, x1, y1, extra = {}) {
+            p.pointer('pointerdown', x0, y0, Object.assign({ pointerId: 1 }, extra)); twin.pressAt(x0, y0, p.now(), extra.pointerType || 'mouse');
+            for (let i = 1; i <= 4; i++) {
+                const x = x0 + (x1 - x0) * i / 4, y = y0 + (y1 - y0) * i / 4;
+                p.pointer('pointermove', x, y, Object.assign({ pointerId: 1 }, extra)); twin.move(x, y, p.now());
+            }
+            p.pointer('pointerup', x1, y1, Object.assign({ pointerId: 1 }, extra)); twin.release(x1, y1, p.now());
+        },
+        bring(wx, wy, sx, sy) {
+            for (let i = 0; i < 10; i++) {
+                const q = twin.toScreen(wx, wy);
+                if (Math.hypot(q.x - sx, q.y - sy) < 1) return;
+                const dx = Math.max(-350, Math.min(350, sx - q.x)), dy = Math.max(-200, Math.min(200, sy - q.y));
+                api.drag(500 - dx / 2, 320 - dy / 2, 500 + dx / 2, 320 + dy / 2);
+            }
+        },
+        frame(zoom = 2.7) {
+            const rx = (S.region.left + S.region.right) / 2, ry = (S.region.top + S.region.bottom) / 2;
+            api.bring(rx, ry, 500, 280);
+            for (let i = 0; i < 100 && Math.abs(twin.camera.zoom - zoom) > 0.051; i++) {
+                const q = twin.toScreen(rx, ry);
+                api.wheel(twin.camera.zoom < zoom ? -5 : 5, true, q.x, q.y);
+            }
+            p.tick(400);
+            api.bring(rx, ry, 620, 270);
+        },
+        choose() { const r = twin.buttonRect('choose'); api.click(r.centerX, r.centerY); },
+        openTarget() { const pin = twin.pinScreen(twin.targetIndex); api.click(pin.x, pin.y); }
+    };
+    return api;
+}
+
+test('map page: framing failure, recovery and selection, then results, rating and local save; browser mode uploads nothing', () => {
+    const p = page('map-canvas');
+    const m = mapTwin(p);
+    assert.match(p.element('map-prompt').textContent, /Find Riverside Museum/);
+    assert.equal(p.element('map-skip').disabled, true);
+    m.start();
+    assert.match(p.element('status').textContent, /Find Riverside Museum/);
+    m.frame(1.7);
+    m.openTarget();
+    assert.match(p.element('status').textContent, /Riverside Museum: History museum/);
+    m.choose();
+    assert.match(p.element('status').textContent, /Zoom in more/);
+    assert.match(p.element("counts").textContent, /^Selections: 1 · Zoom 1\.[67]$/, p.element("counts").textContent);
+    m.frame(2.7);
+    m.choose();
+    assert.equal(m.twin.outcome, 'completed');
+    p.flush();
+    assert.equal(p.element('completion').hidden, false);
+    assert.equal(p.element('completion-title').textContent, 'Map landmark complete');
+    const results = p.element('map-results').textContent;
+    assert.match(results, /Outcome: completed/);
+    assert.match(results, /#1 at .*not accepted \(zoom_too_low\)/);
+    assert.match(results, /#2 at .*lm_riverside_museum · success/);
+    assert.match(p.element('telemetry-status').textContent, /Browser mode/);
+    const row = JSON.parse(p.element('map-telemetry').textContent);
+    assert.equal(row.activity_id, 'stp_map_landmark');
+    assert.equal(row.metric_family, 'clicks');
+    p.radios[4].checked = true;
+    p.form.submit();
+    const [saved] = p.saved();
+    assert.equal(saved.task, 'stp_map_landmark');
+    assert.equal(saved.ease, 5);
+    assert.equal(saved.telemetry.submissions.length, 2);
+    assert.equal(saved.telemetry.events.at(-1).type, 'task_completed');
+    assert.deepEqual(saved.telemetry.intent_observation, row);
+});
+
+test('map page: a native host receives one validated row; a pan release over a marker opens nothing; Skip stays local', () => {
+    const { validate } = require('../transport.js');
+    const sent = [];
+    const transport = { isNative: () => true, enqueue: message => { validate(Object.assign({ id: 'x' }, message)); sent.push(message); return 'x'; } };
+    let p = page('map-canvas', { SurfaceInputsTransport: transport });
+    let m = mapTwin(p);
+    m.start();
+    m.frame();
+    m.openTarget();
+    m.choose();
+    p.flush();
+    assert.equal(sent.length, 1);
+    assert.match(p.element('telemetry-status').textContent, /Queued on the native transport/);
+
+    sent.length = 0;
+    p = page('map-canvas', { SurfaceInputsTransport: transport });
+    m = mapTwin(p);
+    m.start();
+    const i = m.twin.map.landmarks.findIndex(l => l.id === 'lm_city_hall'), pin = m.twin.pinScreen(i);
+    m.drag(pin.x, pin.y, pin.x - 60, pin.y - 40);
+    assert.equal(m.twin.openIndex, null);
+    assert.doesNotMatch(p.element('status').textContent, /City Hall/);
+    p.element('map-skip').click();
+    p.flush();
+    assert.equal(sent.length, 0);
+    assert.equal(p.element('completion-title').textContent, 'Map landmark ended');
+    assert.match(p.element('map-results').textContent, /ended \(skipped\)/);
+    p.element('completion-skip').click();
+    assert.equal(p.saved()[0].targets[0].status, 'abandoned');
+    assert.equal(p.saved()[0].telemetry.summary.pan_count, 1);
+});
+
+test('map page: Exit before Start is unstarted; blur cancels a pan in progress', () => {
+    let p = page('map-canvas');
+    p.element('map-exit').click();
+    p.flush();
+    assert.equal(p.element('completion-title').textContent, 'Map landmark not started');
+    p.element('completion-skip').click();
+    assert.equal(p.saved()[0].telemetry.status, 'unstarted');
+
+    p = page('map-canvas');
+    const m = mapTwin(p);
+    m.start();
+    p.pointer('pointerdown', 500, 300, { pointerId: 1 });
+    p.pointer('pointermove', 450, 280, { pointerId: 1 });
+    p.win.dispatch({ type: 'blur' });
+    p.element('map-exit').click();
+    p.flush();
+    p.element('completion-skip').click();
+    const t = p.saved()[0].telemetry;
+    assert.equal(t.summary.pan_cancel_count, 1);
+    assert.equal(t.events.find(e => e.type === 'pan_cancelled').reason, 'focus_lost');
     assert.equal(t.end_reason, 'exited');
 });

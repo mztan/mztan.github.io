@@ -107,3 +107,5 @@ textarea {
 .crop-results { white-space: pre-line; font-size: 13px; line-height: 1.45; margin: 0 0 12px; color: var(--cream); }
 .crop-telemetry { margin: 0 0 12px; font-size: 13px; color: var(--muted); }
 .crop-telemetry pre { max-height: 180px; overflow: auto; background: var(--navy); border: 2px solid var(--border); padding: 8px; font-size: 11px; }
+/* Map landmark task: tall enough that the required region fits at the lowest accepted zoom. */
+.stage.map-stage { min-height: 420px; }
