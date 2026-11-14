@@ -30,7 +30,7 @@
     }
     const overlaps = (r, v) => r.right >= v.left && r.left <= v.right && r.bottom >= v.top && r.top <= v.bottom;
     /* view: { scale, zoom, toScreen(x, y), pin(index) → {x, y, entrance}, world: visible world rect, viewport: screen rect }.
-     * state: { hover: index|null, open: index|null, detailZoom, labelZoom }. */
+     * state: { hover: index|null, open: index|null, done: [index] (already selected), detailZoom, labelZoom }. */
     function drawMap(ctx, map, view, state) {
         const v = view.viewport, s = view.scale, origin = view.toScreen(0, 0), world = view.world;
         ctx.save();
@@ -108,6 +108,12 @@
             }
             const r = open ? 10 : hovered ? 9 : 6;
             const cx = pin.x, cy = pin.y;
+            if (state.done && state.done.includes(i)) {
+                // Already selected in this session: a green ring with a check.
+                ctx.beginPath(); ctx.arc(cx, cy, r + 5, 0, Math.PI * 2);
+                ctx.lineWidth = 3; ctx.strokeStyle = '#2e9e4f'; ctx.stroke();
+                halo(ctx, '✓', cx + r + 9, cy - r - 2, '#2e9e4f', 'bold 13px system-ui, sans-serif');
+            }
             if (open || hovered) {
                 ctx.beginPath(); ctx.arc(cx, cy, r + 4, 0, Math.PI * 2);
                 ctx.fillStyle = open ? 'rgba(247, 190, 72, 0.9)' : 'rgba(81, 160, 255, 0.55)'; ctx.fill();

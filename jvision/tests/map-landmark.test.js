@@ -32,7 +32,7 @@ function run(options = {}) {
         button(name) { const r = t.buttonRect(name); h.click(r.centerX, r.centerY); },
         /* Drags until the world point is at the screen position (several drags if clamped by drag length). */
         bring(wx, wy, sx, sy) {
-            for (let i = 0; i < 8; i++) {
+            for (let i = 0; i < 24; i++) {
                 const p = t.toScreen(wx, wy);
                 if (Math.hypot(p.x - sx, p.y - sy) < 1) return;
                 const v = t.viewportRect, dx = sx - p.x, dy = sy - p.y;
@@ -41,7 +41,7 @@ function run(options = {}) {
             }
         },
         zoomAt(target, x, y) { for (let i = 0; i < 200 && Math.abs(t.camera.zoom - target) > 0.051; i++) h.wheel(t.camera.zoom < target ? -5 : 5, true, x, y); h.settle(); },
-        regionCenter() { return [(S.region.left + S.region.right) / 2, (S.region.top + S.region.bottom) / 2]; },
+        regionCenter() { const r = t.targetSpec.region; return [(r.left + r.right) / 2, (r.top + r.bottom) / 2]; },
         /* Pan and zoom to a qualifying view of the requested landmark. */
         frame(zoom = 2.7) {
             const v = t.viewportRect, [rx, ry] = h.regionCenter();
@@ -51,6 +51,11 @@ function run(options = {}) {
             h.bring(rx, ry, v.centerX + 120, v.centerY - 50);
         },
         openTarget() { const pin = t.pinScreen(t.targetIndex); h.click(pin.x, pin.y); },
+        /* The intended route to a later landmark: zoom out around the center, then frame it. */
+        findNext(zoom = 2.7) { const v = t.viewportRect; h.zoomAt(1, v.centerX, v.centerY); h.frame(zoom); },
+        select() { h.openTarget(); h.button('choose'); return t.lastSubmission; },
+        /* Completes the landmark in progress and every later one. */
+        finishTour() { while (t.outcome === null) { if (t.step > 0 && !t.visible) h.findNext(); else h.frame(); h.select(); } },
         open(id) { const i = t.map.landmarks.findIndex(l => l.id === id), pin = t.pinScreen(i); h.click(pin.x, pin.y); return i; }
     };
     return h;
@@ -66,33 +71,55 @@ test('authored scenario: the requested landmark starts off-screen, needs panning
     const names = t.map.landmarks.map(l => l.name);
     for (const name of ['Riverside Market', 'Riverview Museum of Art', 'Riverside Theatre', 'Harbor Maritime Museum']) assert.ok(names.includes(name));
     assert.equal(new Set(t.map.landmarks.map(l => l.id)).size, t.map.landmarks.length);
-    // Region contains the museum footprint and its entrance.
-    const f = t.target.footprint;
-    assert.ok(S.region.left <= f.left && S.region.right >= f.right && S.region.top <= f.top && S.region.bottom >= t.target.point[1]);
+    // Three distinct requested landmarks; each region contains its footprint and entrance and fits the smallest stage
+    // (420 px minus the toolbar) at the lowest accepted zoom.
+    assert.equal(S.targets.length, 3);
+    assert.deepEqual(S.targets.map(x => t.map.landmarks[t.targetOrder[S.targets.indexOf(x)]].name), ['Riverside Museum', 'North Tower', 'Canal Street Hospital']);
+    const scale = Task.BASE_SCALE * Math.pow(2, Task.THRESHOLDS.zoom_min);
+    S.targets.forEach((spec, step) => {
+        const l = t.map.landmarks[t.targetOrder[step]], f = l.footprint, r = spec.region;
+        assert.ok(r.left <= f.left && r.right >= f.right && r.top <= f.top && r.bottom >= l.point[1], l.id);
+        assert.ok((r.bottom - r.top) * scale <= 420 - 48 && (r.right - r.left) * scale <= 600, l.id);
+    });
+    // Consecutive landmarks are far apart: framed at the middle of the accepted range on a 1000×600 view, the next
+    // one is well off-screen, so finding it calls for zooming out.
+    for (let step = 1; step < S.targets.length; step++) {
+        const a = t.map.landmarks[t.targetOrder[step - 1]].point, b = t.map.landmarks[t.targetOrder[step]].point;
+        const s28 = Task.BASE_SCALE * Math.pow(2, 2.8);
+        assert.ok(Math.abs(a[0] - b[0]) * s28 > 2 * W || Math.abs(a[1] - b[1]) * s28 > 2 * H, String(step));
+    }
     // Deterministic: the same seed builds the same map.
     assert.equal(JSON.stringify(Task.MAP.blocks.slice(0, 5)), JSON.stringify(Task.MAP.blocks.slice(0, 5)));
     assert.ok(Task.MAP.blocks.length > 50);
     assert.ok(Task.MAP.blocks.every(b => [b.left, b.top, b.right, b.bottom].every(Number.isFinite)));
 });
 
-test('successful navigation, framing and selection completes with consistent finding/framing/selection timing', () => {
+test('a tour selects three landmarks in turn, zooming out to find each later one; every landmark gets its own timing', () => {
     const h = run().start(), t = h.t;
+    assert.match(t.feedback, /Find Riverside Museum \(1 of 3\)/);
     h.frame();
     assert.equal(t.visible, true);
     h.openTarget();
-    assert.equal(t.openLandmark.id, S.landmark);
+    assert.equal(t.openLandmark.id, 'lm_riverside_museum');
     assert.equal(t.qualifying, true, JSON.stringify(t.evaluateView(t.targetIndex)));
     h.tick(300);
     h.button('choose');
-    const r = t.lastSubmission;
+    const r = t.submissions[0];
     assert.equal(r.success, true, JSON.stringify(r));
     assert.equal(r.correct_landmark, true);
+    assert.equal(r.target_index, 0);
     assert.ok(r.zoom >= 2.3 && r.zoom <= 3.3);
     assert.ok(r.region_visible >= 0.9);
     assert.equal(r.selection.offset_norm <= 1, true);
-    assert.equal(t.outcome, 'completed');
-    assert.deepEqual(h.ended, ['completed']);
-    const s = t.summary();
+    // The first success advances to the next landmark from the current view; the run is still open.
+    assert.equal(t.outcome, null);
+    assert.equal(t.step, 1);
+    assert.equal(t.target.name, 'North Tower');
+    assert.equal(t.openIndex, null);
+    assert.equal(t.visible, false);
+    assert.match(t.feedback, /✓ Riverside Museum selected\. Next \(2 of 3\): zoom out to find North Tower, then zoom back in/);
+    const first = t.results[0], s = first.summary;
+    assert.equal(first.status, 'completed');
     assert.ok(s.first_visible_ms > 0 && s.first_visible_ms <= s.first_qualifying_ms && s.first_qualifying_ms <= s.duration_ms);
     assert.ok(s.qualifying_to_select_ms >= 300);
     assert.ok(s.pan_count >= 1 && s.zoom_count >= 1);
@@ -101,16 +128,48 @@ test('successful navigation, framing and selection completes with consistent fin
     assert.equal(s.submit_count, 1);
     assert.ok(s.zoom_change_log2 >= 1.6);
     assert.ok(s.pan_distance_norm > 0.3);
+    assert.equal(s.start_zoom, 1);
+    assert.equal(s.search_min_zoom, 1);
     assert.deepEqual(s.missing, {});
+    const selectedZoom = r.zoom;
+    // Second landmark: counts restart; the start zoom is the zoom of the previous selection.
+    assert.equal(t.summary().pan_count, 0);
+    assert.equal(t.summary().submit_count, 0);
+    h.tick(200);
+    h.findNext();
+    h.select();
+    assert.equal(t.step, 2);
+    const second = t.results[1].summary;
+    assert.equal(second.target_index, 1);
+    assert.equal(second.requested_landmark_id, 'lm_north_tower');
+    assert.equal(second.start_zoom, selectedZoom);
+    assert.ok(second.search_min_zoom <= 1.05, String(second.search_min_zoom));
+    assert.ok(second.first_visible_ms >= 200 && second.first_qualifying_ms <= second.duration_ms);
+    assert.equal(second.submit_count, 1);
+    h.findNext();
+    h.select();
+    assert.equal(t.outcome, 'completed');
+    assert.deepEqual(h.ended, ['completed']);
+    assert.match(t.feedback, /All 3 landmarks found/);
+    const rows = t.targetResults(h.tick(10));
+    assert.deepEqual(rows.map(x => [x.index, x.count, x.status, x.attributes.requested_landmark_id]),
+        [[0, 3, 'completed', 'lm_riverside_museum'], [1, 3, 'completed', 'lm_north_tower'], [2, 3, 'completed', 'lm_canal_hospital']]);
+    assert.ok(rows[2].metrics.stp_map_search_min_zoom <= 1.05);
+    assert.equal(rows.reduce((sum, x) => sum + x.elapsed_ms, 0), t.elapsed(t.endMs));
     const types = t.events.map(e => e.type);
     for (const type of ['task_started', 'navigation_started', 'pan_started', 'pan_finished', 'zoom_started', 'zoom_finished', 'target_visible',
-        'qualifying_view_reached', 'landmark_opened', 'selection_submitted', 'task_completed']) assert.ok(types.includes(type), type);
+        'qualifying_view_reached', 'landmark_opened', 'selection_submitted', 'target_completed', 'task_completed']) assert.ok(types.includes(type), type);
+    assert.equal(types.filter(x => x === 'target_started').length, 3);
+    assert.equal(types.filter(x => x === 'target_completed').length, 3);
+    assert.equal(types.filter(x => x === 'landmark_panel_closed').length, 0, 'automatic closes after a success are not user closes');
     assert.deepEqual(t.events.map(e => e.event_sequence), t.events.map((_, i) => i + 1));
-    // Interaction stops at the successful selection.
-    const duration = s.duration_ms;
+    // Interaction stops at the final successful selection.
+    const payload = t.exportPayload();
     h.tick(5000); h.click(500, 300); h.wheel(50);
-    assert.equal(t.summary().duration_ms, duration);
+    assert.equal(t.exportPayload().duration_ms, payload.duration_ms);
     assert.equal(t.events.at(-1).type, 'task_completed');
+    assert.equal(payload.targets_completed, 3);
+    assert.equal(payload.intent_observations.length, 3);
 });
 
 test('distractor exploration stays separate from committed mistakes; a wrong commit is recoverable', () => {
@@ -132,8 +191,8 @@ test('distractor exploration stays separate from committed mistakes; a wrong com
     h.frame();
     h.openTarget();
     h.button('choose');
-    assert.equal(t.outcome, 'completed');
-    const s = t.summary();
+    assert.equal(t.results[0].status, 'completed');
+    const s = t.results[0].summary;
     assert.equal(s.distractor_open_count, 2);
     assert.equal(s.target_open_count, 2);
     assert.equal(s.incorrect_selection_count, 1);
@@ -170,8 +229,8 @@ test('the correct landmark at an unacceptable zoom fails with specific criteria 
     assert.match(t.feedback, /Adjust the view, then choose Riverside Museum again/);
     h.frame();
     h.button('choose');
-    assert.equal(t.outcome, 'completed');
-    const s = t.summary();
+    assert.equal(t.step, 1);
+    const s = t.results[0].summary;
     assert.equal(s.framing_failure_count, 2);
     assert.equal(s.incorrect_selection_count, 0);
     assert.equal(s.retry_count, 2);
@@ -357,11 +416,22 @@ test('reset, skip, exit and unstarted states are distinct, and later input never
     t.skip(h.tick(100));
     assert.equal(t.status, 'abandoned');
     assert.equal(t.events.at(-1).type, 'task_skipped');
-    assert.equal(t.intentObservation(), null);
-    const [row] = t.targetResults(h.tick(10));
+    assert.deepEqual(t.intentObservations(), []);
+    const [row, later] = t.targetResults(h.tick(10));
     assert.equal(row.status, 'abandoned');
     assert.equal(row.attributes.end_reason, 'skipped');
+    assert.equal(later.attributes.end_reason, 'not_reached');
+    assert.deepEqual(later.metrics, { measurement_started: 0 });
     assert.equal(t.summary().missing.qualifying_to_select_ms, 'not_completed');
+
+    // Skipping after the first landmark keeps its completed row and its observation.
+    h = run().start(); t = h.t;
+    h.frame(); h.select();
+    t.skip(h.tick(100));
+    assert.deepEqual(t.targetResults(h.tick(1)).map(x => [x.status, x.attributes.end_reason]),
+        [['completed', 'completed'], ['abandoned', 'skipped'], ['abandoned', 'not_reached']]);
+    assert.deepEqual(t.intentObservations().map(o => o.details.target_index), [0]);
+    assert.equal(t.exportPayload().targets_completed, 1);
 
     h = run().start(); t = h.t;
     h.drag(500, 300, 400, 300);
@@ -374,8 +444,9 @@ test('reset, skip, exit and unstarted states are distinct, and later input never
     h = run(); t = h.t;
     t.exit(h.tick(5));
     assert.equal(t.status, 'unstarted');
-    assert.deepEqual(t.targetResults(h.tick(1))[0].metrics, { measurement_started: 0 });
-    assert.equal(t.exportPayload().summary.missing.duration_ms, 'not_started');
+    assert.deepEqual(t.targetResults(h.tick(1)).map(x => x.metrics), [0, 1, 2].map(() => ({ measurement_started: 0 })));
+    assert.equal(t.exportPayload().duration_ms, null);
+    assert.equal(t.exportPayload().targets_completed, 0);
     assert.equal(t.events.length, 0);
 });
 
@@ -410,7 +481,7 @@ test('bounded export: events and submissions are capped with explicit truncation
     assert.equal(payload.submissions_dropped, 10);
     assert.ok(Buffer.byteLength(JSON.stringify(payload)) <= Task.EXPORT_MAX_BYTES);
     // Events and summaries carry scalars, never pointer traces or the camera trajectory.
-    const text = JSON.stringify({ events: payload.events, summary: payload.summary, submissions: payload.submissions });
+    const text = JSON.stringify({ events: payload.events, targets: payload.targets, submissions: payload.submissions });
     for (const key of ['clientX', 'downX', '"cx"', '"cy"', '"trace"', 'trajectory']) assert.equal(text.includes(key), false, key);
 });
 
@@ -431,59 +502,79 @@ function goldenRun() {
     h.openTarget(); h.button('choose');
     h.frame();
     h.button('choose');
+    h.findNext(); h.select();
+    h.findNext(); h.select();
     return t;
 }
 
-test('telemetry: the completed row uses existing click/cursor columns, passes the transport and keeps details within 512 bytes', () => {
+test('telemetry: each completed landmark is one row on existing click columns, passes the transport and keeps details within 512 bytes', () => {
     const t = goldenRun();
     assert.equal(t.outcome, 'completed');
-    const o = t.intentObservation();
-    validate(Object.assign({ id: 'map_1' }, o));
-    assert.equal(o.metric_family, 'clicks');
-    assert.equal(o.stp_clicks_target_count, 1);
-    assert.equal(o.stp_clicks_total, t.summary().press_count);
-    assert.equal(o.stp_clicks_on_target, -1);
-    assert.equal(o.stp_clicks_miss_count, -1);
-    assert.equal(o.stp_clicks_completed_count, -1);
-    // The web contract carries only the family's columns; cursor path length travels in qa_path.
-    assert.equal('stp_cursor_movement_total_cursor_distance_px' in o, false);
-    assert.equal(o.details.qa_path[Task.PATH_FIELDS.indexOf('stp_map_cursor_distance_px')], t.summary().cursor_distance_px);
-    const d = o.details;
-    assert.deepEqual(Object.keys(d).slice(0, 9), ['details_version', 'target_index', 'target_count', 'target_status', 'trace_valid',
-        'run_sequence', 'task_index', 'interaction', 'stp_condition']);
-    assert.equal(d.qa_path.length, Task.PATH_FIELDS.length);
-    const m = t.metrics();
-    Task.PATH_FIELDS.forEach((name, i) => assert.equal(d.qa_path[i], m[name] === undefined ? null : Math.round(m[name] * 1000) / 1000, name));
-    assert.equal(d.qa_subs_n, 3);
-    assert.deepEqual(d.qa_subs.map(s => [s[0], s[3]]), [[0, 0], [1, 0], [1, 1]]);
-    assert.ok(Buffer.byteLength(JSON.stringify(d)) <= Task.DETAILS_MAX_BYTES);
-    assert.deepEqual(JSON.parse(intentRow(o).details), d);
+    const observations = t.intentObservations();
+    assert.equal(observations.length, 3);
+    observations.forEach((o, i) => {
+        validate(Object.assign({ id: 'map_' + i }, o));
+        assert.equal(o.metric_family, 'clicks');
+        assert.equal(o.stp_clicks_target_count, 1);
+        assert.equal(o.stp_clicks_total, t.results[i].summary.press_count);
+        assert.equal(o.stp_clicks_on_target, -1);
+        assert.equal(o.stp_clicks_miss_count, -1);
+        assert.equal(o.stp_clicks_completed_count, -1);
+        assert.equal(o.elapsed_ms, t.results[i].elapsed_ms);
+        // The web contract carries only the family's columns; cursor path length travels in qa_path.
+        assert.equal('stp_cursor_movement_total_cursor_distance_px' in o, false);
+        const d = o.details;
+        assert.deepEqual(Object.keys(d).slice(0, 9), ['details_version', 'target_index', 'target_count', 'target_status', 'trace_valid',
+            'run_sequence', 'task_index', 'interaction', 'stp_condition']);
+        assert.deepEqual([d.target_index, d.target_count, d.target_status, d.stp_condition], [i, 3, 'completed', 'river_city_tour_v1']);
+        assert.equal(d.qa_path.length, Task.PATH_FIELDS.length);
+        const m = t.results[i].metrics;
+        Task.PATH_FIELDS.forEach((name, k) => assert.equal(d.qa_path[k], m[name] === undefined ? null : Math.round(m[name] * 1000) / 1000, name));
+        assert.equal(d.qa_path[Task.PATH_FIELDS.indexOf('stp_map_cursor_distance_px')], t.results[i].summary.cursor_distance_px);
+        assert.ok(Buffer.byteLength(JSON.stringify(d)) <= Task.DETAILS_MAX_BYTES);
+        assert.deepEqual(JSON.parse(intentRow(o).details), d);
+    });
+    // Submissions are attributed to their landmark: the first carries the wrong pick and the framing retry.
+    assert.equal(observations[0].details.qa_subs_n, 3);
+    assert.deepEqual(observations[0].details.qa_subs.map(s => [s[0], s[3]]), [[0, 0], [1, 0], [1, 1]]);
+    assert.deepEqual(observations[1].details.qa_subs.map(s => [s[0], s[3]]), [[1, 1]]);
+    const zoomOut = observations.map(o => o.details.qa_path[Task.PATH_FIELDS.indexOf('stp_map_search_min_zoom')]);
+    assert.equal(zoomOut[0], 1);
+    assert.ok(zoomOut[1] <= 1.05 && zoomOut[2] <= 1.05);
     const file = path.join(__dirname, 'fixtures/map-landmark-intent-row.json');
-    const golden = { observation: o, intent_row: intentRow(o) };
+    const golden = { observation: observations[1], intent_row: intentRow(observations[1]) };
     if (process.env.UPDATE_FIXTURES) fs.writeFileSync(file, JSON.stringify(golden, null, 2) + '\n');
     assert.deepEqual(JSON.parse(fs.readFileSync(file, 'utf8')), JSON.parse(JSON.stringify(golden)));
 });
 
 test('telemetry: worst-case values drop optional tuples before qa_path; unavailable values are null, not zero', () => {
-    const t = goldenRun();
+    const h = run().start(), t = h.t;
+    h.frame(1.8);
+    h.openTarget(); h.button('choose'); h.button('choose');
+    h.frame();
     Object.keys(t.c).forEach(k => { t.c[k] = 9876543; });
     t.holdTravel = 98765432.123;
-    const d = t.intentObservation().details;
+    h.button('choose');
+    const d = t.intentObservations()[0].details;
     assert.ok(Buffer.byteLength(JSON.stringify(d)) <= Task.DETAILS_MAX_BYTES, String(Buffer.byteLength(JSON.stringify(d))));
     assert.equal(d.qa_subs, undefined);
     assert.equal(d.qa_subs_truncated, true);
     assert.equal(d.qa_path.length, Task.PATH_FIELDS.length);
 
-    const h = run().start(), u = h.t;
-    h.frame();
-    h.drag(500, 300, 520, 300, { source: 'touch' }); // touch pan: hold travel and cursor path unavailable
-    h.frame();
-    h.openTarget(); h.button('choose');
-    assert.equal(u.outcome, 'completed');
-    const o = u.intentObservation();
+    const h2 = run().start(), u = h2.t;
+    h2.frame();
+    h2.drag(500, 300, 520, 300, { source: 'touch' }); // touch pan: hold travel and cursor path unavailable
+    h2.frame();
+    h2.select();
+    const o = u.intentObservations()[0];
     assert.equal(o.details.qa_path[Task.PATH_FIELDS.indexOf('stp_map_hold_travel_px')], null);
     assert.equal(o.details.qa_path[Task.PATH_FIELDS.indexOf('stp_map_cursor_distance_px')], null);
     assert.equal(o.details.trace_valid, false);
     assert.equal(o.details.qa_path[Task.PATH_FIELDS.indexOf('stp_map_reset_count')], 0);
-    assert.equal(u.summary().missing.hold_travel_px, 'non_cursor_pointer');
+    assert.equal(u.results[0].summary.missing.hold_travel_px, 'non_cursor_pointer');
+    // Validity restarts with each landmark: a mouse-only second landmark has a valid trace.
+    u.hover(500, 300, h2.tick(5));
+    h2.findNext(); h2.select();
+    assert.equal(u.results[1].trace_valid, true);
+    assert.ok(u.results[1].summary.cursor_distance_px > 0);
 });

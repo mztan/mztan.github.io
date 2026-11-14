@@ -18,10 +18,11 @@
     <a class="back" href="../index.html">Back to Arcade</a>
   </header>
   <section class="crop-brief" id="instructions">
-    <canvas id="reference-canvas" width="160" height="160" role="img" aria-label="Reference: Riverside Museum at street level, with its entrance on Harbor St and Dock Ave to the west"></canvas>
+    <canvas id="reference-canvas" width="160" height="160" role="img" aria-label="Reference: Riverside Museum at street level, with its entrance (▲) and nearby streets"></canvas>
     <div>
       <p class="prompt"><strong id="map-prompt"></strong></p>
-      <p class="prompt hint">Riverside Museum is a purple building on the south bank of the Lark River, at Dock Ave and Harbor St. Drag the map (or scroll with two fingers) to pan, and pinch (or use − and +) to zoom; pinch zooms around the cursor and the buttons zoom around the center. Street names and entrances (▲) appear when you're zoomed in far enough. Click a marker to see what it is, then select <b>Choose this landmark</b>. <b>Reset view</b> goes back to the start. Timing starts when you select Start.</p>
+      <p class="prompt"><strong id="map-target" aria-live="polite"></strong></p>
+      <p class="prompt hint">The three landmarks are far apart: after each selection, zoom out to find the next one, then zoom back in. Drag the map (or scroll with two fingers) to pan, and pinch (or use − and +) to zoom; pinch zooms around the cursor and the buttons zoom around the center. Street names and entrances (▲) appear when you're zoomed in far enough, and landmark names when you're zoomed out to the city. Click a marker to see what it is, then select <b>Choose this landmark</b>. Landmarks you've already selected get a green ✓. The reference shows the view to aim for. <b>Reset view</b> goes back to the start. Timing starts when you select Start.</p>
     </div>
   </section>
   <div class="stage map-stage"><canvas id="map-canvas" role="img" aria-label="City map"></canvas></div>
@@ -38,7 +39,7 @@
       <h2 id="completion-title"></h2>
       <div id="map-results" class="crop-results"></div>
       <details class="crop-telemetry">
-        <summary>Telemetry row</summary>
+        <summary>Telemetry rows</summary>
         <p id="telemetry-status"></p>
         <pre id="map-telemetry"></pre>
       </details>
@@ -65,7 +66,7 @@
         <button type="button" class="secondary" id="completion-export">Export saved results</button>
         <a class="back" href="../index.html">Back to Arcade</a>
       </div>
-      <p class="note">Results and gesture events stay in this browser. Only the summary row above goes to a native host, and only when one is connected.</p>
+      <p class="note">Results and gesture events stay in this browser. Only the summary rows above (one per selected landmark) go to a native host, and only when one is connected.</p>
     </div>
   </div>
 </body>

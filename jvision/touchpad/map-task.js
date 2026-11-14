@@ -50,7 +50,7 @@
         ctx.fillRect(0, 0, width, height);
         if (state.phase === 'map') drawMapPhase();
         else {
-            const message = state.outcome === 'completed' ? '✓ Landmark selected' : state.outcome ? 'Task ended' : 'Select Start to open the map.';
+            const message = state.outcome === 'completed' ? '✓ All ' + state.targetCount + ' landmarks selected' : state.outcome ? 'Task ended' : 'Select Start to open the map.';
             text(message, width / 2, height / 2, C.muted, 'center');
         }
         if (canvas.style) canvas.style.cursor = cursor();
@@ -66,7 +66,7 @@
     function drawMapPhase() {
         const owner = hovered(), dragging = state.press && state.press.dragging;
         Render.drawMap(ctx, map, view(), { hover: owner && owner.kind === 'map' ? owner.landmark : null, open: state.openIndex,
-            detailZoom: Task.DETAIL_ZOOM, labelZoom: Task.LABEL_ZOOM });
+            done: state.targetOrder.slice(0, state.step), detailZoom: Task.DETAIL_ZOOM, labelZoom: Task.LABEL_ZOOM });
         Render.drawOverview(ctx, map, state.overviewRect, state.visibleWorldRect());
         if (dragging) {
             const v = state.viewportRect;
@@ -78,7 +78,7 @@
         ctx.fillRect(0, 0, width, state.toolbarHeight);
         ['reset', 'zoomOut', 'zoomIn'].forEach(drawButton);
         text('Zoom ' + state.camera.zoom.toFixed(1), state.buttonRect('zoomOut').left - 12, state.toolbarHeight / 2, C.muted, 'right');
-        text('Find: ' + state.target.name, state.buttonRect('reset').right + 16, state.toolbarHeight / 2, C.text);
+        text('Find (' + (state.step + 1) + '/' + state.targetCount + '): ' + state.target.name, state.buttonRect('reset').right + 16, state.toolbarHeight / 2, C.text);
     }
     function drawButton(name) {
         const r = state.buttonRect(name), owner = { kind: 'button', name };
@@ -113,18 +113,29 @@
     }
     function render() {
         doc.getElementById('status').textContent = state.feedback;
-        doc.getElementById('counts').textContent = 'Selections: ' + state.c.submits + (state.phase === 'map' ? ' · Zoom ' + state.camera.zoom.toFixed(1) : '');
+        doc.getElementById('counts').textContent = (state.phase === 'map' ? 'Landmark ' + (state.step + 1) + ' of ' + state.targetCount + ' · ' : '') +
+            'Selections: ' + state.c.submits + (state.phase === 'map' ? ' · Zoom ' + state.camera.zoom.toFixed(1) : '');
+        if (shownStep !== state.step) { shownStep = state.step; describeTarget(); }
         startButton.disabled = state.started || state.outcome !== null;
         skipButton.disabled = !state.active;
         exitButton.disabled = state.outcome !== null;
     }
     const redraw = () => { if (!frame) frame = win.requestAnimationFrame(draw); };
+    /* Brief and reference for the landmark in progress; they change when a selection succeeds. */
+    let shownStep = -1;
+    function describeTarget() {
+        const spec = state.targetSpec, target = state.target;
+        doc.getElementById('map-target').textContent = 'Landmark ' + (state.step + 1) + ' of ' + state.targetCount + ': ' + target.name + '. ' + spec.hint;
+        const ref = doc.getElementById('reference-canvas');
+        if (ref && ref.setAttribute) ref.setAttribute('aria-label', 'Reference: ' + target.name + ' at street level, with its entrance (▲) and nearby streets');
+        drawReference();
+    }
 
     /* Reference thumbnail: the required region at the middle of the accepted zoom range. */
     function drawReference() {
         const ref = doc.getElementById('reference-canvas');
         if (!ref || !ref.getContext) return;
-        const c = ref.getContext('2d'), dpr = win.devicePixelRatio || 1, size = 160, region = scenario.region;
+        const c = ref.getContext('2d'), dpr = win.devicePixelRatio || 1, size = 160, region = state.targetSpec.region;
         ref.width = size * dpr; ref.height = size * dpr;
         c.setTransform(dpr, 0, 0, dpr, 0, 0);
         const scale = size / Math.max(region.right - region.left, region.bottom - region.top);
@@ -216,56 +227,68 @@
     /* ---------- results, telemetry and rating (after the interaction timer stops) ---------- */
     const secs = ms => (ms === null || ms === undefined ? 'unavailable' : (ms / 1000).toFixed(1) + ' s');
     const pct = v => (v === null || v === undefined ? 'unavailable' : (v * 100).toFixed(0) + '%');
-    function resultsText(payload) {
-        const s = payload.summary, lines = [
-            'Outcome: ' + (payload.status === 'completed' ? 'completed' : payload.status === 'unstarted' ? 'not started' : 'ended (' + payload.end_reason + ')') +
-                (s.duration_ms !== null ? ' in ' + secs(s.duration_ms) : ''),
-            'Finding: museum first visible ' + secs(s.first_visible_ms) + ' · Framing: first qualifying view ' + secs(s.first_qualifying_ms) +
-                ' · Selection: qualifying view to success ' + secs(s.qualifying_to_select_ms),
-            'Pan: ' + s.pan_count + ' gestures (' + s.pan_cancel_count + ' cancelled), ' + s.pan_distance_norm.toFixed(2) + ' map-widths, ' +
-                s.pan_reversal_count + ' reversals · Zoom: ' + s.zoom_count + ' gestures (' + s.zoom_cancel_count + ' cancelled), ' +
-                s.zoom_change_log2.toFixed(2) + ' levels total, ' + s.zoom_reversal_count + ' reversals',
-            'Target geometry: ' + s.visibility_episode_count + ' visibility episodes, ' + s.visibility_loss_count + ' losses, ' +
-                s.zoom_overshoot_count + ' zoom-range overshoots, ' + s.corrective_return_count + ' corrective returns',
-            'Exploration: ' + s.distractor_open_count + ' other landmarks opened, ' + s.target_open_count + ' museum openings, ' +
-                s.panel_close_count + ' panels closed · resets ' + s.reset_count + ' · unhandled clicks ' + s.unhandled_click_count +
-                ' · clicks during an active pan/zoom ' + s.active_gesture_click_count,
-            'Cursor travel while holding: ' + (s.hold_travel_px === null ? 'unavailable (' + s.missing.hold_travel_px + ')' : Math.round(s.hold_travel_px) + ' px'),
-            'Selections (' + s.submit_count + '; ' + s.incorrect_selection_count + ' wrong landmark, ' + s.framing_failure_count + ' unsuitable view):'
+    function targetLines(target, submissions) {
+        const s = target.summary, name = map.landmarks.find(l => l.id === target.landmark_id).name;
+        const head = (target.target_index + 1) + '. ' + name + ': ';
+        if (!s) return [head + 'not reached'];
+        const lines = [
+            head + (target.status === 'completed' ? 'selected' : 'not selected') + ' in ' + secs(s.duration_ms) +
+                ' · first visible ' + secs(s.first_visible_ms) + ' · first qualifying view ' + secs(s.first_qualifying_ms) +
+                ' · qualifying view to success ' + secs(s.qualifying_to_select_ms),
+            '   Zoom: started at ' + s.start_zoom.toFixed(2) + ', lowest while searching ' + s.search_min_zoom.toFixed(2) + ' · ' +
+                s.zoom_count + ' gestures (' + s.zoom_cancel_count + ' cancelled), ' + s.zoom_change_log2.toFixed(2) + ' levels, ' +
+                s.zoom_reversal_count + ' reversals, ' + s.zoom_overshoot_count + ' range overshoots',
+            '   Pan: ' + s.pan_count + ' gestures (' + s.pan_cancel_count + ' cancelled), ' + s.pan_distance_norm.toFixed(2) + ' map-widths, ' +
+                s.pan_reversal_count + ' reversals · visibility ' + s.visibility_episode_count + ' episodes, ' + s.visibility_loss_count +
+                ' losses, ' + s.corrective_return_count + ' corrective returns',
+            '   Exploration: ' + s.distractor_open_count + ' other landmarks opened, ' + s.panel_close_count + ' panels closed · resets ' +
+                s.reset_count + ' · unhandled clicks ' + s.unhandled_click_count + ' · clicks during an active pan/zoom ' + s.active_gesture_click_count +
+                ' · cursor travel while holding ' + (s.hold_travel_px === null ? 'unavailable (' + s.missing.hold_travel_px + ')' : Math.round(s.hold_travel_px) + ' px'),
+            '   Selections (' + s.submit_count + '; ' + s.incorrect_selection_count + ' wrong landmark, ' + s.framing_failure_count + ' unsuitable view):'
         ];
-        if (!payload.submissions.length) lines.push('  none');
-        payload.submissions.forEach(r => {
-            lines.push('  #' + (r.index + 1) + ' at ' + secs(r.elapsed_ms) + ': ' + r.landmark_id + ' · ' + (r.success ? 'success' : 'not accepted (' + r.failures.join(', ') + ')') +
+        const mine = submissions.filter(r => r.target_index === target.target_index);
+        if (!mine.length) lines.push('     none');
+        mine.forEach(r => {
+            lines.push('     #' + (r.index + 1) + ' at ' + secs(r.elapsed_ms) + ': ' + r.landmark_id + ' · ' + (r.success ? 'success' : 'not accepted (' + r.failures.join(', ') + ')') +
                 ' · zoom ' + r.zoom.toFixed(2) + (r.zoom_error ? ' (off by ' + Math.abs(r.zoom_error).toFixed(2) + ')' : '') +
                 ' · offset ' + r.center_offset_norm.toFixed(2) + (r.region_visible === null ? '' : ' · region visible ' + pct(r.region_visible)) +
                 (r.measurement_valid ? '' : ' · coverage invalid: ' + r.invalid_reasons.join(', ')));
         });
         const missing = Object.entries(s.missing);
-        lines.push('Missing data: ' + (missing.length ? missing.map(([k, v]) => k + ' (' + v + ')').join(', ') : 'none'));
+        lines.push('   Missing data: ' + (missing.length ? missing.map(([k, v]) => k + ' (' + v + ')').join(', ') : 'none'));
+        return lines;
+    }
+    function resultsText(payload) {
+        let lines = ['Outcome: ' + (payload.status === 'completed' ? 'completed' : payload.status === 'unstarted' ? 'not started' : 'ended (' + payload.end_reason + ')') +
+            (payload.duration_ms !== null ? ' in ' + secs(payload.duration_ms) : '') + ' · ' + payload.targets_completed + ' of ' + payload.target_count + ' landmarks selected'];
+        payload.targets.forEach(target => { lines = lines.concat(targetLines(target, payload.submissions)); });
         if (payload.events_truncated) lines.push('Events truncated: ' + payload.events_dropped + ' dropped');
         return lines.join('\n');
     }
-    function sendTelemetry(observation) {
+    function sendTelemetry(observations) {
         const transport = win.SurfaceInputsTransport;
-        if (!observation) return 'Nothing to send: only completed runs produce a telemetry row (abandoned and unstarted runs stay local).';
-        if (!transport || !transport.isNative || !transport.isNative()) return 'Browser mode: no native host is connected, so nothing was uploaded. This is the row a native host would receive.';
-        try { transport.enqueue(observation); return 'Queued on the native transport; waiting for the sink to acknowledge.'; }
-        catch (failure) { return 'Native transport rejected the row: ' + failure.message; }
+        if (!observations.length) return 'Nothing to send: only completed landmarks produce a telemetry row (abandoned and unstarted ones stay local).';
+        const rows = observations.length === 1 ? '1 row' : observations.length + ' rows';
+        if (!transport || !transport.isNative || !transport.isNative()) return 'Browser mode: no native host is connected, so nothing was uploaded. These are the ' + rows + ' a native host would receive, one per selected landmark.';
+        try { observations.forEach(o => transport.enqueue(o)); return 'Queued ' + rows + ' on the native transport; waiting for the sink to acknowledge.'; }
+        catch (failure) { return 'Native transport rejected a row: ' + failure.message; }
     }
+    const rowText = o => '{\n' + Object.entries(o).map(([k, v]) => '  ' + JSON.stringify(k) + ': ' + JSON.stringify(v)).join(',\n') + '\n}';
     function showResults() {
         const rows = state.targetResults(now()), payload = state.exportPayload();
         win.SurfaceInputsPathResults.complete(Task.TASK_ID, 'Map landmark', rows, { telemetry: payload });
-        doc.getElementById('completion-title').textContent = payload.status === 'completed' ? 'Map landmark complete'
-            : payload.status === 'unstarted' ? 'Map landmark not started' : 'Map landmark ended';
+        doc.getElementById('completion-title').textContent = payload.status === 'completed' ? 'Map landmarks complete'
+            : payload.status === 'unstarted' ? 'Map landmarks not started' : 'Map landmarks ended';
         doc.getElementById('map-results').textContent = resultsText(payload);
-        doc.getElementById('telemetry-status').textContent = sendTelemetry(payload.intent_observation);
-        doc.getElementById('map-telemetry').textContent = payload.intent_observation
-            ? '{\n' + Object.entries(payload.intent_observation).map(([k, v]) => '  ' + JSON.stringify(k) + ': ' + JSON.stringify(v)).join(',\n') + '\n}' : '';
+        doc.getElementById('telemetry-status').textContent = sendTelemetry(payload.intent_observations);
+        doc.getElementById('map-telemetry').textContent = payload.intent_observations.length
+            ? '[\n' + payload.intent_observations.map(rowText).join(',\n') + '\n]' : '';
         redraw();
     }
 
     doc.getElementById('map-prompt').textContent = scenario.prompt;
-    drawReference();
+    describeTarget();
+    shownStep = state.step;
     new win.ResizeObserver(resize).observe(canvas);
     resize();
 })(window);

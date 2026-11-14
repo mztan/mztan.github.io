@@ -615,7 +615,7 @@ function mapTwin(p) {
             p.pointer('pointerup', x1, y1, Object.assign({ pointerId: 1 }, extra)); twin.release(x1, y1, p.now());
         },
         bring(wx, wy, sx, sy) {
-            for (let i = 0; i < 10; i++) {
+            for (let i = 0; i < 24; i++) {
                 const q = twin.toScreen(wx, wy);
                 if (Math.hypot(q.x - sx, q.y - sy) < 1) return;
                 const dx = Math.max(-350, Math.min(350, sx - q.x)), dy = Math.max(-200, Math.min(200, sy - q.y));
@@ -623,7 +623,7 @@ function mapTwin(p) {
             }
         },
         frame(zoom = 2.7) {
-            const rx = (S.region.left + S.region.right) / 2, ry = (S.region.top + S.region.bottom) / 2;
+            const R = twin.targetSpec.region, rx = (R.left + R.right) / 2, ry = (R.top + R.bottom) / 2;
             api.bring(rx, ry, 500, 280);
             for (let i = 0; i < 100 && Math.abs(twin.camera.zoom - zoom) > 0.051; i++) {
                 const q = twin.toScreen(rx, ry);
@@ -633,49 +633,67 @@ function mapTwin(p) {
             api.bring(rx, ry, 620, 270);
         },
         choose() { const r = twin.buttonRect('choose'); api.click(r.centerX, r.centerY); },
-        openTarget() { const pin = twin.pinScreen(twin.targetIndex); api.click(pin.x, pin.y); }
+        openTarget() { const pin = twin.pinScreen(twin.targetIndex); api.click(pin.x, pin.y); },
+        /* Zoom out around the center (the prompted route to the next landmark), frame it and select it. */
+        next() {
+            for (let i = 0; i < 100 && twin.camera.zoom > 1.05; i++) api.wheel(5, true, 500, 324);
+            p.tick(400);
+            api.frame(); api.openTarget(); api.choose();
+        }
     };
     return api;
 }
 
-test('map page: framing failure, recovery and selection, then results, rating and local save; browser mode uploads nothing', () => {
+test('map page: framing failure, recovery and three selections, then results, rating and local save; browser mode uploads nothing', () => {
     const p = page('map-canvas');
     const m = mapTwin(p);
-    assert.match(p.element('map-prompt').textContent, /Find Riverside Museum/);
+    assert.match(p.element('map-prompt').textContent, /Select three landmarks.*zoom out to find it, then zoom in/);
+    assert.match(p.element('map-target').textContent, /^Landmark 1 of 3: Riverside Museum\. Purple building/);
     assert.equal(p.element('map-skip').disabled, true);
     m.start();
-    assert.match(p.element('status').textContent, /Find Riverside Museum/);
+    assert.match(p.element('status').textContent, /Find Riverside Museum \(1 of 3\)/);
     m.frame(1.7);
     m.openTarget();
     assert.match(p.element('status').textContent, /Riverside Museum: History museum/);
     m.choose();
     assert.match(p.element('status').textContent, /Zoom in more/);
-    assert.match(p.element("counts").textContent, /^Selections: 1 · Zoom 1\.[67]$/, p.element("counts").textContent);
+    assert.match(p.element("counts").textContent, /^Landmark 1 of 3 · Selections: 1 · Zoom 1\.[67]$/, p.element("counts").textContent);
     m.frame(2.7);
     m.choose();
+    assert.equal(m.twin.step, 1);
+    assert.match(p.element('status').textContent, /✓ Riverside Museum selected\. Next \(2 of 3\): zoom out to find North Tower/);
+    assert.match(p.element('counts').textContent, /^Landmark 2 of 3 · Selections: 0/);
+    assert.match(p.element('map-target').textContent, /^Landmark 2 of 3: North Tower\./);
+    m.next();
+    assert.match(p.element('map-target').textContent, /^Landmark 3 of 3: Canal Street Hospital\./);
+    m.next();
     assert.equal(m.twin.outcome, 'completed');
     p.flush();
     assert.equal(p.element('completion').hidden, false);
-    assert.equal(p.element('completion-title').textContent, 'Map landmark complete');
+    assert.equal(p.element('completion-title').textContent, 'Map landmarks complete');
     const results = p.element('map-results').textContent;
-    assert.match(results, /Outcome: completed/);
+    assert.match(results, /Outcome: completed in .* · 3 of 3 landmarks selected/);
+    assert.match(results, /1\. Riverside Museum: selected/);
     assert.match(results, /#1 at .*not accepted \(zoom_too_low\)/);
     assert.match(results, /#2 at .*lm_riverside_museum · success/);
-    assert.match(p.element('telemetry-status').textContent, /Browser mode/);
-    const row = JSON.parse(p.element('map-telemetry').textContent);
-    assert.equal(row.activity_id, 'stp_map_landmark');
-    assert.equal(row.metric_family, 'clicks');
+    assert.match(results, /2\. North Tower: selected .*\n   Zoom: started at 2\.\d+, lowest while searching 1\.0\d/);
+    assert.match(results, /3\. Canal Street Hospital: selected/);
+    assert.match(p.element('telemetry-status').textContent, /Browser mode.*3 rows/);
+    const rows = JSON.parse(p.element('map-telemetry').textContent);
+    assert.deepEqual(rows.map(r => [r.activity_id, r.metric_family, r.details.target_index]),
+        [0, 1, 2].map(i => ['stp_map_landmark', 'clicks', i]));
     p.radios[4].checked = true;
     p.form.submit();
     const [saved] = p.saved();
     assert.equal(saved.task, 'stp_map_landmark');
     assert.equal(saved.ease, 5);
-    assert.equal(saved.telemetry.submissions.length, 2);
+    assert.deepEqual(saved.targets.map(t => t.status), ['completed', 'completed', 'completed']);
+    assert.equal(saved.telemetry.submissions.length, 4);
     assert.equal(saved.telemetry.events.at(-1).type, 'task_completed');
-    assert.deepEqual(saved.telemetry.intent_observation, row);
+    assert.deepEqual(saved.telemetry.intent_observations, rows);
 });
 
-test('map page: a native host receives one validated row; a pan release over a marker opens nothing; Skip stays local', () => {
+test('map page: a native host receives one validated row per selected landmark; a pan release over a marker opens nothing; Skip stays local', () => {
     const { validate } = require('../transport.js');
     const sent = [];
     const transport = { isNative: () => true, enqueue: message => { validate(Object.assign({ id: 'x' }, message)); sent.push(message); return 'x'; } };
@@ -685,9 +703,13 @@ test('map page: a native host receives one validated row; a pan release over a m
     m.frame();
     m.openTarget();
     m.choose();
+    assert.equal(sent.length, 0, 'rows go out once the run ends');
+    m.next();
+    p.element('map-skip').click();
     p.flush();
-    assert.equal(sent.length, 1);
-    assert.match(p.element('telemetry-status').textContent, /Queued on the native transport/);
+    assert.deepEqual(sent.map(o => o.details.target_index), [0, 1]);
+    assert.match(p.element('telemetry-status').textContent, /Queued 2 rows on the native transport/);
+    assert.match(p.element('map-results').textContent, /3\. Canal Street Hospital: not selected/);
 
     sent.length = 0;
     p = page('map-canvas', { SurfaceInputsTransport: transport });
@@ -700,18 +722,19 @@ test('map page: a native host receives one validated row; a pan release over a m
     p.element('map-skip').click();
     p.flush();
     assert.equal(sent.length, 0);
-    assert.equal(p.element('completion-title').textContent, 'Map landmark ended');
+    assert.equal(p.element('completion-title').textContent, 'Map landmarks ended');
     assert.match(p.element('map-results').textContent, /ended \(skipped\)/);
+    assert.match(p.element('map-results').textContent, /2\. North Tower: not reached/);
     p.element('completion-skip').click();
-    assert.equal(p.saved()[0].targets[0].status, 'abandoned');
-    assert.equal(p.saved()[0].telemetry.summary.pan_count, 1);
+    assert.deepEqual(p.saved()[0].targets.map(t => t.status), ['abandoned', 'abandoned', 'abandoned']);
+    assert.equal(p.saved()[0].telemetry.targets[0].summary.pan_count, 1);
 });
 
 test('map page: Exit before Start is unstarted; blur cancels a pan in progress', () => {
     let p = page('map-canvas');
     p.element('map-exit').click();
     p.flush();
-    assert.equal(p.element('completion-title').textContent, 'Map landmark not started');
+    assert.equal(p.element('completion-title').textContent, 'Map landmarks not started');
     p.element('completion-skip').click();
     assert.equal(p.saved()[0].telemetry.status, 'unstarted');
 
@@ -725,7 +748,7 @@ test('map page: Exit before Start is unstarted; blur cancels a pan in progress',
     p.flush();
     p.element('completion-skip').click();
     const t = p.saved()[0].telemetry;
-    assert.equal(t.summary.pan_cancel_count, 1);
+    assert.equal(t.targets[0].summary.pan_cancel_count, 1);
     assert.equal(t.events.find(e => e.type === 'pan_cancelled').reason, 'focus_lost');
     assert.equal(t.end_reason, 'exited');
 });

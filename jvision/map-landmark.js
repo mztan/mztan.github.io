@@ -1,4 +1,6 @@
-/* Map landmark task: navigate a fictional city map, frame the requested landmark at a useful zoom and select it.
+/* Map landmark task: navigate a fictional city map and, for each of three requested landmarks in turn, frame it at a
+ * useful zoom and select it. The landmarks are far apart, so each one after the first means zooming out to find it and
+ * zooming back in to frame it.
  * Pure logic: no DOM, timers or uploads. Times are caller-supplied monotonic ms (performance.now()). Screen values
  * are CSS px; landmarks, regions and the camera are world (map) units. Schema and criteria: jvision/MAP_LANDMARK.md. */
 (function (root, factory) {
@@ -7,7 +9,7 @@
     if (root) root.SurfaceInputsMapLandmark = api;
 })(typeof window === 'undefined' ? null : window, function () {
     'use strict';
-    const TASK_ID = 'stp_map_landmark', TASK_VERSION = '1.0', SCHEMA_VERSION = 1, EVALUATOR_VERSION = 1, PROTOCOL_VERSION = 1;
+    const TASK_ID = 'stp_map_landmark', TASK_VERSION = '2.0', SCHEMA_VERSION = 1, EVALUATOR_VERSION = 1, PROTOCOL_VERSION = 2;
     const INTERACTION = 'MapLandmark', METRIC_FAMILY = 'clicks';
     const DETAILS_MAX_BYTES = 512, EVENT_LIMIT = 300, SUBMISSION_LIMIT = 30, EXPORT_MAX_BYTES = 96 * 1024;
     const MIN_ZOOM = 0, MAX_ZOOM = 5, BASE_SCALE = 0.25, WHEEL_ZOOM_PER_PX = 0.01, BUTTON_ZOOM_STEP = 0.5;
@@ -94,12 +96,18 @@
     }
     const MAP = deepFreeze(buildMap(4207));
     const SCENARIOS = deepFreeze([{
-        id: 'riverside_museum_v1', seed: 4207, protocol_version: PROTOCOL_VERSION, map_id: MAP.id,
-        landmark: 'lm_riverside_museum', condition: 'riverside_museum_v1',
-        prompt: 'Find Riverside Museum. Zoom in until its entrance and the surrounding streets are visible, then select the museum.',
+        id: 'river_city_tour_v1', seed: 4207, protocol_version: PROTOCOL_VERSION, map_id: MAP.id, condition: 'river_city_tour_v1',
+        prompt: 'Select three landmarks, one after another. For each one, zoom out to find it, then zoom in until its entrance and the surrounding streets are visible, and select it.',
         start: { cx: 1000, cy: 700, zoom: 1 },
-        // Must remain visible: the museum, its entrance, Dock Ave, Harbor St and the river bank.
-        region: { left: 2780, top: 1800, right: 3040, bottom: 2030 }
+        // Visited in order. Each region must remain visible: the landmark, its entrance and the nearest named streets.
+        targets: [
+            { landmark: 'lm_riverside_museum', region: { left: 2780, top: 1800, right: 3040, bottom: 2030 },
+                hint: 'Purple building on the south bank of the Lark River, at Dock Ave and Harbor St.' },
+            { landmark: 'lm_north_tower', region: { left: 2950, top: 330, right: 3150, bottom: 520 },
+                hint: 'Violet tower near the north edge of the city, on North St east of Dock Ave.' },
+            { landmark: 'lm_canal_hospital', region: { left: 600, top: 1150, right: 860, bottom: 1380 },
+                hint: 'Red building on Canal St at the west side of the city, near Alder Ave.' }
+        ]
     }]);
 
     /* ---------- Telemetry contract ---------- */
@@ -113,7 +121,8 @@
         'stp_map_panel_close_count', 'stp_map_submit_count', 'stp_map_incorrect_selection_count',
         'stp_map_framing_failure_count', 'stp_map_reset_count', 'stp_map_unhandled_click_count',
         'stp_map_active_gesture_click_count', 'stp_map_hold_travel_px', 'stp_map_cursor_distance_px', 'stp_map_final_zoom', 'stp_map_final_zoom_error',
-        'stp_map_final_center_offset_norm', 'stp_map_final_region_visible', 'stp_map_success'
+        'stp_map_final_center_offset_norm', 'stp_map_final_region_visible', 'stp_map_success',
+        'stp_map_start_zoom', 'stp_map_search_min_zoom'
     ]);
     /* Existing clicks-family typed columns. The web transport contract admits only the family's own columns, so the
      * cursor path length (a cursor_movement column on native rows) travels in `qa_path` instead. */
@@ -132,7 +141,7 @@
             this.thresholds = options.thresholds || THRESHOLDS;
             this.runId = options.runId || randomRunId();
             this.onEnd = options.onEnd || (() => {});
-            this.targetIndex = this.map.landmarks.findIndex(l => l.id === this.scenario.landmark);
+            this.targetOrder = this.scenario.targets.map(t => this.map.landmarks.findIndex(l => l.id === t.landmark));
             this.viewWidth = 0; this.viewHeight = 0; this.slopPx = 8;
             this.phase = 'instructions'; this.outcome = null;
             this.startMs = null; this.endMs = null; this.lastMs = 0;
@@ -140,21 +149,33 @@
             this.openIndex = null; this.openClick = null; this.press = null; this.wheelSeg = null; this.hoverAt = null;
             this.feedback = 'Read the instructions, then select Start.';
             this.events = []; this.eventsDropped = 0; this.sequence = 0;
-            this.submissions = []; this.submissionsDropped = 0; this.lastSubmission = null;
+            this.submissions = []; this.submissionsDropped = 0;
+            this.navigationStarted = false; this.lastWheelMs = null;
+            this.cursorX = NaN; this.cursorY = NaN;
+            this.results = []; this.frozenRows = null;
+            this.beginTarget(0, null);
+        }
+        /* Per-target measurement state: every count, time and validity flag below restarts with each requested landmark. */
+        beginTarget(step, nowMs) {
+            this.step = step; this.targetIndex = this.targetOrder[step];
+            this.targetStartMs = nowMs; this.targetEndMs = null; this.targetSucceeded = false;
             this.c = { pans: 0, zooms: 0, panCancels: 0, zoomCancels: 0, panDistance: 0, zoomChange: 0, panReversals: 0, zoomReversals: 0,
                 episodes: 0, losses: 0, overshoots: 0, corrective: 0, distractorOpens: 0, targetOpens: 0, panelCloses: 0,
                 submits: 0, incorrect: 0, framing: 0, retries: 0, resets: 0, unhandled: 0, activeClicks: 0, presses: 0,
                 pressNoAction: 0, wheelIgnored: 0 };
             this.sinceSubmit = { pans: 0, zooms: 0, cancelled: 0 };
-            this.navigationStarted = false; this.lastWheelMs = null;
+            this.lastSubmission = null; this.feedbackFromSubmission = false;
             this.firstVisibleMs = null; this.firstQualifyingMs = null; this.lastQualifyingSinceMs = null;
-            this.visible = false; this.qualifying = false; this.qualifiedOnce = false;
+            this.visible = false; this.qualifying = false;
             this.panDir = { x: 0, y: 0 }; this.panOpposite = { x: 0, y: 0 }; this.zoomDir = 0; this.zoomOpposite = 0;
             this.orderingValid = true; this.resized = false; this.touchHold = false; this.holdTravel = 0;
-            this.cursorObserved = false; this.cursorGap = false; this.directInput = false; this.cursorX = NaN; this.cursorY = NaN; this.cursorTravel = 0;
-            this.frozenRow = null;
+            // A cursor already on the map carries over; its travel restarts from zero.
+            this.cursorObserved = finite(this.cursorX); this.cursorGap = false; this.directInput = false; this.cursorTravel = 0;
+            this.startZoom = this.camera.zoom; this.minZoom = this.camera.zoom;
         }
         get target() { return this.map.landmarks[this.targetIndex]; }
+        get targetSpec() { return this.scenario.targets[this.step]; }
+        get targetCount() { return this.scenario.targets.length; }
         get started() { return this.startMs !== null; }
         get active() { return this.started && this.outcome === null; }
         get openLandmark() { return this.openIndex === null ? null : this.map.landmarks[this.openIndex]; }
@@ -272,7 +293,7 @@
             const zoomError = z < t.zoom_min ? z - t.zoom_min : z > t.zoom_max ? z - t.zoom_max : 0;
             let regionVisible = null;
             if (index === this.targetIndex) {
-                const region = this.scenario.region, shown = intersection(region, world);
+                const region = this.targetSpec.region, shown = intersection(region, world);
                 let visibleArea = area(shown);
                 occ.forEach(o => { visibleArea -= area(intersection(shown, o)); });
                 regionVisible = round3(Math.max(0, visibleArea) / area(region));
@@ -290,6 +311,7 @@
         /* Geometric target events after every camera or overlay change. */
         cameraChanged(nowMs) {
             if (!this.active || this.targetIndex < 0) return;
+            this.minZoom = Math.min(this.minZoom, this.camera.zoom);
             const view = this.evaluateView(this.targetIndex);
             const visible = view.point_in_viewport && view.obscured_by.length === 0;
             if (visible && !this.visible) {
@@ -328,9 +350,11 @@
             Object.assign(this.camera, this.scenario.start);
             this.clampCamera();
             this.phase = 'map';
-            this.emit('task_started', nowMs, { scenario_id: this.scenario.id, map_id: this.map.id, requested_landmark_id: this.scenario.landmark });
+            this.beginTarget(0, nowMs);
+            this.emit('task_started', nowMs, { scenario_id: this.scenario.id, map_id: this.map.id, target_count: this.targetCount });
+            this.emit('target_started', nowMs, { target_index: 0, requested_landmark_id: this.target.id, zoom: round3(this.camera.zoom) });
             this.cameraChanged(nowMs);
-            this.feedback = 'Find ' + this.target.name + '.';
+            this.feedback = 'Find ' + this.target.name + ' (1 of ' + this.targetCount + ').';
             return true;
         }
         beginNavigation(nowMs) { if (!this.navigationStarted) { this.navigationStarted = true; this.emit('navigation_started', nowMs); } }
@@ -558,7 +582,9 @@
             const invalid = [];
             if (!this.orderingValid) invalid.push('out_of_order_input');
             if (this.resized) invalid.push('resized_during_task');
-            const record = deepFreeze({ index: this.submissions.length + this.submissionsDropped, landmark_id: l.id, elapsed_ms: this.elapsed(nowMs),
+            const record = deepFreeze({ index: this.submissions.length + this.submissionsDropped, target_index: this.step,
+                requested_landmark_id: this.target.id, landmark_id: l.id, elapsed_ms: this.elapsed(nowMs),
+                target_elapsed_ms: Math.max(0, Math.round(nowMs - this.targetStartMs)),
                 correct_landmark: correct, zoom: view.zoom, zoom_error: view.zoom_error, center_offset_norm: view.center_offset_norm,
                 region_visible: correct ? view.region_visible : null, missing: correct ? {} : { region_visible: 'wrong_landmark' },
                 point_in_viewport: view.point_in_viewport, obscured_by: view.obscured_by, selection,
@@ -569,11 +595,42 @@
             if (this.submissions.length < SUBMISSION_LIMIT) this.submissions.push(record); else this.submissionsDropped++;
             this.lastSubmission = record;
             this.sinceSubmit = { pans: 0, zooms: 0, cancelled: 0 };
-            this.emit('selection_submitted', nowMs, { index: record.index, landmark_id: l.id, correct_landmark: correct, success: record.success, failures });
-            if (record.success) { this.feedback = '✓ ' + l.name + ' selected.'; this.finish('completed', nowMs); return record; }
+            this.emit('selection_submitted', nowMs, { index: record.index, target_index: this.step, landmark_id: l.id, correct_landmark: correct, success: record.success, failures });
+            if (record.success) { this.completeTarget(nowMs); return record; }
             if (!correct) { this.c.incorrect++; this.feedback = "That's " + l.name + ', not ' + this.target.name + '. Close this panel and keep looking.'; }
             else { this.c.framing++; this.feedback = this.framingFeedback(failures); this.feedbackFromSubmission = true; }
             return record;
+        }
+        /* A successful selection closes the panel (not counted as a user close), freezes this target's row and either
+         * starts the next landmark from the current view or completes the task. */
+        completeTarget(nowMs) {
+            const done = this.target;
+            this.targetSucceeded = true; this.targetEndMs = nowMs;
+            this.openIndex = null; this.openClick = null;
+            this.results.push(this.targetRecord('completed'));
+            this.emit('target_completed', nowMs, { target_index: this.step, landmark_id: done.id, duration_ms: Math.round(nowMs - this.targetStartMs) });
+            if (this.step + 1 >= this.targetCount) {
+                this.feedback = '✓ ' + done.name + ' selected. All ' + this.targetCount + ' landmarks found.';
+                this.finish('completed', nowMs);
+                return;
+            }
+            this.beginTarget(this.step + 1, nowMs);
+            this.emit('target_started', nowMs, { target_index: this.step, requested_landmark_id: this.target.id, zoom: round3(this.camera.zoom) });
+            this.cameraChanged(nowMs);
+            this.feedback = '✓ ' + done.name + ' selected. Next (' + (this.step + 1) + ' of ' + this.targetCount + '): zoom out to find ' +
+                this.target.name + ', then zoom back in to select it.';
+        }
+        targetRecord(status) {
+            const traceValid = this.traceValid;
+            return deepFreeze({ index: this.step, count: this.targetCount, status, landmark_id: this.target.id,
+                elapsed_ms: Math.max(0, Math.round((this.targetEndMs !== null ? this.targetEndMs : this.lastMs) - this.targetStartMs)),
+                trace_valid: traceValid, summary: this.summary(), metrics: this.metrics(), attributes: this.attributes(status) });
+        }
+        unstartedRecord(step) {
+            const id = this.scenario.targets[step].landmark;
+            return deepFreeze({ index: step, count: this.targetCount, status: 'abandoned', landmark_id: id, elapsed_ms: 0, trace_valid: false,
+                summary: null, metrics: { measurement_started: 0 },
+                attributes: Object.assign(this.attributes('abandoned'), { requested_landmark_id: id, end_reason: 'not_reached' }) });
         }
         framingFeedback(failures) {
             const name = this.target.name;
@@ -592,6 +649,12 @@
             this.cancel(at, outcome);
             if (this.wheelSeg) this.closeWheel(outcome === 'completed' ? null : outcome);
             this.phase = 'rating'; this.outcome = outcome; this.endMs = at;
+            if (outcome !== 'completed') {
+                // The landmark in progress ends here; later ones were never requested.
+                this.targetEndMs = at;
+                this.results.push(this.targetRecord('abandoned'));
+                for (let step = this.step + 1; step < this.targetCount; step++) this.results.push(this.unstartedRecord(step));
+            }
             this.emit(outcome === 'completed' ? 'task_completed' : outcome === 'skipped' ? 'task_skipped' : 'task_exited', at, { duration_ms: this.elapsed(at) });
             this.onEnd(this);
             return true;
@@ -601,13 +664,15 @@
         get status() { return this.outcome === 'completed' ? 'completed' : this.started ? 'abandoned' : 'unstarted'; }
         get holdTravelValid() { return !this.touchHold && this.orderingValid; }
         get traceValid() { return this.cursorObserved && !this.cursorGap && !this.directInput && this.orderingValid && !this.resized; }
+        /* Summary of the landmark in progress (or just finished); times are relative to when it was requested. */
         summary() {
-            const c = this.c, end = this.endMs !== null ? this.endMs : this.lastMs, last = this.lastSubmission, missing = {};
-            const since = ms => (ms === null ? null : Math.round(ms - this.startMs));
+            const c = this.c, end = this.targetEndMs !== null ? this.targetEndMs : this.lastMs, last = this.lastSubmission, missing = {};
+            const since = ms => (ms === null ? null : Math.round(ms - this.targetStartMs));
             const out = {
-                duration_ms: this.started ? this.elapsed(end) : null,
+                target_index: this.step, requested_landmark_id: this.target.id,
+                duration_ms: this.started ? Math.max(0, Math.round(end - this.targetStartMs)) : null,
                 first_visible_ms: since(this.firstVisibleMs), first_qualifying_ms: since(this.firstQualifyingMs),
-                qualifying_to_select_ms: this.outcome === 'completed' && this.lastQualifyingSinceMs !== null ? Math.round(this.endMs - this.lastQualifyingSinceMs) : null,
+                qualifying_to_select_ms: this.targetSucceeded && this.lastQualifyingSinceMs !== null ? Math.round(this.targetEndMs - this.lastQualifyingSinceMs) : null,
                 pan_count: c.pans, zoom_count: c.zooms, pan_cancel_count: c.panCancels, zoom_cancel_count: c.zoomCancels,
                 pan_distance_norm: round3(c.panDistance), zoom_change_log2: round3(c.zoomChange),
                 pan_reversal_count: c.panReversals, zoom_reversal_count: c.zoomReversals,
@@ -618,12 +683,13 @@
                 active_gesture_click_count: c.activeClicks, press_count: c.presses, button_press_without_action_count: c.pressNoAction,
                 wheel_ignored_during_drag_count: c.wheelIgnored, hold_travel_px: null, cursor_distance_px: null,
                 final_zoom: null, final_zoom_error: null, final_center_offset_norm: null, final_region_visible: null,
-                final_correct_landmark: null, success: this.outcome === 'completed' ? 1 : 0
+                final_correct_landmark: null, success: this.targetSucceeded ? 1 : 0,
+                start_zoom: this.started ? round3(this.startZoom) : null, search_min_zoom: this.started ? round3(this.minZoom) : null
             };
             if (this.started) {
                 if (out.first_visible_ms === null) missing.first_visible_ms = 'never_visible';
                 if (out.first_qualifying_ms === null) missing.first_qualifying_ms = 'never_qualifying';
-                if (out.qualifying_to_select_ms === null) missing.qualifying_to_select_ms = this.outcome === 'completed' ? 'never_qualifying' : 'not_completed';
+                if (out.qualifying_to_select_ms === null) missing.qualifying_to_select_ms = this.targetSucceeded ? 'never_qualifying' : 'not_completed';
                 if (this.holdTravelValid) out.hold_travel_px = round1(this.holdTravel);
                 else missing.hold_travel_px = this.touchHold ? 'non_cursor_pointer' : 'out_of_order_input';
                 if (this.traceValid) out.cursor_distance_px = round1(this.cursorTravel);
@@ -656,56 +722,65 @@
                 stp_map_active_gesture_click_count: s.active_gesture_click_count, stp_map_hold_travel_px: s.hold_travel_px,
                 stp_map_final_zoom: s.final_zoom, stp_map_final_zoom_error: s.final_zoom_error,
                 stp_map_final_center_offset_norm: s.final_center_offset_norm, stp_map_final_region_visible: s.final_region_visible,
-                stp_map_success: s.success };
+                stp_map_success: s.success, stp_map_start_zoom: s.start_zoom, stp_map_search_min_zoom: s.search_min_zoom };
             Object.entries(map).forEach(([k, v]) => set(k, v));
             set('stp_map_cursor_distance_px', s.cursor_distance_px);
             out.clicks_total = s.press_count;
             return out;
         }
-        attributes() {
+        attributes(status) {
             return { stp_target_kind: 'map_landmark', stp_condition: this.scenario.condition, stp_measurement: 'app_output',
-                stp_attempt_source: 'delivered_click', requested_landmark_id: this.scenario.landmark, end_reason: this.outcome || 'open' };
+                stp_attempt_source: 'delivered_click', requested_landmark_id: this.target.id,
+                end_reason: status === 'completed' ? 'completed' : this.outcome || 'open' };
         }
+        /* One row per requested landmark, in order. Ends an open run as exited. */
         targetResults(nowMs) {
-            if (!this.frozenRow) {
+            if (!this.frozenRows) {
                 if (this.outcome === null) this.finish('exited', nowMs);
-                this.frozenRow = deepFreeze({ index: 0, count: 1, status: this.status === 'completed' ? 'completed' : 'abandoned',
-                    elapsed_ms: this.started ? this.elapsed(this.endMs) : 0, trace_valid: this.started && this.traceValid,
-                    metrics: this.metrics(), attributes: this.attributes() });
+                if (!this.started) this.results = this.scenario.targets.map((t, step) => this.unstartedRecord(step));
+                this.frozenRows = deepFreeze(this.results.map(r => ({ index: r.index, count: r.count, status: r.status, elapsed_ms: r.elapsed_ms,
+                    trace_valid: r.trace_valid, metrics: r.metrics, attributes: r.attributes })));
             }
-            return [this.frozenRow];
+            return this.frozenRows;
         }
-        /* Existing touchpad observation (jvision/transport.js) for the intent row; null unless completed. */
-        intentObservation() {
-            if (this.status !== 'completed') return null;
-            const m = this.metrics(), details = {
-                details_version: 1, target_index: 0, target_count: 1, target_status: 'completed', trace_valid: this.traceValid,
-                run_sequence: 1, task_index: 1, interaction: INTERACTION, stp_condition: this.scenario.condition,
-                map_eval_v: EVALUATOR_VERSION, qa_path_v: 1,
-                qa_path: PATH_FIELDS.map(name => (finite(m[name]) && m[name] >= 0 ? round3(m[name]) : null))
-            };
-            details.qa_subs_n = this.c.submits;
-            details.qa_subs = this.submissions.slice(-3).map(r => [r.correct_landmark ? 1 : 0, r.zoom, r.region_visible, r.success ? 1 : 0]);
-            if (bytes(JSON.stringify(details)) > DETAILS_MAX_BYTES) { delete details.qa_subs; details.qa_subs_truncated = true; }
-            if (bytes(JSON.stringify(details)) > DETAILS_MAX_BYTES) { delete details.qa_path; details.qa_path_truncated = true; }
-            const observation = { version: 1, type: 'touchpad', activity_id: TASK_ID, elapsed_ms: this.elapsed(this.endMs), metric_family: METRIC_FAMILY, details };
-            CLICK_COLUMNS.forEach(name => { observation[name] = -1; });
-            observation.stp_clicks_target_count = 1;
-            observation.stp_clicks_total = m.clicks_total;
-            return observation;
+        /* Existing touchpad observations (jvision/transport.js): one per completed landmark, none for the rest. */
+        intentObservations() {
+            return this.results.filter(r => r.status === 'completed').map(r => {
+                const m = r.metrics, details = {
+                    details_version: 1, target_index: r.index, target_count: r.count, target_status: 'completed', trace_valid: r.trace_valid,
+                    run_sequence: 1, task_index: 1, interaction: INTERACTION, stp_condition: this.scenario.condition,
+                    map_eval_v: EVALUATOR_VERSION, qa_path_v: 1,
+                    qa_path: PATH_FIELDS.map(name => (finite(m[name]) && m[name] >= 0 ? round3(m[name]) : null))
+                };
+                const subs = this.submissions.filter(x => x.target_index === r.index);
+                details.qa_subs_n = r.summary.submit_count;
+                details.qa_subs = subs.slice(-3).map(x => [x.correct_landmark ? 1 : 0, x.zoom, x.region_visible, x.success ? 1 : 0]);
+                if (bytes(JSON.stringify(details)) > DETAILS_MAX_BYTES) { delete details.qa_subs; details.qa_subs_truncated = true; }
+                if (bytes(JSON.stringify(details)) > DETAILS_MAX_BYTES) { delete details.qa_path; details.qa_path_truncated = true; }
+                const observation = { version: 1, type: 'touchpad', activity_id: TASK_ID, elapsed_ms: r.elapsed_ms, metric_family: METRIC_FAMILY, details };
+                CLICK_COLUMNS.forEach(name => { observation[name] = -1; });
+                observation.stp_clicks_target_count = 1;
+                observation.stp_clicks_total = m.clicks_total;
+                return observation;
+            });
         }
         exportPayload() {
-            const s = this.scenario;
+            const s = this.scenario, rows = this.results;
             const payload = {
                 schema_version: SCHEMA_VERSION, task_id: TASK_ID, task_version: TASK_VERSION, protocol_version: PROTOCOL_VERSION,
-                run_id: this.runId, scenario_id: s.id, scenario_seed: s.seed, map_id: this.map.id, requested_landmark_id: s.landmark,
-                map_size: { width: this.map.width, height: this.map.height }, start_camera: s.start, required_region: s.region,
+                run_id: this.runId, scenario_id: s.id, scenario_seed: s.seed, map_id: this.map.id,
+                map_size: { width: this.map.width, height: this.map.height }, start_camera: s.start,
+                requested_targets: s.targets.map(t => ({ landmark_id: t.landmark, required_region: t.region })),
                 evaluator_version: EVALUATOR_VERSION, thresholds: this.thresholds,
                 thresholds_note: 'prototype task criteria, not validated STP quality gates',
-                status: this.status, end_reason: this.outcome, trace_valid: this.started && this.traceValid,
-                summary: this.summary(), submissions: this.submissions.slice(), submissions_dropped: this.submissionsDropped,
+                status: this.status, end_reason: this.outcome,
+                duration_ms: this.started ? this.elapsed(this.endMs !== null ? this.endMs : this.lastMs) : null,
+                targets_completed: rows.filter(r => r.status === 'completed').length, target_count: this.targetCount,
+                targets: rows.map(r => ({ target_index: r.index, landmark_id: r.landmark_id, status: r.status, elapsed_ms: r.elapsed_ms,
+                    trace_valid: r.trace_valid, summary: r.summary })),
+                submissions: this.submissions.slice(), submissions_dropped: this.submissionsDropped,
                 events: this.events.slice(), events_dropped: this.eventsDropped, events_truncated: this.eventsDropped > 0,
-                intent_observation: this.intentObservation()
+                intent_observations: this.intentObservations()
             };
             while (bytes(JSON.stringify(payload)) > EXPORT_MAX_BYTES && payload.events.length > 1) {
                 payload.events.splice(payload.events.length - 2, 1);
