@@ -1,5 +1,5 @@
 'use strict';
-// Loads the real Menus/Circles/Files page scripts against a minimal fake DOM/canvas and drives them
+// Loads the real Menus/Circles/Files/Storefront page scripts against a minimal fake DOM/canvas and drives them
 // with pointer events. Covers event → trial state → page text → completion → local save wiring.
 // It does not prove canvas rendering, layout or physical touchpad behavior.
 const test = require('node:test');
@@ -55,7 +55,7 @@ function page(canvasId) {
         Blob: class {}, URL: { createObjectURL: () => 'blob:x', revokeObjectURL() {} }
     });
     const context = vm.createContext({ window: win, navigator: { userAgent: 'node' } });
-    const script = { 'menu-canvas': 'menu', 'circle-canvas': 'circle', 'files-canvas': 'files' }[canvasId];
+    const script = { 'menu-canvas': 'menu', 'circle-canvas': 'circle', 'files-canvas': 'files', 'store-canvas': 'storefront' }[canvasId];
     for (const file of ['path-tasks.js', 'path-results.js', 'touchpad/' + script + '-task.js']) {
         vm.runInContext(fs.readFileSync(path.join(__dirname, '..', file), 'utf8'), context, { filename: file });
     }
@@ -334,4 +334,105 @@ test('files page: wrong folder recovers, cancel, blur and a second pointer end d
     filesDrag(p, row, [170, slot * 1.5], { pointerType: 'touch' });
     assert.equal(p.element('status').textContent, '✓ Moved Q3 budget final.xlsx to Finance');
     assert.equal(p.element('counts').textContent, 'File 1 of 3 · Drags: 5 · Wrong file: 0');
+});
+
+/* A layout twin of the page's StorefrontTrials (1000×600 canvas) that mirrors every click, so
+ * the test can aim at the same control rectangles the page draws. */
+function storeTwin(p) {
+    const { StorefrontTrials } = require('../path-tasks.js');
+    const twin = new StorefrontTrials();
+    twin.geometry(1000, 600, 1, 8);
+    let at = 0;
+    const api = {
+        twin,
+        begin() { p.element('store-button').click(); twin.begin(at += 10); },
+        next() { p.element('store-button').click(); twin.next(); },
+        wheel(delta) { p.wheel(delta); twin.scroll(delta, at += 10); },
+        click(r, extra = {}) {
+            p.pointer('pointerdown', r.centerX, r.centerY, Object.assign({ buttons: 1, pointerId: 1 }, extra));
+            p.pointer('pointerup', r.centerX, r.centerY, Object.assign({ pointerId: 1 }, extra));
+            twin.pressAt(r.centerX, r.centerY, at += 10, extra.pointerType !== 'touch');
+            twin.release(r.centerX, r.centerY, at += 10);
+        },
+        choose(field, value, extra) {
+            api.click(field, extra);
+            api.click(twin.optionRect(twin.options().indexOf(value)), extra);
+        },
+        order(extra) {
+            const order = twin.order;
+            api.wheel(order.product * 64 - 276);
+            api.click(twin.productRowRect(order.product), extra);
+            p.tick(300);
+            api.choose(twin.colorRect(), order.color, extra);
+            api.choose(twin.sizeRect(), order.size, extra);
+            api.choose(twin.quantityRect(), String(order.quantity), extra);
+            api.click(twin.addRect(), extra);
+            api.click(twin.cartButtonRect(), extra);
+            api.click(twin.confirmRect(), extra);
+        }
+    };
+    return api;
+}
+
+test('storefront page: wheel scroll and clicks confirm both orders, then save local results', () => {
+    const p = page('store-canvas');
+    const s = storeTwin(p);
+    const button = p.element('store-button');
+    assert.equal(p.element('status').textContent, 'Select Begin to open the store.');
+    s.begin();
+    assert.equal(p.element('order-prompt').textContent,
+        'Add two blue, medium Trailhead Hiking Shirts to your cart, then confirm the cart.');
+    assert.equal(button.disabled, true);
+    p.tick(400);
+    s.order();
+    assert.equal(p.element('status').textContent, '✓ Order confirmed: 2 × Trailhead Hiking Shirt (Blue, M)');
+    assert.equal(button.textContent, 'Next order');
+    s.next();
+    s.begin();
+    assert.match(p.element('order-prompt').textContent, /^Add one pair of black Summit Trail Runners, size 9/);
+    s.order();
+    p.flush();
+    assert.equal(p.element('completion').hidden, false);
+    assert.equal(p.element('completion-title').textContent, 'Storefront complete');
+    p.element('completion-skip').click();
+    const [run] = p.saved();
+    assert.equal(run.task, 'stp_storefront_cart');
+    assert.deepEqual(run.targets.map(t => t.status), ['completed', 'completed']);
+    assert.ok(run.targets.every(t => t.metrics.stp_shop_step_cart_verified === 1 && t.metrics.stp_shop_incorrect_add_count === 0));
+    assert.ok(run.targets.every(t => t.trace_valid && t.metrics.total_cursor_distance_px > 0));
+    // The first click lands right after the wheel packet, so it counts as a click while scrolling.
+    assert.deepEqual(run.targets.map(t => t.metrics.stp_shop_scroll_click_count), [1, 1]);
+    assert.deepEqual(run.targets.map(t => t.attributes.stp_condition), ['shirt_mid_list_variant_qty2', 'runner_late_list_variant_qty1']);
+});
+
+test('storefront page: wrong item recovery in the cart, blur closes a dropdown, touch can complete', () => {
+    const p = page('store-canvas');
+    const s = storeTwin(p);
+    s.begin();
+    s.wheel(300);
+    s.click(s.twin.productRowRect(7));
+    s.choose(s.twin.colorRect(), 'Blue');
+    s.choose(s.twin.sizeRect(), 'M');
+    s.click(s.twin.addRect());
+    s.click(s.twin.cartButtonRect());
+    s.click(s.twin.confirmRect());
+    assert.equal(p.element('status').textContent, "Trailhead Hiking Shirt, Sleeveless (Blue, M) isn't in the order. Delete it.");
+    s.click(s.twin.deleteRect(0));
+    assert.equal(p.element('counts').textContent, 'Order 1 of 2 · Cart: 0 · Adds: 1');
+    s.click(s.twin.backButtonRect());
+    s.click(s.twin.productRowRect(6), { pointerType: 'touch' });
+    s.click(s.twin.colorRect(), { pointerType: 'touch' });
+    p.win.dispatch({ type: 'blur' });
+    s.twin.focusLost(0);
+    // The dropdown closed, so the next click on the color field opens it again.
+    s.choose(s.twin.colorRect(), 'Blue', { pointerType: 'touch' });
+    s.choose(s.twin.sizeRect(), 'M', { pointerType: 'touch' });
+    s.choose(s.twin.quantityRect(), '2', { pointerType: 'touch' });
+    s.click(s.twin.addRect(), { pointerType: 'touch' });
+    s.click(s.twin.cartButtonRect(), { pointerType: 'touch' });
+    s.click(s.twin.confirmRect(), { pointerType: 'touch' });
+    assert.equal(p.element('status').textContent, '✓ Order confirmed: 2 × Trailhead Hiking Shirt (Blue, M)');
+    assert.equal(p.element('counts').textContent, 'Order 1 of 2 · Cart: 2 · Adds: 2');
+    assert.equal(p.element('store-button').textContent, 'Next order');
+    assert.deepEqual(p.saved(), []);
 });
