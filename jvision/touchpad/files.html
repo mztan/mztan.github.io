@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Files · Surface Inputs Arcade</title>
+  <link rel="stylesheet" href="path-tasks.css">
+  <script src="../path-tasks.js"></script>
+  <script src="../path-results.js"></script>
+  <script src="files-task.js" defer></script>
+</head>
+<body oncontextmenu="return false;">
+  <header>
+    <div class="brand">Surface Inputs <span>Arcade</span></div>
+    <h1>Files</h1>
+    <a class="back" href="../index.html">Back to Arcade</a>
+  </header>
+  <p class="prompt">Select Begin, find the requested file and drag it onto the requested folder. Scroll to find it, then press, hold and move to drag it, and release over the folder. If you drag the wrong file or drop it somewhere else, it returns to the list; try again.</p>
+  <p class="prompt">Move <strong id="requested-file"></strong> to the <strong id="requested-folder"></strong> folder</p>
+  <div class="stage"><canvas id="files-canvas" role="img" aria-label="File manager measurement area"></canvas></div>
+  <p class="status" id="status" aria-live="polite"></p>
+  <div class="controls">
+    <button id="files-button" type="button">Begin</button>
+    <span id="counts">File 1 of 3 · Drags: 0 · Wrong file: 0</span>
+  </div>
+
+  <div id="completion" hidden>
+    <div class="card" role="dialog" aria-modal="true" aria-labelledby="completion-title">
+      <h2 id="completion-title"></h2>
+      <form id="completion-form">
+        <fieldset>
+          <legend>How easy or difficult was this task?</legend>
+          <div class="scale">
+            <label><input type="radio" name="ease" value="1"><b>1</b>Very difficult</label>
+            <label><input type="radio" name="ease" value="2"><b>2</b>Difficult</label>
+            <label><input type="radio" name="ease" value="3"><b>3</b>Neither easy nor difficult</label>
+            <label><input type="radio" name="ease" value="4"><b>4</b>Easy</label>
+            <label><input type="radio" name="ease" value="5"><b>5</b>Very easy</label>
+          </div>
+        </fieldset>
+        <label for="completion-comment">What worked well, or what could be improved? (optional)</label>
+        <textarea id="completion-comment" maxlength="1024"></textarea>
+        <div class="actions">
+          <button type="submit">Save</button>
+          <button type="button" class="secondary" id="completion-skip">Skip rating</button>
+        </div>
+      </form>
+      <p id="completion-status" aria-live="polite"></p>
+      <div class="actions">
+        <button type="button" class="secondary" id="completion-export">Export saved results</button>
+        <a class="back" href="../index.html">Back to Arcade</a>
+      </div>
+      <p class="note">Results stay in this browser. This task does not upload anything.</p>
+    </div>
+  </div>
+</body>
+</html>

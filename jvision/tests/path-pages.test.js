@@ -1,5 +1,5 @@
 'use strict';
-// Loads the real Menus/Circles page scripts against a minimal fake DOM/canvas and drives them
+// Loads the real Menus/Circles/Files page scripts against a minimal fake DOM/canvas and drives them
 // with pointer events. Covers event → trial state → page text → completion → local save wiring.
 // It does not prove canvas rendering, layout or physical touchpad behavior.
 const test = require('node:test');
@@ -22,12 +22,13 @@ function page(canvasId) {
         if (!elements.has(id)) {
             const el = listeners({ id, textContent: '', value: '', hidden: id === 'completion', disabled: false, checked: false });
             el.focus = () => {};
+            el.setPointerCapture = () => {};
             el.click = () => { if (el.onclick) el.onclick({}); el.dispatch({ type: 'click' }); };
             el.getBoundingClientRect = () => ({ left: 0, top: 0, width: 1000, height: 600 });
             el.fills = [];
             el.paths = [];
             let points = [];
-            const ctx = { fillStyle: '', fillRect: (x, y, w, h) => el.fills.push({ style: ctx.fillStyle, x, y, w, h }),
+            const ctx = { fillStyle: '', measureText: text => ({ width: String(text).length * 7 }), fillRect: (x, y, w, h) => el.fills.push({ style: ctx.fillStyle, x, y, w, h }),
                 beginPath: () => { points = []; }, moveTo: (x, y) => points.push({ x, y }), lineTo: (x, y) => points.push({ x, y }),
                 fill: () => el.paths.push({ style: ctx.fillStyle, points: points.slice() }),
                 stroke: () => el.strokes.push({ style: ctx.strokeStyle, points: points.slice() }) };
@@ -54,7 +55,8 @@ function page(canvasId) {
         Blob: class {}, URL: { createObjectURL: () => 'blob:x', revokeObjectURL() {} }
     });
     const context = vm.createContext({ window: win, navigator: { userAgent: 'node' } });
-    for (const file of ['path-tasks.js', 'path-results.js', 'touchpad/' + (canvasId === 'menu-canvas' ? 'menu' : 'circle') + '-task.js']) {
+    const script = { 'menu-canvas': 'menu', 'circle-canvas': 'circle', 'files-canvas': 'files' }[canvasId];
+    for (const file of ['path-tasks.js', 'path-results.js', 'touchpad/' + script + '-task.js']) {
         vm.runInContext(fs.readFileSync(path.join(__dirname, '..', file), 'utf8'), context, { filename: file });
     }
     const canvas = element(canvasId);
@@ -63,9 +65,16 @@ function page(canvasId) {
         canvas.dispatch(Object.assign({ type, pointerType: 'mouse', isPrimary: true, buttons: 0,
             button: type === 'pointermove' ? -1 : 0, clientX: x, clientY: y, timeStamp: clock }, extra));
     };
+    const wheel = deltaY => {
+        clock += 4;
+        let prevented = false;
+        canvas.dispatch({ type: 'wheel', deltaY, deltaMode: 0, clientX: 500, clientY: 300, timeStamp: clock,
+            preventDefault: () => { prevented = true; } });
+        return prevented;
+    };
     const flush = () => { while (timers.length) timers.shift()(); };
     const saved = () => JSON.parse(storage.get('jvision-path-results-v1') || '[]');
-    return { win, element, radios, form, pointer, flush, saved, tick: ms => { clock += ms; } };
+    return { win, element, radios, form, pointer, wheel, flush, saved, tick: ms => { clock += ms; } };
 }
 
 test('circle page: six hovered laps open the rating dialog and save local results', () => {
@@ -259,4 +268,70 @@ test('circle page: a click before starting a lap is still logged and marked', ()
     p.pointer('pointerup', 500, 300 - 216);
     assert.equal(p.element('clicks').textContent, 'Clicks: 1');
     assert.ok(p.element('circle-canvas').strokes.some(st => st.style === 'rgb(230, 61, 46)'));
+});
+
+function filesDrag(p, from, to, extra = {}) {
+    p.pointer('pointerdown', from[0], from[1], Object.assign({ buttons: 1, pointerId: 1 }, extra));
+    p.pointer('pointermove', (from[0] + to[0]) / 2, (from[1] + to[1]) / 2, Object.assign({ buttons: 1, pointerId: 1 }, extra));
+    p.pointer('pointermove', to[0], to[1], Object.assign({ buttons: 1, pointerId: 1 }, extra));
+    p.pointer('pointerup', to[0], to[1], Object.assign({ pointerId: 1 }, extra));
+}
+
+test('files page: wheel scroll and press-hold-drag move all three files, then save local results', () => {
+    const p = page('files-canvas');
+    const button = p.element('files-button');
+    const slot = 600 / 7;
+    assert.equal(p.element('status').textContent, 'Select Begin to show the files.');
+    button.click();
+    assert.equal(p.element('requested-file').textContent, 'Q3 budget final.xlsx');
+    assert.equal(p.element('requested-folder').textContent, 'Finance');
+    assert.equal(button.disabled, true);
+    assert.equal(p.wheel(400), true);
+    filesDrag(p, [676, 16 * 40 - 400 + 20], [170, slot * 1.5]);
+    assert.equal(p.element('status').textContent, '✓ Moved Q3 budget final.xlsx to Finance');
+    assert.equal(button.textContent, 'Next file');
+    button.click();
+    button.click();
+    assert.equal(p.element('requested-folder').textContent, 'Projects');
+    p.wheel(700);
+    filesDrag(p, [324, 29 * 40 - 700 + 20], [830, slot * 3.5]);
+    button.click();
+    button.click();
+    p.wheel(-800);
+    filesDrag(p, [676, 2 * 40 - 40 + 20], [170, slot * 6.5]);
+    p.flush();
+    assert.equal(p.element('completion').hidden, false);
+    assert.equal(p.element('completion-title').textContent, 'Files complete');
+    p.element('completion-skip').click();
+    const [run] = p.saved();
+    assert.equal(run.task, 'stp_file_drag');
+    assert.deepEqual(run.targets.map(t => t.status), ['completed', 'completed', 'completed']);
+    assert.ok(run.targets.every(t => t.metrics.drag_attempt_count === 1 && t.trace_valid));
+    assert.ok(run.targets.every(t => t.metrics.stp_file_hold_travel_px > 0));
+    assert.deepEqual(run.targets.map(t => t.attributes.stp_condition), [
+        'scroll_down_short_folder_left_upper', 'scroll_down_long_folder_right_middle', 'scroll_up_long_folder_left_lower']);
+});
+
+test('files page: wrong folder recovers, cancel, blur and a second pointer end drags, touch can complete', () => {
+    const p = page('files-canvas');
+    const slot = 600 / 7;
+    p.element('files-button').click();
+    p.wheel(400);
+    const row = [676, 16 * 40 - 400 + 20];
+    filesDrag(p, row, [170, slot * 2.5]);
+    assert.equal(p.element('status').textContent, 'Dropped on Finance archive. Drag it to Finance.');
+    p.pointer('pointerdown', row[0], row[1], { buttons: 1, pointerId: 1 });
+    p.pointer('pointermove', row[0] - 60, row[1], { buttons: 1, pointerId: 1 });
+    p.element('files-canvas').dispatch({ type: 'pointercancel', pointerId: 1 });
+    assert.match(p.element('status').textContent, /^Drag cancelled/);
+    p.pointer('pointerdown', row[0], row[1], { buttons: 1, pointerId: 1 });
+    p.pointer('pointermove', row[0] - 60, row[1], { buttons: 1, pointerId: 1 });
+    p.win.dispatch({ type: 'blur' });
+    // A second pointer while pressing is not a single-pointer drag.
+    p.pointer('pointerdown', row[0], row[1], { buttons: 1, pointerId: 1 });
+    p.pointer('pointermove', row[0] - 60, row[1], { buttons: 1, pointerId: 1 });
+    p.pointer('pointerdown', row[0], row[1] + 40, { buttons: 1, pointerId: 2, isPrimary: false });
+    filesDrag(p, row, [170, slot * 1.5], { pointerType: 'touch' });
+    assert.equal(p.element('status').textContent, '✓ Moved Q3 budget final.xlsx to Finance');
+    assert.equal(p.element('counts').textContent, 'File 1 of 3 · Drags: 5 · Wrong file: 0');
 });
