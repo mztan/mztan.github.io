@@ -70,7 +70,8 @@ test('launcher negotiates the APK ready handshake without changing browser links
         'touchpad/menu.html',
         'touchpad/circle.html',
         'touchpad/files.html',
-        'touchpad/storefront.html'
+        'touchpad/storefront.html',
+        'touchpad/crop.html'
     ]);
 });
 
