@@ -99,3 +99,11 @@ textarea {
 .actions { display: flex; gap: 10px; flex-wrap: wrap; }
 #completion-status { margin: 12px 0 0; min-height: 1.5em; color: var(--mint); }
 .note { margin: 12px 0 0; font-size: 13px; color: var(--muted); }
+/* Photo crop task */
+.crop-brief { display: flex; gap: 16px; align-items: flex-start; }
+.crop-brief canvas { width: 160px; height: 160px; flex: none; border: 2px solid var(--border); border-radius: 2px; }
+.crop-brief .prompt.hint { font-size: 15px; margin-top: 6px; }
+#completion .card { max-height: calc(100% - 32px); overflow: auto; }
+.crop-results { white-space: pre-line; font-size: 13px; line-height: 1.45; margin: 0 0 12px; color: var(--cream); }
+.crop-telemetry { margin: 0 0 12px; font-size: 13px; color: var(--muted); }
+.crop-telemetry pre { max-height: 180px; overflow: auto; background: var(--navy); border: 2px solid var(--border); padding: 8px; font-size: 11px; }

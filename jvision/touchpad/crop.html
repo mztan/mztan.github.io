@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Photo crop · Surface Inputs Arcade</title>
+  <link rel="stylesheet" href="path-tasks.css">
+  <script src="../transport.js"></script>
+  <script src="../photo-crop.js"></script>
+  <script src="photo-scenes.js"></script>
+  <script src="../path-results.js"></script>
+  <script src="crop-task.js" defer></script>
+</head>
+<body oncontextmenu="return false;">
+  <header>
+    <div class="brand">Surface Inputs <span>Arcade</span></div>
+    <h1>Photo crop</h1>
+    <a class="back" href="../index.html">Back to Arcade</a>
+  </header>
+  <section class="crop-brief" id="instructions">
+    <canvas id="reference-canvas" width="160" height="160" role="img" aria-label="Reference crop: the red backpack on the bench, framed with a small margin"></canvas>
+    <div>
+      <p class="prompt"><strong id="crop-prompt"></strong></p>
+      <p class="prompt hint">Match the reference crop. Scroll the gallery with two fingers, click a photo to open it, and <b>Back</b> returns to the gallery. In the editor, drag a crop edge or corner to resize, drag inside the crop to move it, and drag outside the crop to pan. Two-finger scroll pans, pinch (or the − and + buttons) zooms. <b>Apply</b> checks your crop, and <b>Reset</b> starts the crop over. Timing starts when you select Start.</p>
+    </div>
+  </section>
+  <div class="stage"><canvas id="crop-canvas" role="img" aria-label="Photo gallery and crop editor"></canvas></div>
+  <p class="status" id="status" aria-live="polite"></p>
+  <div class="controls">
+    <button id="crop-start" type="button">Start</button>
+    <button id="crop-skip" type="button" class="secondary">Skip task</button>
+    <button id="crop-exit" type="button" class="secondary">Exit</button>
+    <span id="counts">Submissions: 0</span>
+  </div>
+
+  <div id="completion" hidden>
+    <div class="card" role="dialog" aria-modal="true" aria-labelledby="completion-title">
+      <h2 id="completion-title"></h2>
+      <div id="crop-results" class="crop-results"></div>
+      <details class="crop-telemetry">
+        <summary>Telemetry row</summary>
+        <p id="telemetry-status"></p>
+        <pre id="crop-telemetry"></pre>
+      </details>
+      <form id="completion-form">
+        <fieldset>
+          <legend>How easy or difficult was this task?</legend>
+          <div class="scale">
+            <label><input type="radio" name="ease" value="1"><b>1</b>Very difficult</label>
+            <label><input type="radio" name="ease" value="2"><b>2</b>Difficult</label>
+            <label><input type="radio" name="ease" value="3"><b>3</b>Neither easy nor difficult</label>
+            <label><input type="radio" name="ease" value="4"><b>4</b>Easy</label>
+            <label><input type="radio" name="ease" value="5"><b>5</b>Very easy</label>
+          </div>
+        </fieldset>
+        <label for="completion-comment">What worked well, or what could be improved? (optional)</label>
+        <textarea id="completion-comment" maxlength="1024"></textarea>
+        <div class="actions">
+          <button type="submit">Save</button>
+          <button type="button" class="secondary" id="completion-skip">Skip rating</button>
+        </div>
+      </form>
+      <p id="completion-status" aria-live="polite"></p>
+      <div class="actions">
+        <button type="button" class="secondary" id="completion-export">Export saved results</button>
+        <a class="back" href="../index.html">Back to Arcade</a>
+      </div>
+      <p class="note">Results and gesture events stay in this browser. Only the summary row above goes to a native host, and only when one is connected.</p>
+    </div>
+  </div>
+</body>
+</html>

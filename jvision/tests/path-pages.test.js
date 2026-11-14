@@ -8,7 +8,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-function page(canvasId) {
+function page(canvasId, globals = {}) {
     let clock = 1000;
     const timers = [];
     const listeners = target => {
@@ -45,18 +45,20 @@ function page(canvasId) {
     form.submit = () => form.onsubmit({ preventDefault() {} });
     const storage = new Map();
     const doc = listeners({ getElementById: element, hidden: false, body: { appendChild() {} }, createElement: () => ({ click() {}, remove() {} }) });
-    const win = listeners({
+    const win = listeners(Object.assign({
         document: doc, devicePixelRatio: 1,
         performance: { now: () => clock },
         requestAnimationFrame: fn => { fn(); return 0; },
         setTimeout: fn => { timers.push(fn); return timers.length; },
         ResizeObserver: class { observe() {} },
         localStorage: { getItem: k => (storage.has(k) ? storage.get(k) : null), setItem: (k, v) => storage.set(k, String(v)), removeItem: k => storage.delete(k) },
-        Blob: class {}, URL: { createObjectURL: () => 'blob:x', revokeObjectURL() {} }
-    });
+        Blob: class {}, URL: { createObjectURL: () => 'blob:x', revokeObjectURL() {} }, clearTimeout() {}
+    }, globals));
     const context = vm.createContext({ window: win, navigator: { userAgent: 'node' } });
-    const script = { 'menu-canvas': 'menu', 'circle-canvas': 'circle', 'files-canvas': 'files', 'store-canvas': 'storefront' }[canvasId];
-    for (const file of ['path-tasks.js', 'path-results.js', 'touchpad/' + script + '-task.js']) {
+    const files = canvasId === 'crop-canvas' ? ['photo-crop.js', 'touchpad/photo-scenes.js', 'path-results.js', 'touchpad/crop-task.js']
+        : ['path-tasks.js', 'path-results.js', 'touchpad/' + { 'menu-canvas': 'menu', 'circle-canvas': 'circle', 'files-canvas': 'files',
+            'store-canvas': 'storefront' }[canvasId] + '-task.js'];
+    for (const file of files) {
         vm.runInContext(fs.readFileSync(path.join(__dirname, '..', file), 'utf8'), context, { filename: file });
     }
     const canvas = element(canvasId);
@@ -65,16 +67,16 @@ function page(canvasId) {
         canvas.dispatch(Object.assign({ type, pointerType: 'mouse', isPrimary: true, buttons: 0,
             button: type === 'pointermove' ? -1 : 0, clientX: x, clientY: y, timeStamp: clock }, extra));
     };
-    const wheel = deltaY => {
+    const wheel = (deltaY, extra = {}) => {
         clock += 4;
         let prevented = false;
-        canvas.dispatch({ type: 'wheel', deltaY, deltaMode: 0, clientX: 500, clientY: 300, timeStamp: clock,
+        canvas.dispatch({ type: 'wheel', deltaX: 0, deltaY, deltaMode: 0, clientX: 500, clientY: 300, timeStamp: clock, ...extra,
             preventDefault: () => { prevented = true; } });
         return prevented;
     };
     const flush = () => { while (timers.length) timers.shift()(); };
     const saved = () => JSON.parse(storage.get('jvision-path-results-v1') || '[]');
-    return { win, element, radios, form, pointer, wheel, flush, saved, tick: ms => { clock += ms; } };
+    return { win, element, radios, form, pointer, wheel, flush, saved, tick: ms => { clock += ms; }, now: () => clock };
 }
 
 test('circle page: six hovered laps open the rating dialog and save local results', () => {
@@ -435,4 +437,156 @@ test('storefront page: wrong item recovery in the cart, blur closes a dropdown, 
     assert.equal(p.element('counts').textContent, 'Order 1 of 2 · Cart: 2 · Adds: 2');
     assert.equal(p.element('store-button').textContent, 'Next order');
     assert.deepEqual(p.saved(), []);
+});
+
+/* Layout twin of the crop page's PhotoCropTrials (1000×600 canvas) mirroring every input. */
+function cropTwin(p) {
+    const Crop = require('../photo-crop.js');
+    const twin = new Crop.PhotoCropTrials({ runId: 'twin' });
+    twin.geometry(1000, 600, 8);
+    const S = twin.scenario;
+    const api = {
+        twin, S,
+        start() { p.element('crop-start').click(); twin.start(p.now()); },
+        wheel(delta, ctrl = false) { p.wheel(delta, { ctrlKey: ctrl }); twin.wheel(0, delta, ctrl, 500, 300, p.now()); },
+        click(x, y, extra = {}) {
+            p.pointer('pointerdown', x, y, Object.assign({ pointerId: 1 }, extra)); twin.pressAt(x, y, p.now(), extra.pointerType || 'mouse');
+            p.pointer('pointerup', x, y, Object.assign({ pointerId: 1 }, extra)); twin.release(x, y, p.now());
+        },
+        drag(x0, y0, x1, y1, extra = {}) {
+            p.pointer('pointerdown', x0, y0, Object.assign({ pointerId: 1 }, extra)); twin.pressAt(x0, y0, p.now(), extra.pointerType || 'mouse');
+            for (let i = 1; i <= 4; i++) {
+                const x = x0 + (x1 - x0) * i / 4, y = y0 + (y1 - y0) * i / 4;
+                p.pointer('pointermove', x, y, Object.assign({ pointerId: 1 }, extra)); twin.move(x, y, p.now());
+            }
+            p.pointer('pointerup', x1, y1, Object.assign({ pointerId: 1 }, extra)); twin.release(x1, y1, p.now());
+        },
+        open(index) {
+            for (let i = 0; i < 100 && twin.cellRect(index).bottom > twin.listRect.bottom; i++) api.wheel(50);
+            p.tick(400);
+            const c = twin.cellRect(index); api.click(c.centerX, c.centerY);
+        },
+        button(name) { const r = twin.buttonRect(name); api.click(r.centerX, r.centerY); },
+        cropTo(box) {
+            let r = twin.cropScreenRect(), a = twin.toScreen(box.left, box.top);
+            api.drag(r.left + 2, r.top + 2, a.x + 2, a.y + 2);
+            r = twin.cropScreenRect(); const b = twin.toScreen(box.right, box.bottom);
+            api.drag(r.right - 2, r.bottom - 2, b.x - 2, b.y - 2);
+        }
+    };
+    return api;
+}
+
+test('crop page: find, failed Apply, correct, then results, rating and local save; browser mode uploads nothing', () => {
+    const p = page('crop-canvas');
+    const c = cropTwin(p);
+    assert.match(p.element('crop-prompt').textContent, /red backpack on the bench/);
+    assert.equal(p.element('crop-skip').disabled, true);
+    c.start();
+    assert.equal(p.element('crop-start').disabled, true);
+    assert.match(p.element('status').textContent, /Find the red backpack/);
+    c.open(c.S.photo);
+    assert.match(p.element('status').textContent, /Drag the crop edges/);
+    c.cropTo({ left: 600, top: 300, right: 1150, bottom: 820 });
+    c.button('apply');
+    assert.match(p.element('status').textContent, /Close, but not yet|edge/);
+    assert.equal(p.element('counts').textContent, 'Submissions: 1 · Zoom: 100%');
+    c.wheel(-30, true);
+    assert.match(p.element('counts').textContent, /Zoom: 1[0-9]{2}%/);
+    p.tick(400);
+    c.button('zoomOut'); c.button('zoomOut');
+    c.cropTo(c.S.target);
+    c.button('apply');
+    assert.equal(c.twin.outcome, 'completed');
+    assert.match(p.element('status').textContent, /✓ Crop matches/);
+    assert.equal(p.element('completion').hidden, true);
+    p.flush();
+    assert.equal(p.element('completion').hidden, false);
+    assert.equal(p.element('completion-title').textContent, 'Photo crop complete');
+    const results = p.element('crop-results').textContent;
+    assert.match(results, /Outcome: completed/);
+    assert.match(results, /#1 at .*not accepted/);
+    assert.match(results, /#2 at .*success · IoU/);
+    assert.match(results, /Missing data: none/);
+    assert.match(p.element('telemetry-status').textContent, /Browser mode: no native host/);
+    const row = JSON.parse(p.element('crop-telemetry').textContent);
+    assert.equal(row.activity_id, 'stp_photo_crop');
+    assert.equal(row.details.qa_subs_n, 2);
+    p.radios[2].checked = true;
+    p.form.submit();
+    const [saved] = p.saved();
+    assert.equal(saved.task, 'stp_photo_crop');
+    assert.equal(saved.ease, 3);
+    assert.equal(saved.targets[0].status, 'completed');
+    assert.equal(saved.telemetry.status, 'completed');
+    assert.equal(saved.telemetry.submissions.length, 2);
+    assert.equal(saved.telemetry.events.at(-1).type, 'task_completed');
+    assert.deepEqual(saved.telemetry.intent_observation, row);
+});
+
+test('crop page: a connected native host receives exactly one validated row; Skip keeps abandoned runs local', () => {
+    const { validate } = require('../transport.js');
+    const sent = [];
+    const transport = { isNative: () => true, enqueue: message => { validate(Object.assign({ id: 'x' }, message)); sent.push(message); return 'x'; } };
+    let p = page('crop-canvas', { SurfaceInputsTransport: transport });
+    let c = cropTwin(p);
+    c.start();
+    c.open(c.S.photo);
+    c.cropTo(c.S.target);
+    c.button('apply');
+    p.flush();
+    assert.equal(sent.length, 1);
+    assert.equal(sent[0].metric_family, 'drag');
+    assert.match(p.element('telemetry-status').textContent, /Queued on the native transport/);
+
+    sent.length = 0;
+    p = page('crop-canvas', { SurfaceInputsTransport: transport });
+    c = cropTwin(p);
+    c.start();
+    c.open(3);
+    // Touch drag on the crop, then a canceled pointer, then Skip.
+    const r = c.twin.cropScreenRect();
+    c.drag(r.left + 2, r.top + 2, r.left + 80, r.top + 60, { pointerType: 'touch' });
+    p.pointer('pointerdown', r.centerX, r.centerY, { pointerId: 1 });
+    p.pointer('pointermove', r.centerX + 40, r.centerY, { pointerId: 1 });
+    p.element('crop-canvas').dispatch({ type: 'pointercancel', pointerId: 1 });
+    p.element('crop-skip').click();
+    p.flush();
+    assert.equal(sent.length, 0);
+    assert.equal(p.element('completion-title').textContent, 'Photo crop ended');
+    assert.match(p.element('telemetry-status').textContent, /only completed runs produce a telemetry row/);
+    assert.match(p.element('crop-results').textContent, /ended \(skipped\)/);
+    assert.match(p.element('crop-results').textContent, /hold_travel_px \(non_cursor_pointer\)/);
+    p.element('completion-skip').click();
+    const [saved] = p.saved();
+    assert.equal(saved.ease, null);
+    assert.equal(saved.targets[0].status, 'abandoned');
+    assert.equal(saved.telemetry.summary.cancelled_adjustments.move, 1);
+    assert.equal(saved.telemetry.events.at(-1).type, 'task_skipped');
+});
+
+test('crop page: Exit before Start records an unstarted run; blur cancels an active drag', () => {
+    let p = page('crop-canvas');
+    p.element('crop-exit').click();
+    p.flush();
+    assert.equal(p.element('completion-title').textContent, 'Photo crop not started');
+    p.element('completion-skip').click();
+    assert.equal(p.saved()[0].telemetry.status, 'unstarted');
+    assert.deepEqual(p.saved()[0].targets[0].metrics, { measurement_started: 0 });
+
+    p = page('crop-canvas');
+    const c = cropTwin(p);
+    c.start();
+    c.open(c.S.photo);
+    const r = c.twin.cropScreenRect();
+    p.pointer('pointerdown', r.right - 2, r.centerY, { pointerId: 1 });
+    p.pointer('pointermove', r.right - 60, r.centerY, { pointerId: 1 });
+    p.win.dispatch({ type: 'blur' });
+    p.element('crop-exit').click();
+    p.flush();
+    p.element('completion-skip').click();
+    const t = p.saved()[0].telemetry;
+    assert.equal(t.summary.cancelled_adjustments.resize_e, 1);
+    assert.equal(t.events.find(e => e.type === 'adjustment_cancelled').reason, 'focus_lost');
+    assert.equal(t.end_reason, 'exited');
 });
