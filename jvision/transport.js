@@ -9,6 +9,8 @@
     const ACTIVITIES = new Set(['keyboard_natural_language', 'keyboard_punctuation', 'keyboard_email',
         'keyboard_password', 'keyboard_shortcuts', 'keyboard_arrows', 'touchpad_targeting',
         'touchpad_scrolling', 'touchpad_selection', 'touchpad_zoom', 'session']);
+    // Path-task touchpad observations named by their dashboard task id (details carry `qa_path_v`/`qa_path`).
+    const PATH_ACTIVITIES = new Set(['stp_photo_crop']);
     const METRICS = {
         cursor_movement: {
             stp_cursor_movement_target_radius_px: 'number', stp_cursor_movement_start_distance_px: 'number',
@@ -52,7 +54,7 @@
         requireValue(object(payload), 'Payload must be an object');
         requireValue(payload.version === 1, 'Unsupported version');
         identifier(payload.id, 'id');
-        requireValue(ACTIVITIES.has(payload.activity_id), 'Unknown activity_id');
+        requireValue(ACTIVITIES.has(payload.activity_id) || PATH_ACTIVITIES.has(payload.activity_id), 'Unknown activity_id');
         const common = ['version', 'type', 'id', 'activity_id'];
         if (payload.type === 'feedback') {
             exactKeys(payload, common.concat(['scope', 'round_id', 'ratings', 'comment', 'pain_points']));
@@ -88,7 +90,7 @@
                 if (payload.details.final_text !== undefined) text(payload.details.final_text, 512, 'final_text');
             } else {
                 requireValue(payload.type === 'touchpad' && object(METRICS[payload.metric_family]), 'Unknown type or metric_family');
-                requireValue(payload.activity_id.startsWith('touchpad_'), 'Touchpad activity required');
+                requireValue(payload.activity_id.startsWith('touchpad_') || PATH_ACTIVITIES.has(payload.activity_id), 'Touchpad activity required');
                 const schema = METRICS[payload.metric_family];
                 exactKeys(payload, common.concat(['elapsed_ms', 'metric_family', 'details'], Object.keys(schema)));
                 Object.entries(schema).forEach(([key, kind]) => {
@@ -214,5 +216,5 @@
             validate, utf8Bytes: bytes
         };
     }
-    return { createTransport, validate, utf8Bytes: bytes, metrics: METRICS };
+    return { createTransport, validate, utf8Bytes: bytes, metrics: METRICS, pathActivities: PATH_ACTIVITIES };
 });
