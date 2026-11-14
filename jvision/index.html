@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Start the Surface Inputs targeting, scrolling, typing, menu, circle, file drag, storefront, or photo crop test.">
+  <meta name="description" content="Start the Surface Inputs targeting, scrolling, typing, menu, circle, file drag, storefront, photo crop, or map landmark test.">
   <title>Surface Inputs Arcade</title>
   <script src="../environment.js" defer></script>
   <script src="transport.js"></script>
@@ -166,6 +166,14 @@
             <path d="M16 30L23 21L28 26L31 23L34 30Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
           </svg>
           <span class="name" id="crop-title">Photo crop</span>
+        </a>
+        <a class="test-link" href="touchpad/map.html" aria-labelledby="map-title">
+          <svg class="test-icon" viewBox="0 0 48 48" fill="none" aria-hidden="true" focusable="false">
+            <path d="M4 10L16 6L32 12L44 8V38L32 42L16 36L4 40Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+            <path d="M16 6V36M32 12V42" stroke="currentColor" stroke-width="2"/>
+            <circle cx="24" cy="22" r="4" stroke="currentColor" stroke-width="2"/>
+          </svg>
+          <span class="name" id="map-title">Map landmark</span>
         </a>
       </nav>
     </section>

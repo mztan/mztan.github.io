@@ -18,7 +18,7 @@ The keyboard and touchpad pages keep their original browser identity controls, G
 
 All observations use `version: 1`, a stable ASCII `id` of at most 64 bytes, and an explicit prescribed `activity_id`. Transport IDs are not atom session IDs.
 
-Activity values: `keyboard_natural_language`, `keyboard_punctuation`, `keyboard_email`, `keyboard_password`, `keyboard_shortcuts`, `keyboard_arrows`, `touchpad_targeting`, `touchpad_scrolling`, `touchpad_selection`, `touchpad_zoom`. Session feedback uses `session`. Path-task touchpad observations may instead use their dashboard task ID; the only one is `stp_photo_crop` (drag family, `details` with `qa_path_v`/`qa_path`; see [PHOTO_CROP.md](PHOTO_CROP.md)). The native receiver must accept that ID before these rows can land.
+Activity values: `keyboard_natural_language`, `keyboard_punctuation`, `keyboard_email`, `keyboard_password`, `keyboard_shortcuts`, `keyboard_arrows`, `touchpad_targeting`, `touchpad_scrolling`, `touchpad_selection`, `touchpad_zoom`. Session feedback uses `session`. Path-task touchpad observations may instead use their dashboard task ID; currently `stp_photo_crop` (drag family; [PHOTO_CROP.md](PHOTO_CROP.md)) and `stp_map_landmark` (clicks family; [MAP_LANDMARK.md](MAP_LANDMARK.md)), both with `qa_path_v`/`qa_path` in `details`. The native receiver must accept that ID before these rows can land.
 
 ### Keyboard observations
 
