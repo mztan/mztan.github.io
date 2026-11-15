@@ -8,7 +8,7 @@
 - Development URL: https://mztan.github.io/surface-inputs-dev/
 - Branch: `main`; GitHub Pages publishes the committed repository content.
 
-These are separate static paths in one repository. They do not provide separate collectors, credentials, or backends. Development retains production's Google Forms and native-message telemetry behavior: **there is no dev upload blocking**. Do not use real participant data for a casual UI test unless that collection is intended.
+These are separate static paths in one repository. They do not provide separate credentials or backends. Development keeps the existing Forms and native-message collection flow: **there is no dev upload blocking**. The active dev Typing, Targeting and Scrolling URLs were switched to new forms without changing `entry.*` names or accessing Google Forms; mapping and respondent access are unverified. Browser feedback is still local/export-only. Production and jvision collector URLs are unchanged. Do not use real participant data for a casual UI test unless that collection is intended.
 
 ## Development changes
 

@@ -64,7 +64,12 @@ def main():
                    + re.escape(argument) + r'\);\n[ \t]*// END POST-TASK FEEDBACK HOOK\n')
         original, removed = re.subn(pattern, '', source, flags=re.MULTILINE)
         assert removed == count, (name, 'Unexpected feedback completion hooks')
-        assert original == (PROD / name).read_text(), (name, 'Task engine changed outside completion hooks')
+        if name == 'keyboard/script.js':
+            new_url = 'https://docs.google.com/forms/d/e/1FAIpQLSfEcRfQeisYOj7K3Z1rWrbPji4rV4_9EqDlMEL4SyJi45FtRA/formResponse'
+            old_url = 'https://docs.google.com/forms/d/e/1FAIpQLSdAuVaWh53BvFkNTSHVki0QqIlw7CQn-xTptVpmRtHrk2ULEA/formResponse'
+            assert original.count(new_url) == 1, 'Unexpected typing URL-only override'
+            original = original.replace(new_url, old_url)
+        assert original == (PROD / name).read_text(), (name, 'Task engine changed outside completion hooks and the typing URL override')
     assert not (DEV / 'dev-bootstrap.js').exists()
     assert not (ROOT / 'development-tools').exists()
     assert (DEV / 'touchpad/arcade-targeting.css').is_file()

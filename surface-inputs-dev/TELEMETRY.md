@@ -2,7 +2,7 @@
 
 ## Browser behavior
 
-The keyboard and touchpad pages keep their original browser identity controls, Google Forms, test logic, geometry, timings and public corpora. URL parameters do not select native mode. The launcher also loads the handshake transport so its links are usable after the APK's input gate is released; standalone browser links remain unchanged.
+The keyboard and touchpad pages keep their browser identity controls, test logic, geometry, timings and public corpora. The active dev Typing (UXR/UXR2/dogfooding), Targeting and Scrolling pages now point to the new task-specific Google Forms. This is a URL-only replacement: existing `entry.*` field names remain unchanged, field mappings and form access are unverified, and no Forms requests were made to validate it. Browser feedback remains local/export-only; the dormant collector is not enabled. Other legacy task/variant form URLs are unchanged. URL parameters do not select native mode. The launcher also loads the handshake transport so its links are usable after the APK's input gate is released; standalone browser links remain unchanged.
 
 ## Native capability handshake
 
