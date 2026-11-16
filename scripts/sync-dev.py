@@ -31,10 +31,11 @@ def main():
     regression = DEV / 'tests' / 'regression.test.js'
     if regression.is_file():
         source = regression.read_text()
-        source = source.replace(
-            "const scripts = [...html.matchAll(/<script[^>]*\\bsrc=\"([^\"]+)\"/g)].map(value => value[1]);",
-            "const scripts = [...html.matchAll(/<script[^>]*\\bsrc=\"([^\"]+)\"/g)].map(value => value[1]).filter(value => value !== '../environment.js');",
-        )
+        if 'const transportScripts' not in source:
+            source = source.replace(
+                "const scripts = [...html.matchAll(/<script[^>]*\\bsrc=\"([^\"]+)\"/g)].map(value => value[1]);",
+                "const scripts = [...html.matchAll(/<script[^>]*\\bsrc=\"([^\"]+)\"/g)].map(value => value[1]).filter(value => value !== '../environment.js');",
+            )
         regression.write_text(source)
     print('Copied production into dev and linked the URL-derived environment script.')
     print('Telemetry and Google Forms uploads are unchanged; development runs can write to existing collectors.')

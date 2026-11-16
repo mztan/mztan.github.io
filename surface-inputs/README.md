@@ -16,6 +16,12 @@ The alternate upstream [UXR touchpad variants](touchpad/uxr/index.html) and keyb
 
 For local use, run a static HTTP server at the repository root, for example `python3 -m http.server 8000`, and open `/surface-inputs/keyboard/` or a touchpad page. Use HTTP rather than opening HTML files directly, since the keyboard loads prompt files with `fetch`.
 
+## Promoted activity UI
+
+Production includes the dev snapshot's Arcade themes for Targeting, Scrolling and Typing, the full-viewport targeting layout fix, and the simplified post-task **Feedback** dialog with a five-point ease rating, optional freeform text and **Upload** action. The fixed targeting SVG remains 620×400 with unchanged target sizes and hit rules. Shared runtime files match the approved dev snapshot; no task timing or metric formulas were changed during promotion.
+
+The home page derives environment identity from its URL. The **DEV** pill is absent at `/surface-inputs/`. The original source notices and provenance below remain in place. Browser feedback is local/export-only; native sink acceptance is not a downstream upload receipt.
+
 ## Upstream provenance
 
 - Keyboard: [fbotros/si_eval_app](https://github.com/fbotros/si_eval_app), commit `082f9d740ba2e65a6a2714c4b40065082c28e58e`.
@@ -28,7 +34,7 @@ The upstream jQuery UI 1.8.6 stylesheet referenced theme images that were absent
 
 ## Collection boundary
 
-Browser Google Forms endpoints and identity controls remain unchanged. The keyboard main page and root/UXR touchpad targeting, scrolling, selection and zoom pages now support the private native MessagePort handshake and typed intent observations. Native attribution and collection are host-owned; there is no new web backend or feedback UI. `exec_demo` and the UXR Fitts latency variant remain browser-only.
+Active Typing, Targeting and Scrolling use the promoted URL-only Google Forms destinations. Browser identity and all `entry.*` fields remain unchanged, so field mapping and respondent access are unverified. No Google Forms access or submission was used to validate this promotion. The keyboard main page and root/UXR touchpad targeting, scrolling, selection and zoom pages support the private native MessagePort handshake and typed intent observations. The main three activities also show post-task feedback; native responses use the existing sink, while browser feedback remains local/export-only with no configured feedback collector. `exec_demo` and the UXR Fitts latency variant remain browser-only.
 
 See [the telemetry contract](TELEMETRY.md) for handshake, bounds, ACK/retry behavior, populated metrics and unavailable measurements. Run the offline transport/producer checks with `node --test surface-inputs/tests/*.test.js` from the repository root. These checks use fake sinks and never submit Forms. Generate receiver fixtures with `node surface-inputs/tests/generate-fixtures.js`.
 

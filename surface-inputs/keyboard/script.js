@@ -735,6 +735,9 @@ document.addEventListener('DOMContentLoaded', async function () {
         startButton.textContent = 'Start New Test';
 
         flushDetailedLogs(); // download the per-prompt JSON (no-op if logging off)
+        // BEGIN POST-TASK FEEDBACK HOOK
+        if (window.SurfaceInputsFeedback) window.SurfaceInputsFeedback.complete(nativeActivity());
+        // END POST-TASK FEEDBACK HOOK
     }
 
     function releaseKeychordLock() {
@@ -1314,7 +1317,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
             // Route submissions to the UXR2 form.
             document.getElementById('resultForm').action =
-                'https://docs.google.com/forms/d/e/1FAIpQLSdAuVaWh53BvFkNTSHVki0QqIlw7CQn-xTptVpmRtHrk2ULEA/formResponse';
+                'https://docs.google.com/forms/d/e/1FAIpQLSfEcRfQeisYOj7K3Z1rWrbPji4rV4_9EqDlMEL4SyJi45FtRA/formResponse';
 
             // Show User ID field when UXR mode is enabled
             document.getElementById('user-id-group').style.display = 'block';
@@ -1867,6 +1870,9 @@ document.addEventListener('DOMContentLoaded', async function () {
         if (!uxrModeEnabled && !dfModeEnabled) {
             results.style.display = 'block';
         }
+        // BEGIN POST-TASK FEEDBACK HOOK
+        if (window.SurfaceInputsFeedback) window.SurfaceInputsFeedback.complete(nativeActivity());
+        // END POST-TASK FEEDBACK HOOK
     }
 
     function resetTest() {

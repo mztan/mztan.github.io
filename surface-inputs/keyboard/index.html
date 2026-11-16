@@ -4,9 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-    <title>Typing Test App</title>
+    <title>Typing · Surface Inputs Arcade</title>
     <link rel="icon" href="favicon-32x32.png" type="image/png">
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="arcade-typing.css">
+    <link rel="stylesheet" href="../post-task-feedback.css?v=feedback-ui-2">
 </head>
 
 <body>
@@ -14,7 +16,8 @@
         <div class="container">
             <button id="kc-exit-btn" class="kc-exit-btn" style="display: none;" title="Exit full screen"
                 aria-label="Exit full screen">&#10005;</button>
-            <h1>Typing Test App</h1>
+            <div class="arcade-brand">Surface Inputs <span>Arcade</span></div>
+            <h1>Typing</h1>
             <p class="instructions">Type the text shown below. Press Enter when you finish a prompt to move to the next
                 one.</p>
 
@@ -188,6 +191,7 @@
 
     <script src="../transport.js"></script>
     <script src="../transport-ui.js"></script>
+    <script src="../post-task-feedback.js?v=feedback-ui-2"></script>
     <script src="../keyboard-capture.js"></script>
     <script src="keyboard-layout.js"></script>
     <script src="script.js"></script>
@@ -195,7 +199,7 @@
     </div>
 
     <form
-        action="https://docs.google.com/forms/d/e/1FAIpQLSekMCXFKdGD_GiwkBFWeEKCnRsLW2c_8LL8Vz_LonQgOViMgA/formResponse"
+        action="https://docs.google.com/forms/d/e/1FAIpQLSfEcRfQeisYOj7K3Z1rWrbPji4rV4_9EqDlMEL4SyJi45FtRA/formResponse"
         target="_self" id="resultForm" method="POST" style="display:none;">
 
         <input id="result_user_id" type="text" name="entry.1101754675" class="form-control">
@@ -225,7 +229,7 @@
     </form>
 
     <form
-        action="https://docs.google.com/forms/d/e/1FAIpQLSef7jmYGEEUAtiZ6s1_w5B8lDd5b9bfdmwf6AzUDmABB5ZZrg/formResponse"
+        action="https://docs.google.com/forms/d/e/1FAIpQLSfEcRfQeisYOj7K3Z1rWrbPji4rV4_9EqDlMEL4SyJi45FtRA/formResponse"
         target="_self" id="dfResultForm" method="POST" style="display:none;">
 
         <input id="df_result_user_id" type="text" name="entry.1101754675" class="form-control">

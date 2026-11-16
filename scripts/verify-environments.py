@@ -3,6 +3,7 @@
 
 from html.parser import HTMLParser
 from pathlib import Path
+import argparse
 import re
 import subprocess
 from urllib.parse import urlsplit, unquote
@@ -34,8 +35,22 @@ class Assets(HTMLParser):
 
 
 def main():
-    subprocess.run(['git', 'diff', '--exit-code', '--', 'surface-inputs/'], cwd=ROOT, check=True)
-    subprocess.run(['git', 'diff', '--cached', '--exit-code', '--', 'surface-inputs/'], cwd=ROOT, check=True)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--allow-production-changes', action='store_true',
+                        help='Use only for an owner-authorized promotion; requires runtime parity.')
+    args = parser.parse_args()
+    if not args.allow_production_changes:
+        subprocess.run(['git', 'diff', '--exit-code', '--', 'surface-inputs/'], cwd=ROOT, check=True)
+        subprocess.run(['git', 'diff', '--cached', '--exit-code', '--', 'surface-inputs/'], cwd=ROOT, check=True)
+    else:
+        paths = subprocess.check_output(['git', 'ls-files', 'surface-inputs-dev'], cwd=ROOT, text=True).splitlines()
+        for path in paths:
+            relative = Path(path).relative_to('surface-inputs-dev')
+            if relative.suffix == '.md' or relative.name == 'UPSTREAM.json' or relative.parts[0] == 'tests':
+                continue
+            assert (DEV / relative).read_bytes() == (PROD / relative).read_bytes(), (str(relative), 'Promotion runtime mismatch')
+    subprocess.run(['git', 'diff', '--exit-code', '--', 'jvision/'], cwd=ROOT, check=True)
+    subprocess.run(['git', 'diff', '--cached', '--exit-code', '--', 'jvision/'], cwd=ROOT, check=True)
     home = (DEV / 'index.html').read_text()
     assert 'src="../environment.js" defer' in home
     assert 'id="development-label"' not in home
@@ -64,12 +79,16 @@ def main():
                    + re.escape(argument) + r'\);\n[ \t]*// END POST-TASK FEEDBACK HOOK\n')
         original, removed = re.subn(pattern, '', source, flags=re.MULTILINE)
         assert removed == count, (name, 'Unexpected feedback completion hooks')
+        baseline, baseline_removed = re.subn(pattern, '', (PROD / name).read_text(), flags=re.MULTILINE)
+        assert baseline_removed in (0, count), (name, 'Unexpected production feedback hooks')
         if name == 'keyboard/script.js':
             new_url = 'https://docs.google.com/forms/d/e/1FAIpQLSfEcRfQeisYOj7K3Z1rWrbPji4rV4_9EqDlMEL4SyJi45FtRA/formResponse'
             old_url = 'https://docs.google.com/forms/d/e/1FAIpQLSdAuVaWh53BvFkNTSHVki0QqIlw7CQn-xTptVpmRtHrk2ULEA/formResponse'
             assert original.count(new_url) == 1, 'Unexpected typing URL-only override'
+            assert baseline.count(new_url) in (0, 1), 'Unexpected production typing override'
             original = original.replace(new_url, old_url)
-        assert original == (PROD / name).read_text(), (name, 'Task engine changed outside completion hooks and the typing URL override')
+            baseline = baseline.replace(new_url, old_url)
+        assert original == baseline, (name, 'Task engine changed outside completion hooks and the typing URL override')
     assert not (DEV / 'dev-bootstrap.js').exists()
     assert not (ROOT / 'development-tools').exists()
     assert (DEV / 'touchpad/arcade-targeting.css').is_file()
@@ -79,7 +98,10 @@ def main():
     result = subprocess.run(['python3', 'scripts/sync-dev.py'], cwd=ROOT, capture_output=True, text=True)
     assert result.returncode != 0 and 'Dev already exists' in result.stderr
     print('10 dev entry points retain environment-local assets; collection code and task engines unchanged except explicit post-task feedback hooks.')
-    print('Development labeling and non-overwrite sync behavior verified. Production diff is empty.')
+    if args.allow_production_changes:
+        print('Owner-authorized promotion: production/runtime parity verified; jvision unchanged.')
+    else:
+        print('Development labeling and non-overwrite sync behavior verified. Production diff is empty.')
     print('No task was run and no telemetry or Google Form request was sent by this check.')
 
 

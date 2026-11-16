@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
 	<meta http-equiv="Content-Type" content="text/html;charset=utf-8">
-	<title>Fitts's Test</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Targeting · Surface Inputs Arcade</title>
 	<script src="../transport.js"></script>
 	<script src="../transport-ui.js"></script>
 	<script src="../metrics.js"></script>
@@ -14,16 +15,32 @@
 
 	<link type="text/css" rel="stylesheet" href="reset.css" />
 	<link type="text/css" rel="stylesheet" href="style.css" />
+	<link type="text/css" rel="stylesheet" href="arcade-targeting.css?v=viewport-fit-1" />
+	<link rel="stylesheet" href="../post-task-feedback.css?v=feedback-ui-2" />
+	<script src="../post-task-feedback.js?v=feedback-ui-2"></script>
 </head>
 
-<body>
+<body class="arcade-targeting-page">
 	<div class="start-screen" id="start-screen">
-		<div class="start-controls">
-			<input type="text" id="button-pad-id" placeholder="User ID">
-			<button id="start-button">Start</button>
-			<button id="practice-button">Practice</button>
+		<div class="start-controls arcade-setup">
+			<header>
+				<div class="arcade-brand">Surface Inputs <span>Arcade</span></div>
+				<svg class="arcade-task-icon" viewBox="0 0 48 48" fill="none" aria-hidden="true" focusable="false">
+					<circle cx="17" cy="17" r="9" stroke="currentColor" stroke-width="2" />
+					<path d="M26 24L28 42L33 35L42 33L26 24Z" fill="currentColor" />
+				</svg>
+				<h1>Targeting</h1>
+			</header>
+			<div id="user-id-group">
+				<label for="button-pad-id">User ID</label>
+				<input type="text" id="button-pad-id" placeholder="User ID">
+			</div>
+			<div class="arcade-actions">
+				<button id="start-button">Start</button>
+				<button id="practice-button">Practice</button>
+			</div>
 		</div>
-		<div class="start-controls">
+		<div class="start-controls arcade-history">
 			<p id="start-text" style="font-size: 1.5rem"></p>
 		</div>
 	</div>
@@ -45,7 +62,7 @@
 	</div> <!-- container12 end -->
 
 	<form
-		action="https://docs.google.com/forms/d/e/1FAIpQLSd1KR5eL76wkKFE2TFI_HTJoXbKt-4EKcsOR9bGKDGc7D_aMA/formResponse"
+		action="https://docs.google.com/forms/d/e/1FAIpQLSdkh1qgAluUKd7j-Gga5gArOaZ6lT-V1OA9XSASmXI0I7ZV3w/formResponse"
 		target="_self" id="bootstrapForm" method="POST" style="display:none;">
 
 		<input id="device_os" type="text" name="entry.1366025332" class="form-control">

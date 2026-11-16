@@ -2,7 +2,7 @@
 
 ## Browser behavior
 
-The keyboard and touchpad pages keep their original browser identity controls, Google Forms, test logic, geometry, timings and public corpora. URL parameters do not select native mode. The launcher also loads the handshake transport so its links are usable after the APK's input gate is released; standalone browser links remain unchanged.
+The keyboard and touchpad pages keep their browser identity controls, test logic, geometry, timings and public corpora. The active production and dev Typing (UXR/UXR2/dogfooding), Targeting and Scrolling pages now point to the new task-specific Google Forms. This is a URL-only replacement: existing `entry.*` field names remain unchanged, field mappings and form access are unverified, and no Forms requests were made to validate it. Browser feedback remains local/export-only; the dormant collector is not enabled. Other legacy task/variant form URLs are unchanged. URL parameters do not select native mode. The launcher also loads the handshake transport so its links are usable after the APK's input gate is released; standalone browser links remain unchanged.
 
 ## Native capability handshake
 
@@ -48,7 +48,7 @@ Selection emits the actual prescribed target text and exact-selection completion
 
 ### Feedback API
 
-`window.SurfaceInputsTransport.submitFeedback(payload)` supports future UI without adding any UI now:
+`window.SurfaceInputsTransport.submitFeedback(payload)` is used by the post-task UI:
 
 - `activity_id`: prescribed task activity, or `session` for session feedback.
 - `scope`: `task` or `session`; task feedback requires `round_id` (at most 64 ASCII bytes).
@@ -57,7 +57,19 @@ Selection emits the actual prescribed target text and exact-selection completion
 - Optional `pain_points`: at most eight nonempty strings, each at most 64 UTF-8 bytes.
 - The complete serialized feedback message is at most 2048 UTF-8 bytes.
 
-Native feedback uses the private port. Browser feedback requires `setBrowserFeedbackCallback(callback)` wired explicitly to an existing form. Without that callback the API throws; it does not invent an endpoint or fall back to native.
+Native feedback uses the private port. The post-task widget checks both the message and the receiver's final details object against 2048 UTF-8 encoded bytes; escape-heavy comments are rejected visibly, never truncated. Browser feedback through the transport API still requires an explicitly configured callback. There is no configured browser collector in this deployment, so the widget saves browser feedback locally and offers JSON export without calling a guessed form.
+
+### Post-task feedback UI
+
+The root development Targeting and Scrolling pages and keyboard main page load a shared feedback dialog. It opens after nine targeting hits, six scrolling targets, or the full selected typing/shortcut/arrow block. Practice completions also get feedback. Task calculations and timing finish before opening it; individual targets or prompts do not open it.
+
+The dialog is titled **Feedback** and its primary button is **Upload**. The ease question and five scale anchors remain unchanged; freeform text may be blank without an optional label. Branding, task-complete titles, number underlines, placeholder text, the byte counter, export/clear buttons and the Skip button are removed. Escape remains an accessibility exit without manufacturing a rating. Native sink acceptance closes the dialog; browser-local persistence does not, and its status explicitly says that no upload occurred.
+
+The widget assigns an ASCII feedback-block identifier. It identifies that local completed-task feedback context; it is not an objective observation attempt ID and does not prove a join to individual intent events. Keyboard observations remain independent and carry no added attempt/order metadata.
+
+    Each response is persisted before native enqueue under `surface-inputs-dev-feedback-v1`. Up to 50 responses are retained on the same browser/origin, with no silent eviction. Upload reports local-only, pending-native, rejected, or native-sink-accepted honestly. Retries reuse the exact ID and payload. ACK status is retained even after closing the dialog. Reloaded native pending/rejected responses can be retried with **Retry saved native feedback** in the next completed task's dialog, after native readiness. Export/clear UI controls are absent; developer-only `getSavedFeedback()`, `exportSavedFeedback()` and `clearExportedFeedback()` APIs on `window.SurfaceInputsFeedback` provide explicit retention management. Clearing requires confirmation after export and removes only that snapshot's IDs. Local storage failure keeps the entered response visible and reports that it was not saved.
+
+Existing objective Google Forms submissions, collection destinations, native handshake and task code are unchanged except guarded post-completion hooks. Development does not block those writes.
 
 ## Delivery and failures
 

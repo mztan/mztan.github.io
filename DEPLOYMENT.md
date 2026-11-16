@@ -8,7 +8,7 @@
 - Development URL: https://mztan.github.io/surface-inputs-dev/
 - Branch: `main`; GitHub Pages publishes the committed repository content.
 
-These are separate static paths in one repository. They do not provide separate credentials or backends. Development keeps the existing Forms and native-message collection flow: **there is no dev upload blocking**. The active dev Typing, Targeting and Scrolling URLs were switched to new forms without changing `entry.*` names or accessing Google Forms; mapping and respondent access are unverified. Browser feedback is still local/export-only. Production and jvision collector URLs are unchanged. Do not use real participant data for a casual UI test unless that collection is intended.
+These are separate static paths in one repository. They do not provide separate credentials or backends. Production was promoted from the approved dev snapshot `aade4d5` on 2026-11-16, including the activity themes, targeting clipping fix, simplified feedback UI and URL-only form changes. Production and dev now use the same active Typing, Targeting and Scrolling form URLs, with existing `entry.*` names unchanged; field mapping and respondent access are unverified. Browser feedback is local/export-only, and native feedback acknowledgement is sink handoff rather than server receipt. There is no upload-blocking guard. `jvision/` remains a separate, unchanged preview. Do not use real participant data for a casual UI test unless that collection is intended.
 
 ## Development changes
 
@@ -29,7 +29,7 @@ For a deliberate reset, first commit or preserve dev-only work, review what will
 
 ## Promote to production
 
-**Promote only after the owner explicitly approves production promotion.** Review selected dev changes and manually copy the approved task/theme files into `surface-inputs/`, updating any environment-relative references. Do not copy dev-only documentation into production. A promoted launcher can retain `environment.js`: its URL-based badge will remain hidden at the production path. Run production tests, review the final production diff, commit and publish the approved files. Do not blindly replace the whole production folder.
+**Promote only after the owner explicitly approves production promotion.** Review selected dev changes and manually copy the approved task/theme files into `surface-inputs/`, updating any environment-relative references. Do not copy dev-only documentation into production. A promoted launcher can retain `environment.js`: its URL-based badge will remain hidden at the production path. For an explicitly authorized full runtime promotion, run `python3 scripts/verify-environments.py --allow-production-changes`; this verifies runtime parity and leaves `jvision/` protected. Run both production and dev Node test suites, review the final production diff, commit and publish the approved files. Do not blindly replace the whole production folder.
 
 Use a normal Git revert to roll back a published change. Do not force-push shared history. A repository commit records exactly what changed in each deployment.
 

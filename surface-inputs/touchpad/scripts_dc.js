@@ -320,6 +320,9 @@ function highlightRandomPhraseScroll() {
             EventLogger.clearLog();
         }
         trialNum += 1;
+        // BEGIN POST-TASK FEEDBACK HOOK
+        if (window.SurfaceInputsFeedback) window.SurfaceInputsFeedback.complete('touchpad_scrolling');
+        // END POST-TASK FEEDBACK HOOK
     } else {
         SurfaceInputsTouchpad.beginScroll(isPractice);
         EventLogger.setIsInTarget(false);

@@ -44,16 +44,18 @@ test('all supported entry pages load shared transport before producers with vali
         assert.ok(transportIndex >= 0, file);
         const producerIndex = scripts.findIndex(value => /^(?:script|scripts_dc|fitts-law)\.js$/.test(value));
         assert.ok(producerIndex > transportIndex, file);
-        for (const script of scripts) assert.equal(fs.existsSync(path.join(root, path.dirname(file), script)), true, file + ':' + script);
+        for (const script of scripts) assert.equal(fs.existsSync(path.join(root, path.dirname(file), script.split(/[?#]/)[0])), true, file + ':' + script);
     }
 });
 
 test('launcher negotiates the APK ready handshake without changing browser links', () => {
     const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
     const scripts = [...html.matchAll(/<script[^>]*\bsrc="([^"]+)"/g)].map(value => value[1]);
-    assert.deepEqual(scripts, ['transport.js', 'transport-ui.js']);
+    assert.ok(scripts.includes('../environment.js'));
+    const transportScripts = scripts.filter(script => script !== '../environment.js');
+    assert.deepEqual(transportScripts, ['transport.js', 'transport-ui.js']);
     const e = environment();
-    scripts.forEach(script => e.load(script));
+    transportScripts.forEach(script => e.load(script));
     assert.equal(e.win.SurfaceInputsTransport.getMode(), 'browser');
     e.handshake();
     assert.deepEqual(e.port.sent[0], { version: 1, type: 'ready' });

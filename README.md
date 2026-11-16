@@ -8,7 +8,7 @@ The keyboard and touchpad tests are versioned in this Git repository and publish
 - **Development:** [surface-inputs-dev/](https://mztan.github.io/surface-inputs-dev/)
 - **jvision preview:** [jvision/](https://mztan.github.io/jvision/) — a copy of dev with the Menus, Circles, Files, Storefront, Photo crop and Map landmark tasks added; see its README.
 
-Dev is a plain sibling copy for fast iteration, not a separate backend. Its small bottom-right **DEV** pill is rendered at runtime from the `surface-inputs-dev` URL path, not hardcoded in its HTML. **Uploads are enabled in both environments.** Dev retains the existing Google Forms collection flow and APK telemetry behavior. Active dev Typing, Targeting and Scrolling form URLs have a URL-only override to new forms; existing field names are unchanged and their mappings are unverified. See dev `TELEMETRY.md` for the limitation.
+Dev is a plain sibling copy for fast iteration, not a separate backend. Its small bottom-right **DEV** pill is rendered at runtime from the `surface-inputs-dev` URL path, not hardcoded in its HTML. **Uploads are enabled in both environments.** Dev retains the existing Google Forms collection flow and APK telemetry behavior. Production now includes the approved dev snapshot's runtime and active Typing, Targeting and Scrolling form URLs. Existing field names are unchanged and their mappings are unverified; browser feedback is local/export-only. See [DEPLOYMENT.md](DEPLOYMENT.md) and `TELEMETRY.md` for the limitations.
 
 Read [DEPLOYMENT.md](DEPLOYMENT.md) for dev refresh, verification, publication and explicit production promotion. Agents must also read [AGENTS.md](AGENTS.md).
 
