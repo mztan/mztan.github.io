@@ -143,6 +143,7 @@ body {
   overflow-y: auto;
 }
 .arcade-history:has(#start-text:empty) { display: none; }
+.arcade-targeting-page .arcade-history { display: none; }
 /* These colors are targeting-only: style.css is shared with other touchpad tasks. */
 #test-area .back { fill: var(--arcade-card); stroke: var(--arcade-border); }
 #test-area circle.iso { fill: var(--arcade-idle); }

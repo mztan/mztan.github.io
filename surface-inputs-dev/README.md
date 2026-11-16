@@ -22,6 +22,12 @@ Targeting, Scrolling and Typing use the Arcade navy/card surfaces, cream text, c
 
 The alternate `touchpad/uxr/` and `keyboard/exec_demo/` pages are not restyled by these overrides. Development uses the same collection destinations as production; there is no upload blocking. See [the deployment workflow](../DEPLOYMENT.md) before publishing. A dev theme change does not promote to `surface-inputs/` or change an Android APK's default URL.
 
+## Page navigation
+
+Every HTML task/demo subpage has a **Home/back** control returning to this environment's main page. Typing places it in a footer after the app controls. Scrolling uses a compact arrow in the free gutter when needed, or a reachable footer below the pane on short screens, without covering its wheel/scroll area. Other task pages use the compact fixed utility control. Existing native pending-message guards prevent leaving with unacknowledged observations, and the feedback dialog keeps background navigation inert while open.
+
+The Targeting return screen no longer shows the result-history card. Its calculations, objective upload path and logs are unchanged. Legacy `exec_demo` and Fitts latency pages load the common capability handshake for APK navigation; this does not add native intent measurements to those implementations.
+
 ## Post-task feedback
 
 After a complete Targeting, Scrolling or Typing task, the shared dialog is titled **Feedback** and asks **How easy or difficult was this task?** on the unchanged 1–5 scale. The freeform question remains **What worked well, or what could be improved?**; blank text is allowed without an optional label. Branding, placeholders, number underlines, the byte counter, export/clear controls and the Skip button are absent. The primary control is **Upload**. Escape remains available for accessibility.
