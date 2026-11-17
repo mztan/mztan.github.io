@@ -1,0 +1,19 @@
+{
+  "intent_contract_version": 1,
+  "supported_versions": [1, 2],
+  "message_types": ["keyboard", "touchpad", "arcade"],
+  "touchpad_metric_families": ["cursor_movement", "clicks", "drag", "scrolling", "zooming"],
+  "limits": {"message_utf8_bytes":32768,"identifier_utf8_bytes":64,"intent_details_utf8_bytes":512,"keyboard_prompt_utf8_bytes":512,"keyboard_stream_utf8_bytes":2048,"arcade_details_utf8_bytes":2048,"integer_max":2147483647,"dedup_window_messages":1024,"json_depth":32},
+  "queue_limit": 32,
+  "float_max": 3.4028234663852886e38,
+  "legacy_activities": ["keyboard_natural_language","keyboard_punctuation","keyboard_email","keyboard_password","keyboard_shortcuts","keyboard_arrows","touchpad_targeting","touchpad_scrolling","touchpad_selection","touchpad_zoom","session"],
+  "legacy_facade_task_ids": {"keyboard_natural_language":"keyboard_natural_language","keyboard_punctuation":"keyboard_punctuation","keyboard_email":"keyboard_email","keyboard_password":"keyboard_password","keyboard_shortcuts":"keyboard_shortcuts","keyboard_arrows":"keyboard_arrows","touchpad_targeting":"touchpad_targeting","touchpad_scrolling":"touchpad_scrolling","touchpad_selection":"touchpad_selection","touchpad_zoom":"touchpad_zoom","session":"session"},
+  "metrics": {
+    "cursor_movement": {"stp_cursor_movement_target_radius_px":"number","stp_cursor_movement_start_distance_px":"number","stp_cursor_movement_time_ms":"int","stp_cursor_movement_stroke_count":"int","stp_cursor_movement_first_stroke_share":"share","stp_cursor_movement_small_strokes_far_from_target":"int","stp_cursor_movement_small_strokes_near_target":"int","stp_cursor_movement_target_entries":"int","stp_cursor_movement_total_cursor_distance_px":"number","stp_cursor_movement_index_of_difficulty_bits":"number","stp_cursor_movement_overshoot_count":"int","stp_cursor_movement_endpoint_error_px":"number"},
+    "clicks": {"stp_clicks_target_count":"int","stp_clicks_completed_count":"int","stp_clicks_total":"int","stp_clicks_on_target":"int","stp_clicks_miss_count":"int"},
+    "drag": {"stp_drag_target_text":"text","stp_drag_attempt_count":"int","stp_drag_first_attempt_selected_target":"bool","stp_drag_selection_start_failure_count":"int","stp_drag_nothing_selected_count":"int","stp_drag_selection_unchanged_count":"int","stp_drag_wrong_selection_count":"int","stp_drag_tap1_5_count":"int","stp_drag_tap2_5_count":"int","stp_drag_tap3_5_count":"int"},
+    "scrolling": {"stp_scrolling_time_ms":"int","stp_scrolling_start_distance_px":"number","stp_scrolling_direction":"scrollDirection","stp_scrolling_stroke_count":"int","stp_scrolling_dial_in_stroke_count":"int","stp_scrolling_empty_stroke_count":"int","stp_scrolling_first_stroke_share":"share","stp_scrolling_overshoot_count":"int","stp_scrolling_overshoot_max_px":"number","stp_scrolling_cursor_travel_without_scroll_px":"number"},
+    "zooming": {"stp_zooming_time_ms":"int","stp_zooming_direction":"zoomDirection","stp_zooming_required_change_percent":"number","stp_zooming_pinch_count":"int","stp_zooming_dial_in_pinch_count":"int","stp_zooming_empty_pinch_count":"int","stp_zooming_first_pinch_share":"share","stp_zooming_overshoot_count":"int","stp_zooming_overshoot_max_percent":"number","stp_zooming_cursor_travel_while_zooming_px":"number","stp_zooming_cursor_travel_without_zoom_px":"number"}
+  },
+  "metric_units": {"_px":"CSS pixels","_ms":"milliseconds","_share":"ratio 0..1","_percent":"percent","counts":"integer","stp_drag_target_text":"prescribed text"}
+}
