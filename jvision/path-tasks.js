@@ -1,4 +1,4 @@
-/* Menu-navigation, circle-tracing and file drag-and-drop trial state. Pure logic: no DOM, timers or uploads.
+/* Menu-navigation, freeform circle-drawing and file drag-and-drop trial state. Pure logic: no DOM, timers or uploads.
  * Times are caller-supplied monotonic milliseconds (performance.now() in the browser). */
 (function (root, factory) {
     const api = factory();
@@ -153,152 +153,369 @@
         }
     }
 
-    /* Six clockwise laps (screen coordinates, y down) around a reference circle. */
+    /* Freeform circle drawing for drift measurement (screen coordinates, y down, so clockwise is
+     * increasing atan2 angle). The participant clicks the start point at 3 o'clock, then keeps
+     * circling. Nothing is rejected or reset: every mouse sample after the start click is kept,
+     * and pauses, clicks and exits from the pad are only logged. Laps are counted by winding angle
+     * around the previous lap's fitted center (the reference center for lap 1), so a drifting
+     * circle keeps counting. Points are stored in reference-radius units around the reference
+     * center, so a resize rescales the drawing instead of invalidating it; metrics are reported in
+     * current CSS px. Angular profile bin k covers [15k°, 15k+15°) clockwise from 3 o'clock. */
+    const CIRCLE_BINS = 24, CIRCLE_PAUSE_MS = 250, CIRCLE_MAX_POINTS = 60000, CIRCLE_EXPORT_POINTS = 2500;
+    const circleRound = (value, places = 3) => { const k = Math.pow(10, places); return Math.round(value * k) / k + 0; };
+    const TAU = 2 * Math.PI;
+
+    /* Per-sample weights: half the length of the adjacent path segments (segments across an exit
+     * from the pad count zero), so slow or paused stretches don't dominate the geometry. */
+    function circleWeights(points, from, to) {
+        const out = [];
+        let total = 0;
+        for (let i = from; i <= to; i++) {
+            const prev = i > from && !points[i].gap ? Math.hypot(points[i].u - points[i - 1].u, points[i].v - points[i - 1].v) : 0;
+            const next = i < to && !points[i + 1].gap ? Math.hypot(points[i + 1].u - points[i].u, points[i + 1].v - points[i].v) : 0;
+            out.push((prev + next) / 2);
+            total += (prev + next) / 2;
+        }
+        if (total <= 0) return { weights: out.map(() => 1), total: out.length };
+        return { weights: out, total };
+    }
+
+    /* Weighted algebraic (Kåsa) circle fit. Returns null for degenerate (collinear or tiny) input. */
+    function fitCircle(points, from, to, weights, total) {
+        let mu = 0, mv = 0;
+        for (let i = from; i <= to; i++) { mu += weights[i - from] * points[i].u; mv += weights[i - from] * points[i].v; }
+        mu /= total; mv /= total;
+        let saa = 0, sab = 0, sbb = 0, saz = 0, sbz = 0;
+        for (let i = from; i <= to; i++) {
+            const w = weights[i - from], a = points[i].u - mu, b = points[i].v - mv, z = a * a + b * b;
+            saa += w * a * a; sab += w * a * b; sbb += w * b * b; saz += w * a * z; sbz += w * b * z;
+        }
+        const det = saa * sbb - sab * sab;
+        if (!(Math.abs(det) > 1e-12 * (saa + sbb) * (saa + sbb)) || saa + sbb <= 0) return null;
+        const uc = 0.5 * (saz * sbb - sbz * sab) / det, vc = 0.5 * (sbz * saa - saz * sab) / det;
+        const r = Math.sqrt(uc * uc + vc * vc + (saa + sbb) / total);
+        return finite(r) && r > 0 ? { u: mu + uc, v: mv + vc, r } : null;
+    }
+
+    const circleBin = (u, v, cu, cv) => {
+        const angle = (Math.atan2(v - cv, u - cu) + TAU) % TAU;
+        return Math.min(CIRCLE_BINS - 1, Math.floor(angle / TAU * CIRCLE_BINS));
+    };
+    function slope(values) {
+        const n = values.length, mean = (n - 1) / 2, avg = values.reduce((a, b) => a + b, 0) / n;
+        let num = 0, den = 0;
+        values.forEach((y, x) => { num += (x - mean) * (y - avg); den += (x - mean) * (x - mean); });
+        return den > 0 ? num / den : 0;
+    }
+
     class CircleTrials {
         constructor(onAllCompleted = () => {}) {
             this.lapCount = 6;
             this.onAllCompleted = onAllCompleted;
             this.radius = 0; this.centerX = 0; this.centerY = 0;
-            this.feedback = 'Move to the blue marker, then trace clockwise without clicking.';
-            this.startedAtMs = null;
-            this.lastMs = 0;
-            this.frozen = false;
-            this.attempts = 0; this.interruptions = 0; this.clicks = 0;
-            this.previous = null; this.origin = null;
-            this.progress = 0; this.travel = 0; this.squareError = 0; this.samples = 0;
-            this.errors = new Int32Array(401); this.maxError = 0;
-            this.minX = 0; this.maxX = 0; this.minY = 0; this.maxY = 0;
-            this.baselineCenter = null; this.baselineAllowed = true;
-            this.results = [];
+            this.markerRatio = 0.09;          // start marker radius, in reference radii
+            this.points = [];                 // { u, v, t (ms since start), gap (first sample after an exit) }
+            this.laps = [];                   // completed laps
+            this.startedAtMs = null; this.lastMs = 0; this.frozen = false; this.finishedAtMs = null;
+            this.lapFrom = 0; this.lapStartMs = 0;
+            this.windCenter = { u: 0, v: 0 }; this.windScale = 1;
+            this.lastAngle = null; this.progress = 0; this.direction = 0;
+            this.pendingGap = false; this.outside = false;
+            this.counts = this.freshCounts();
+            this.clicksBeforeStart = 0; this.ignoredEvents = 0; this.resizes = 0;
+            this.feedback = 'Click the blue start point to begin.';
+            this.results = null; this.summary = null;
         }
-        get completedLaps() { return this.results.filter(r => r.status === 'completed').length; }
-        get allCompleted() { return this.completedLaps === this.lapCount; }
-        get active() { return this.previous !== null; }
+        freshCounts() { return { clicks: 0, pauses: 0, maxGap: 0, exits: 0 }; }
+        get started() { return this.startedAtMs !== null; }
+        get completedLaps() { return this.laps.length; }
+        get allCompleted() { return this.laps.length >= this.lapCount; }
+        get active() { return this.started && !this.frozen; }
+        get startHitRadiusPx() { return Math.max(12, this.radius * this.markerRatio * 1.6); }
+        lapFeedback() {
+            return 'Keep circling without lifting your hand · Lap ' + (this.completedLaps + 1) + ' of ' + this.lapCount;
+        }
         geometry(x, y, r) {
             if (this.frozen || !finite(x) || !finite(y) || !finite(r) || r <= 0) return;
             if (this.radius === r && this.centerX === x && this.centerY === y) return;
-            if (this.startedAtMs !== null || this.results.length > 0) this.baselineAllowed = false;
-            this.interrupt();
+            if (this.started) this.resizes++;
             this.centerX = x; this.centerY = y; this.radius = r;
-            // A resize changes the authored reference and cannot share a drift baseline.
-            this.baselineCenter = null;
+        }
+        /* A primary-button press. Returns 'start' for the start click, 'click' for any other press. */
+        press(x, y, nowMs) {
+            if (this.frozen || this.radius <= 0) return null;
+            if (!finite(x) || !finite(y) || !finite(nowMs)) { this.ignoredEvents++; return null; }
+            if (this.started) { this.counts.clicks++; return 'click'; }
+            if (Math.hypot(x - this.centerX - this.radius, y - this.centerY) > this.startHitRadiusPx) {
+                this.clicksBeforeStart++;
+                this.feedback = 'Click the blue start point to begin.';
+                return 'click';
+            }
+            this.startedAtMs = nowMs; this.lastMs = nowMs; this.lapStartMs = nowMs;
+            this.feedback = this.lapFeedback();
+            this.record(x, y, nowMs);
+            return 'start';
         }
         move(x, y, nowMs) {
-            if (this.frozen || this.allCompleted || this.radius <= 0) return;
-            if (!finite(x) || !finite(y) || !finite(nowMs) || nowMs < this.lastMs) { this.interrupt(); return; }
+            if (!this.active) return;
+            if (!finite(x) || !finite(y) || !finite(nowMs) || nowMs < this.lastMs) { this.ignoredEvents++; return; }
+            const gap = nowMs - this.lastMs;
+            if (!this.pendingGap) {
+                if (gap >= CIRCLE_PAUSE_MS) this.counts.pauses++;
+                this.counts.maxGap = Math.max(this.counts.maxGap, gap);
+            }
             this.lastMs = nowMs;
-            const radial = Math.hypot(x - this.centerX, y - this.centerY);
-            if (radial < this.radius * 0.5 || radial > this.radius * 1.75) { this.interrupt(); return; }
-            const old = this.previous;
-            if (!old) {
-                if (Math.hypot(x - this.centerX - this.radius, y - this.centerY) > this.radius * 0.18) return;
-                if (this.startedAtMs === null) this.startedAtMs = nowMs;
-                this.attempts++;
-                this.progress = 0; this.travel = 0; this.squareError = 0; this.samples = 0;
-                this.errors.fill(0); this.maxError = 0;
-                this.minX = this.maxX = x; this.minY = this.maxY = y;
-                this.origin = { x, y };
-                this.feedback = 'Trace clockwise · Lap ' + (this.completedLaps + 1) + ' of ' + this.lapCount;
-            } else {
-                const angle = Math.atan2(y - this.centerY, x - this.centerX);
-                const oldAngle = Math.atan2(old.y - this.centerY, old.x - this.centerX);
-                let delta = angle - oldAngle;
-                if (delta > Math.PI) delta -= 2 * Math.PI;
-                if (delta < -Math.PI) delta += 2 * Math.PI;
-                if (Math.abs(delta) > Math.PI / 2) { this.interrupt(); return; }
+            if (this.outside) { this.outside = false; this.feedback = this.lapFeedback(); }
+            this.record(x, y, nowMs);
+            if (this.points.length >= CIRCLE_MAX_POINTS && !this.frozen) this.finish(nowMs);
+        }
+        record(x, y, nowMs) {
+            const point = { u: (x - this.centerX) / this.radius, v: (y - this.centerY) / this.radius,
+                t: nowMs - this.startedAtMs, gap: this.pendingGap };
+            this.pendingGap = false;
+            this.points.push(point);
+            this.wind(point, nowMs);
+        }
+        angleOf(point) {
+            const du = point.u - this.windCenter.u, dv = point.v - this.windCenter.v;
+            return Math.hypot(du, dv) < 0.1 * this.windScale ? null : Math.atan2(dv, du);
+        }
+        wind(point, nowMs) {
+            const angle = this.angleOf(point);
+            if (angle === null) return;          // too close to the center for a stable angle
+            if (this.lastAngle !== null) {
+                let delta = angle - this.lastAngle;
+                if (delta > Math.PI) delta -= TAU;
+                if (delta < -Math.PI) delta += TAU;
                 this.progress += delta;
-                this.travel += Math.hypot(x - old.x, y - old.y);
             }
-            const error = Math.abs(radial - this.radius);
-            this.squareError += error * error;
-            this.samples++;
-            this.maxError = Math.max(this.maxError, error);
-            this.errors[Math.min(400, Math.ceil(error / this.radius * 200))]++;
-            this.minX = Math.min(this.minX, x); this.maxX = Math.max(this.maxX, x);
-            this.minY = Math.min(this.minY, y); this.maxY = Math.max(this.maxY, y);
-            this.previous = { x, y };
-            if (this.progress >= 2 * Math.PI - 1e-6) {
-                this.results.push(this.result('completed', nowMs));
-                if (this.baselineCenter === null && this.baselineAllowed) {
-                    this.baselineCenter = { x: (this.minX + this.maxX) / 2, y: (this.minY + this.maxY) / 2 };
+            this.lastAngle = angle;
+            const dir = this.direction || Math.sign(this.progress);
+            if (dir !== 0 && this.progress * dir >= TAU - 1e-9) this.completeLap(nowMs, dir);
+        }
+        completeLap(nowMs, dir) {
+            if (!this.direction) this.direction = dir;
+            const to = this.points.length - 1;
+            const lap = this.buildLap(this.lapFrom, to, this.lapStartMs, nowMs, this.counts);
+            this.laps.push(lap);
+            this.progress -= dir * TAU;
+            this.lapFrom = to; this.lapStartMs = nowMs; this.counts = this.freshCounts();
+            const fit = lap.fit;
+            if (fit && fit.r > 0.2 && fit.r < 5 && Math.hypot(fit.u, fit.v) < 3) {
+                this.windCenter = { u: fit.u, v: fit.v }; this.windScale = fit.r;
+            }
+            this.lastAngle = this.angleOf(this.points[to]);
+            if (this.allCompleted) {
+                this.feedback = '✓ ' + this.lapCount + ' laps complete';
+                this.finish(nowMs);
+                this.onAllCompleted(nowMs);
+            } else {
+                this.feedback = this.lapFeedback();
+            }
+        }
+        buildLap(from, to, startMs, endMs, counts) {
+            const { points } = this;
+            const samples = to - from + 1;
+            let travel = 0, minU = Infinity, maxU = -Infinity, minV = Infinity, maxV = -Infinity;
+            for (let i = from; i <= to; i++) {
+                const p = points[i];
+                if (i > from && !p.gap) travel += Math.hypot(p.u - points[i - 1].u, p.v - points[i - 1].v);
+                minU = Math.min(minU, p.u); maxU = Math.max(maxU, p.u); minV = Math.min(minV, p.v); maxV = Math.max(maxV, p.v);
+            }
+            const lap = { from, to, startMs, endMs, samples, travel, counts: Object.assign({}, counts),
+                closure: Math.hypot(points[to].u - points[from].u, points[to].v - points[from].v),
+                boundsRadius: ((maxU - minU) + (maxV - minV)) / 4, fit: null };
+            if (samples < 5) return lap;
+            const { weights, total } = circleWeights(points, from, to);
+            lap.fit = fitCircle(points, from, to, weights, total);
+            const errors = [], refBins = new Float64Array(CIRCLE_BINS), shapeBins = new Float64Array(CIRCLE_BINS),
+                refW = new Float64Array(CIRCLE_BINS), shapeW = new Float64Array(CIRCLE_BINS);
+            let square = 0, radial = 0, fitSquare = 0;
+            for (let i = from; i <= to; i++) {
+                const p = points[i], w = weights[i - from], dist = Math.hypot(p.u, p.v), error = dist - 1;
+                errors.push({ value: Math.abs(error), w });
+                square += w * error * error; radial += w * dist;
+                const rb = circleBin(p.u, p.v, 0, 0);
+                refBins[rb] += w * error; refW[rb] += w;
+                if (lap.fit) {
+                    const own = Math.hypot(p.u - lap.fit.u, p.v - lap.fit.v) - lap.fit.r;
+                    fitSquare += w * own * own;
+                    const sb = circleBin(p.u, p.v, lap.fit.u, lap.fit.v);
+                    shapeBins[sb] += w * own; shapeW[sb] += w;
                 }
-                this.previous = null;
-                this.startedAtMs = null;
-                this.attempts = 0; this.interruptions = 0; this.clicks = 0;
-                this.feedback = this.allCompleted ? '✓ Six laps complete'
-                    : 'Return to the blue marker for lap ' + (this.completedLaps + 1) + '.';
-                if (this.allCompleted) this.onAllCompleted(nowMs);
             }
+            errors.sort((a, b) => a.value - b.value);
+            let acc = 0, p95 = errors[errors.length - 1].value;
+            for (const e of errors) { acc += e.w; if (acc >= 0.95 * total) { p95 = e.value; break; } }
+            Object.assign(lap, { radialRms: Math.sqrt(square / total), radialP95: p95, meanRadial: radial / total,
+                fitRms: lap.fit ? Math.sqrt(fitSquare / total) : null,
+                refProfile: Array.from(refBins, (s, k) => (refW[k] > 0 ? s / refW[k] : null)),
+                shapeProfile: lap.fit ? Array.from(shapeBins, (s, k) => (shapeW[k] > 0 ? s / shapeW[k] : null)) : null });
+            return lap;
         }
-        interrupt() {
-            if (this.frozen || this.allCompleted) return;
-            if (this.previous !== null) {
-                this.interruptions++;
-                this.feedback = 'Path interrupted. Return to the blue marker to restart this lap.';
+        /* The pointer left the pad (or the window lost focus). The run carries on; the next sample starts a new stroke. */
+        leave() {
+            if (!this.active || this.outside) return;
+            this.outside = true; this.pendingGap = true;
+            this.counts.exits++;
+            this.feedback = 'The cursor left the pad. Come back and keep circling.';
+        }
+        /* Touch, pen, stale or otherwise unusable events are not drawn, only counted. */
+        ignore() { if (!this.frozen) this.ignoredEvents++; }
+        attributes() {
+            return { stp_target_kind: 'circle_lap', stp_condition: 'freeform_6_laps', stp_measurement: 'app_output',
+                stp_circle_direction: this.direction > 0 ? 'clockwise' : this.direction < 0 ? 'counterclockwise' : 'unknown' };
+        }
+        lapMetrics(lap, index) {
+            const R = this.radius, first = this.laps[0], prev = this.laps[index - 1];
+            const m = {
+                measurement_started: 1,
+                stp_circle_reference_radius_px: R,
+                stp_circle_sample_count: lap.samples,
+                total_cursor_distance_px: lap.travel * R,
+                stp_circle_closure_error_px: lap.closure * R,
+                stp_circle_bounds_radius_px: lap.boundsRadius * R,
+                stp_circle_pause_count: lap.counts.pauses,
+                stp_circle_max_gap_ms: lap.counts.maxGap,
+                stp_circle_exit_count: lap.counts.exits,
+                stp_circle_accidental_click_count: lap.counts.clicks
+            };
+            if (lap.radialRms !== undefined) {
+                Object.assign(m, { stp_circle_radial_rms_px: lap.radialRms * R, stp_circle_radial_p95_px: lap.radialP95 * R,
+                    stp_circle_mean_radial_px: lap.meanRadial * R });
             }
-            this.previous = null;
+            if (lap.fit) {
+                Object.assign(m, {
+                    stp_circle_fit_center_dx_px: lap.fit.u * R,
+                    stp_circle_fit_center_dy_px: lap.fit.v * R,
+                    stp_circle_fit_radius_px: lap.fit.r * R,
+                    stp_circle_fit_rms_px: lap.fitRms * R,
+                    stp_circle_center_offset_px: Math.hypot(lap.fit.u, lap.fit.v) * R
+                });
+                if (first.fit) {
+                    m.stp_circle_center_shift_px = Math.hypot(lap.fit.u - first.fit.u, lap.fit.v - first.fit.v) * R;
+                    m.stp_circle_radius_change_px = (lap.fit.r - first.fit.r) * R;
+                }
+                if (prev && prev.fit) m.stp_circle_lap_center_shift_px = Math.hypot(lap.fit.u - prev.fit.u, lap.fit.v - prev.fit.v) * R;
+            }
+            return m;
         }
-        click() {
-            if (!this.frozen && !this.allCompleted && this.startedAtMs !== null) this.clicks++;
-        }
-        snapshot() {
-            const last = this.results[this.results.length - 1];
-            return last ? last.metrics : this.metrics();
+        finish(nowMs) {
+            if (this.frozen) return;
+            this.frozen = true;
+            const end = finite(nowMs) ? Math.max(this.lastMs, nowMs) : this.lastMs;
+            this.finishedAtMs = this.started ? end : null;
+            const attrs = this.attributes();
+            const rows = this.laps.map((lap, i) => row(i, this.lapCount, 'completed', Math.max(0, lap.endMs - lap.startMs),
+                lap.samples > 4 && !!lap.fit, this.lapMetrics(lap, i), attrs));
+            if (!this.allCompleted && this.started) {
+                const partial = this.buildLap(this.lapFrom, this.points.length - 1, this.lapStartMs, end, this.counts);
+                rows.push(row(rows.length, this.lapCount, 'abandoned', Math.max(0, end - this.lapStartMs), false, {
+                    measurement_started: 1,
+                    stp_circle_reference_radius_px: this.radius,
+                    stp_circle_sample_count: partial.samples,
+                    total_cursor_distance_px: partial.travel * this.radius,
+                    stp_circle_pause_count: partial.counts.pauses,
+                    stp_circle_max_gap_ms: partial.counts.maxGap,
+                    stp_circle_exit_count: partial.counts.exits,
+                    stp_circle_accidental_click_count: partial.counts.clicks
+                }, attrs));
+            }
+            while (rows.length < this.lapCount) {
+                rows.push(row(rows.length, this.lapCount, 'abandoned', 0, false, { measurement_started: 0 }, attrs));
+            }
+            this.results = rows;
+            this.summary = this.computeSummary();
         }
         targetResults(nowMs) {
-            if (!this.frozen) {
-                if (!this.allCompleted) this.results.push(this.result('abandoned', Math.max(this.lastMs, nowMs)));
-                while (this.results.length < this.lapCount) {
-                    this.results.push(row(this.results.length, this.lapCount, 'abandoned', 0, false,
-                        { measurement_started: 0 }, this.attributes()));
-                }
-                this.frozen = true;
-            }
+            this.finish(nowMs);
             return this.results.slice();
         }
-        attributes() {
-            return { stp_target_kind: 'circle_lap', stp_condition: 'clockwise_6_laps', stp_measurement: 'app_output' };
-        }
-        metrics() {
-            const out = { measurement_started: this.startedAtMs !== null ? 1 : 0 };
-            if (this.startedAtMs !== null) {
-                Object.assign(out, {
-                    stp_circle_attempt_count: this.attempts,
-                    stp_circle_interruption_count: this.interruptions,
-                    stp_circle_accidental_click_count: this.clicks,
-                    stp_circle_reference_radius_px: this.radius
+        /* Run-level drift: how the fitted lap centers and radii move across laps (long drift), and how
+         * consistently each lap's shape repeats around its own center (drift in repeated patterns). */
+        computeSummary() {
+            const R = this.radius, px = v => circleRound(v * R), fitted = this.laps.filter(l => l.fit);
+            const profileMean = (laps, key) => Array.from({ length: CIRCLE_BINS }, (_, k) => {
+                const vals = laps.map(l => l[key] && l[key][k]).filter(finite);
+                return vals.length ? px(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
+            });
+            const out = {
+                version: 1,
+                laps_completed: this.completedLaps,
+                direction: this.attributes().stp_circle_direction,
+                reference_radius_px: circleRound(R),
+                duration_ms: this.started ? Math.round(this.finishedAtMs - this.startedAtMs) : 0,
+                sample_count: this.points.length,
+                pause_count: this.laps.reduce((a, l) => a + l.counts.pauses, 0) + (this.allCompleted ? 0 : this.counts.pauses),
+                exit_count: this.laps.reduce((a, l) => a + l.counts.exits, 0) + (this.allCompleted ? 0 : this.counts.exits),
+                clicks_before_start: this.clicksBeforeStart,
+                ignored_event_count: this.ignoredEvents,
+                resize_count: this.resizes,
+                profile_bin_deg: 360 / CIRCLE_BINS,
+                lap_centers_px: fitted.map(l => [px(l.fit.u), px(l.fit.v)]),
+                lap_radii_px: fitted.map(l => px(l.fit.r)),
+                lap_mean_radial_px: this.laps.filter(l => finite(l.meanRadial)).map(l => px(l.meanRadial)),
+                reference_profile_px: profileMean(this.laps, 'refProfile'),
+                shape_profile_px: profileMean(fitted, 'shapeProfile'),
+                lap_reference_profiles_px: this.laps.map(l => (l.refProfile || []).map(v => (finite(v) ? px(v) : null))),
+                lap_shape_profiles_px: fitted.map(l => l.shapeProfile.map(v => (finite(v) ? px(v) : null)))
+            };
+            if (fitted.length >= 2) {
+                const first = fitted[0].fit, last = fitted[fitted.length - 1].fit;
+                const su = slope(fitted.map(l => l.fit.u)), sv = slope(fitted.map(l => l.fit.v));
+                let path = 0, max = 0;
+                fitted.forEach((l, i) => {
+                    max = Math.max(max, Math.hypot(l.fit.u - first.u, l.fit.v - first.v));
+                    if (i > 0) path += Math.hypot(l.fit.u - fitted[i - 1].fit.u, l.fit.v - fitted[i - 1].fit.v);
                 });
+                const radii = fitted.map(l => l.fit.r);
+                let direction = circleRound((Math.atan2(sv, su) * 180 / Math.PI + 360) % 360, 1);
+                if (direction >= 360) direction = 0;
+                Object.assign(out, {
+                    center_drift_total_px: px(Math.hypot(last.u - first.u, last.v - first.v)),
+                    center_drift_max_px: px(max),
+                    center_path_px: px(path),
+                    center_drift_rate_px_per_lap: px(Math.hypot(su, sv)),
+                    center_drift_direction_deg: direction,
+                    radius_drift_rate_px_per_lap: px(slope(radii)),
+                    radius_range_px: px(Math.max(...radii) - Math.min(...radii)),
+                    mean_radial_drift_rate_px_per_lap: px(slope(this.laps.filter(l => finite(l.meanRadial)).map(l => l.meanRadial)))
+                });
+                // Lap-to-lap spread of the same angular stretch, around each lap's own center.
+                let variance = 0, bins = 0, systematic = 0, sysBins = 0;
+                for (let k = 0; k < CIRCLE_BINS; k++) {
+                    const vals = fitted.map(l => l.shapeProfile[k]).filter(finite);
+                    if (vals.length >= 2) {
+                        const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
+                        variance += vals.reduce((a, b) => a + (b - mean) * (b - mean), 0) / (vals.length - 1);
+                        bins++;
+                    }
+                    if (vals.length) { const mean = vals.reduce((a, b) => a + b, 0) / vals.length; systematic += mean * mean; sysBins++; }
+                }
+                if (bins) out.shape_repeat_sd_px = px(Math.sqrt(variance / bins));
+                if (sysBins) out.shape_systematic_rms_px = px(Math.sqrt(systematic / sysBins));
             }
             return out;
         }
-        result(status, nowMs) {
-            const valid = status === 'completed' && this.samples > 4;
-            const values = this.metrics();
-            if (valid) {
-                values.stp_circle_sample_count = this.samples;
-                values.stp_circle_radial_rms_px = Math.sqrt(this.squareError / this.samples);
-                values.stp_circle_radial_p95_px = this.percentile95();
-                values.total_cursor_distance_px = this.travel;
-                if (this.origin && this.previous) {
-                    values.stp_circle_closure_error_px = Math.hypot(this.previous.x - this.origin.x, this.previous.y - this.origin.y);
-                }
-                const observed = { x: (this.minX + this.maxX) / 2, y: (this.minY + this.maxY) / 2 };
-                values.stp_circle_bounds_radius_px = ((this.maxX - this.minX) + (this.maxY - this.minY)) / 4;
-                const baseline = this.baselineCenter ||
-                    (this.results.length === 0 && this.baselineAllowed ? observed : null);
-                if (baseline) values.stp_circle_center_shift_px = Math.hypot(observed.x - baseline.x, observed.y - baseline.y);
+        /* Decimated drawn path for saving: [dx_px, dy_px, t_ms, lap, gap] relative to the reference center. */
+        exportPath(limit = CIRCLE_EXPORT_POINTS) {
+            const R = this.radius, rows = [], minStep = 1 / Math.max(1, R);
+            const n = this.points.length;
+            let k = 0, last = null;
+            this.points.forEach((p, i) => {
+                while (k < this.laps.length && this.laps[k].to < i) k++;
+                const boundary = k < this.laps.length && this.laps[k].to === i;
+                if (last && !p.gap && !boundary && i !== n - 1 && Math.hypot(p.u - last.u, p.v - last.v) < minStep) return;
+                rows.push([circleRound(p.u * R, 1), circleRound(p.v * R, 1), Math.round(p.t), k + 1, p.gap ? 1 : 0]);
+                last = p;
+            });
+            let points = rows;
+            if (points.length > limit) {
+                const stride = points.length / limit;
+                points = Array.from({ length: limit }, (_, k) => rows[Math.min(rows.length - 1, Math.round(k * stride))]);
+                points[limit - 1] = rows[rows.length - 1];
             }
-            return row(this.results.length, this.lapCount, status,
-                this.startedAtMs !== null ? Math.max(0, nowMs - this.startedAtMs) : 0, valid, values, this.attributes());
-        }
-        percentile95() {
-            const target = Math.ceil(this.samples * 0.95);
-            let count = 0;
-            for (let index = 0; index < this.errors.length; index++) {
-                count += this.errors[index];
-                if (count >= target) return Math.min(this.maxError, index * this.radius / 200);
-            }
-            return this.maxError;
+            return { columns: ['dx_px', 'dy_px', 't_ms', 'lap', 'gap'], points };
         }
     }
 

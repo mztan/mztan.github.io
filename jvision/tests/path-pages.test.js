@@ -80,16 +80,37 @@ function page(canvasId, globals = {}) {
     return { win, element, radios, form, pointer, wheel, flush, saved, tick: ms => { clock += ms; }, now: () => clock };
 }
 
-test('circle page: six hovered laps open the rating dialog and save local results', () => {
-    const p = page('circle-canvas');
-    const cx = 500, cy = 300, r = 600 * 0.36;
-    for (let lap = 0; lap < 6; lap++) {
-        for (let deg = 0; deg <= 360; deg += 3) {
-            const a = deg * Math.PI / 180, wobble = lap === 2 ? 6 * Math.sin(5 * a) : 0;
-            p.pointer('pointermove', cx + (r + wobble) * Math.cos(a), cy + (r + wobble) * Math.sin(a));
-        }
+const CIRCLE = { cx: 500, cy: 300, r: 600 * 0.36 };
+const circleAt = (deg, r = CIRCLE.r, dx = 0) => [CIRCLE.cx + dx + r * Math.cos(deg * Math.PI / 180), CIRCLE.cy + r * Math.sin(deg * Math.PI / 180)];
+function circleLaps(p, laps, { r = () => CIRCLE.r, dx = () => 0, extra = {} } = {}) {
+    for (let lap = 0; lap < laps; lap++) {
+        for (let deg = 3; deg <= 360; deg += 3) p.pointer('pointermove', ...circleAt(deg, r(lap, deg), dx(lap, deg)), extra);
     }
-    assert.equal(p.element('laps').textContent, 'Clockwise circles · 6 of 6 complete');
+}
+
+test('circle page: click the start point, draw six drifting laps, then rate and save path and drift', () => {
+    const p = page('circle-canvas');
+    const canvas = p.element('circle-canvas');
+    assert.equal(p.element('finish').disabled, true);
+    assert.match(p.element('status').textContent, /Click the blue start point/);
+    // Hovering over the start point does nothing until it is clicked.
+    circleLaps(p, 1);
+    assert.equal(p.element('laps').textContent, 'Laps · 0 of 6 complete');
+    p.pointer('pointerdown', CIRCLE.cx + CIRCLE.r, CIRCLE.cy, { buttons: 1 });
+    p.pointer('pointerup', CIRCLE.cx + CIRCLE.r, CIRCLE.cy);
+    assert.equal(p.element('finish').disabled, false);
+    assert.equal(p.element('clicks').textContent, 'Clicks: 0', 'the start click is not an accidental click');
+    assert.match(p.element('status').textContent, /without lifting your hand · Lap 1 of 6/);
+    // The hand slides 4 px right every lap.
+    circleLaps(p, 6, { dx: (lap, deg) => 4 * (lap + deg / 360) });
+    // Laps 2+ wind around the previous lap's fitted center, so the sixth can end a few degrees
+    // past the sixth turn; like a participant, keep circling until the page says it's done.
+    for (let deg = 3; deg <= 60 && p.element('completion').hidden && !/6 of 6/.test(p.element('laps').textContent); deg += 3) {
+        p.pointer('pointermove', ...circleAt(deg, CIRCLE.r, 4 * (6 + deg / 360)));
+    }
+    assert.equal(p.element('laps').textContent, 'Laps · 6 of 6 complete');
+    assert.ok(canvas.strokes.some(st => st.style === 'rgb(234, 195, 111)'), 'lap centers are joined after the run');
+    assert.match(p.element('last-lap').textContent, /^Center drift: 2\d\.\d px over 6 laps/);
     assert.equal(p.element('completion').hidden, true);
     p.flush();
     assert.equal(p.element('completion').hidden, false);
@@ -102,24 +123,79 @@ test('circle page: six hovered laps open the rating dialog and save local result
     assert.equal(run.ease, 4);
     assert.equal(run.comment, 'smooth');
     assert.deepEqual(run.targets.map(t => t.status), Array(6).fill('completed'));
-    assert.ok(run.targets[2].metrics.stp_circle_radial_rms_px > 3);
-    assert.ok(run.targets[0].metrics.stp_circle_radial_rms_px < 0.5);
+    assert.ok(run.targets.every(t => t.attributes.stp_condition === 'freeform_6_laps'));
+    assert.ok(run.drift.center_drift_rate_px_per_lap > 3.5 && run.drift.center_drift_rate_px_per_lap < 4.5);
+    assert.ok(run.targets[5].metrics.stp_circle_center_shift_px > 18);
+    assert.deepEqual(run.path.columns, ['dx_px', 'dy_px', 't_ms', 'lap', 'gap']);
+    assert.ok(run.path.points.length > 100);
+    assert.deepEqual(run.clicks, []);
     assert.match(p.element('completion-status').textContent, /Saved in this browser/);
 });
 
-test('circle page: touch input and leaving the area interrupt the lap', () => {
+test('circle page: off-path motion is drawn; leaving the pad and touch input never reset the run', () => {
     const p = page('circle-canvas');
-    const cx = 500, cy = 300, r = 216;
-    for (let deg = 0; deg <= 90; deg += 3) p.pointer('pointermove', cx + r * Math.cos(deg * Math.PI / 180), cy + r * Math.sin(deg * Math.PI / 180));
-    p.pointer('pointermove', cx, cy + r, { pointerType: 'touch' });
-    assert.match(p.element('status').textContent, /interrupted/);
-    // Clicking during a lap is counted, and pressed motion is not treated as hover.
-    p.pointer('pointermove', cx + r, cy);
-    p.pointer('pointerdown', cx + r, cy, { buttons: 1 });
-    p.pointer('pointerup', cx + r, cy);
-    p.element('circle-canvas').dispatch({ type: 'pointerleave' });
-    assert.match(p.element('status').textContent, /interrupted/);
-    assert.equal(p.element('laps').textContent, 'Clockwise circles · 0 of 6 complete');
+    const canvas = p.element('circle-canvas');
+    p.pointer('pointerdown', CIRCLE.cx + CIRCLE.r, CIRCLE.cy, { buttons: 1 });
+    for (let deg = 3; deg <= 90; deg += 3) p.pointer('pointermove', ...circleAt(deg));
+    // Far outside the guide is still part of the drawing.
+    p.pointer('pointermove', 950, 580);
+    canvas.dispatch({ type: 'pointerleave' });
+    assert.match(p.element('status').textContent, /left the pad/);
+    p.pointer('pointermove', CIRCLE.cx, CIRCLE.cy + CIRCLE.r, { pointerType: 'touch' });
+    for (let deg = 93; deg <= 360; deg += 3) p.pointer('pointermove', ...circleAt(deg));
+    assert.equal(p.element('laps').textContent, 'Laps · 1 of 6 complete');
+    const teal = canvas.strokes.filter(st => /105, 221, 197/.test(st.style));
+    assert.ok(teal.some(st => st.points.some(pt => pt.x === 950 && pt.y === 580)), 'the off-path point is drawn');
+    assert.doesNotMatch(p.element('status').textContent, /interrupted/);
+    // Finish early: completed lap kept, the lap in progress abandoned, the rest unstarted.
+    p.element('finish').click();
+    assert.equal(p.element('finish').disabled, true);
+    p.flush();
+    p.element('completion-skip').click();
+    const [run] = p.saved();
+    assert.deepEqual(run.targets.map(t => t.status), ['completed', 'abandoned', 'abandoned', 'abandoned', 'abandoned', 'abandoned']);
+    assert.equal(run.targets[0].metrics.stp_circle_exit_count, 1);
+    assert.equal(run.drift.ignored_event_count, 1);
+    assert.ok(run.path.points.some(pt => pt[4] === 1), 'the stroke break after re-entry is saved');
+});
+
+test('circle page: clicks before and during the run are logged and marked with a red X without resetting it', () => {
+    const p = page('circle-canvas');
+    const canvas = p.element('circle-canvas');
+    const RED = 'rgb(230, 61, 46)';
+    // A miss before starting is logged, marked, and doesn't start the run.
+    p.pointer('pointerdown', CIRCLE.cx, CIRCLE.cy - CIRCLE.r, { buttons: 1 });
+    p.pointer('pointerup', CIRCLE.cx, CIRCLE.cy - CIRCLE.r);
+    assert.equal(p.element('clicks').textContent, 'Clicks: 1');
+    assert.equal(p.element('finish').disabled, true);
+    assert.ok(canvas.strokes.some(st => st.style === RED));
+    p.pointer('pointerdown', CIRCLE.cx + CIRCLE.r, CIRCLE.cy, { buttons: 1 });
+    for (let lap = 0; lap < 6; lap++) {
+        for (let deg = 3; deg <= 360; deg += 3) {
+            const [x, y] = circleAt(deg);
+            if (lap === 0 && deg === 90) {
+                // Press, keep drawing with the button held, release: one click, run continues.
+                p.pointer('pointerdown', x, y, { buttons: 1 });
+                for (let d = 93; d <= 120; d += 3) p.pointer('pointermove', ...circleAt(d), { buttons: 1 });
+                p.pointer('pointerup', ...circleAt(120));
+                deg = 120;
+                continue;
+            }
+            p.pointer('pointermove', x, y);
+            if (lap === 3 && deg === 180) { p.pointer('pointerdown', x, y, { buttons: 1 }); p.pointer('pointerup', x, y); }
+        }
+    }
+    assert.equal(p.element('clicks').textContent, 'Clicks: 3');
+    assert.ok(canvas.strokes.filter(st => st.style === RED).length >= 6, 'two strokes per X, three clicks');
+    p.flush();
+    p.element('completion-skip').click();
+    const [run] = p.saved();
+    assert.deepEqual(run.targets.map(t => t.status), Array(6).fill('completed'));
+    assert.equal(run.targets[0].metrics.stp_circle_accidental_click_count, 1);
+    assert.equal(run.targets[3].metrics.stp_circle_accidental_click_count, 1);
+    assert.equal(run.drift.clicks_before_start, 1);
+    assert.deepEqual(run.clicks.map(c => [c.lap, c.in_lap]), [[1, false], [1, true], [4, true]]);
+    assert.ok(run.clicks.every(c => Number.isFinite(c.x) && Number.isFinite(c.y) && c.t_ms >= 0));
 });
 
 test('menu page: wrong pick, two paths, skip rating and save local results', () => {
@@ -225,52 +301,6 @@ test('circle page: the blue start marker contains a downward (clockwise) arrow',
     // Clockwise at 3 o'clock is +y on screen: the apex is centered and below the base.
     assert.ok(Math.abs(apex.x - mx) < 1e-9);
     assert.ok(base.every(pt => pt.y < apex.y));
-});
-
-test('circle page: clicks mid-lap are logged and marked with a red X without interrupting the lap', () => {
-    const p = page('circle-canvas');
-    const canvas = p.element('circle-canvas');
-    const cx = 500, cy = 300, r = 216, RED = 'rgb(230, 61, 46)';
-    const at = deg => [cx + r * Math.cos(deg * Math.PI / 180), cy + r * Math.sin(deg * Math.PI / 180)];
-    for (let lap = 0; lap < 6; lap++) {
-        for (let deg = 0; deg <= 360; deg += 3) {
-            const [x, y] = at(deg);
-            if (lap === 0 && deg === 90) {
-                // Press, keep tracing with the button held, release: one click, lap continues.
-                p.pointer('pointerdown', x, y, { buttons: 1 });
-                for (let d = 93; d <= 120; d += 3) { const [px, py] = at(d); p.pointer('pointermove', px, py, { buttons: 1 }); }
-                const [ux, uy] = at(120);
-                p.pointer('pointerup', ux, uy);
-                deg = 120;
-                continue;
-            }
-            p.pointer('pointermove', x, y);
-            if (lap === 3 && deg === 180) { p.pointer('pointerdown', x, y, { buttons: 1 }); p.pointer('pointerup', x, y); }
-        }
-        assert.doesNotMatch(p.element('status').textContent, /interrupted/);
-    }
-    assert.equal(p.element('clicks').textContent, 'Clicks: 2');
-    const reds = canvas.strokes.filter(st => st.style === RED);
-    assert.ok(reds.length >= 4, 'two strokes per X, two clicks');
-    p.flush();
-    p.element('completion-skip').click();
-    const [run] = p.saved();
-    assert.deepEqual(run.targets.map(t => t.status), Array(6).fill('completed'));
-    assert.equal(run.targets[0].metrics.stp_circle_interruption_count, 0);
-    assert.equal(run.targets[0].metrics.stp_circle_accidental_click_count, 1);
-    assert.equal(run.targets[3].metrics.stp_circle_accidental_click_count, 1);
-    assert.equal(run.clicks.length, 2);
-    assert.deepEqual(run.clicks.map(c => [c.lap, c.in_lap]), [[1, true], [4, true]]);
-    assert.ok(run.clicks.every(c => Number.isFinite(c.x) && Number.isFinite(c.y) && c.t_ms >= 0));
-});
-
-test('circle page: a click before starting a lap is still logged and marked', () => {
-    const p = page('circle-canvas');
-    p.pointer('pointermove', 500, 300 - 216);
-    p.pointer('pointerdown', 500, 300 - 216, { buttons: 1 });
-    p.pointer('pointerup', 500, 300 - 216);
-    assert.equal(p.element('clicks').textContent, 'Clicks: 1');
-    assert.ok(p.element('circle-canvas').strokes.some(st => st.style === 'rgb(230, 61, 46)'));
 });
 
 function filesDrag(p, from, to, extra = {}) {
