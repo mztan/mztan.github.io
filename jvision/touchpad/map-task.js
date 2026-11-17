@@ -270,7 +270,7 @@
         if (!observations.length) return 'Nothing to send: only completed landmarks produce a telemetry row (abandoned and unstarted ones stay local).';
         const rows = observations.length === 1 ? '1 row' : observations.length + ' rows';
         if (!transport || !transport.isNative || !transport.isNative()) return 'Browser mode: no native host is connected, so nothing was uploaded. These are the ' + rows + ' a native host would receive, one per selected landmark.';
-        try { observations.forEach(o => transport.enqueue(o)); return 'Queued ' + rows + ' on the native transport; waiting for the sink to acknowledge.'; }
+        try { observations.forEach(o => transport.submitTouchpad(o)); return 'Queued ' + rows + ' on the native transport; waiting for the sink to acknowledge.'; }
         catch (failure) { return 'Native transport rejected a row: ' + failure.message; }
     }
     const rowText = o => '{\n' + Object.entries(o).map(([k, v]) => '  ' + JSON.stringify(k) + ': ' + JSON.stringify(v)).join(',\n') + '\n}';

@@ -297,7 +297,7 @@
             return 'Browser mode: no native host is connected, so nothing was uploaded. This is the row a native host would receive.';
         }
         try {
-            transport.enqueue(observation);
+            transport.submitTouchpad(observation);
             return 'Queued on the native transport; waiting for the sink to acknowledge.';
         } catch (failure) {
             return 'Native transport rejected the row: ' + failure.message;

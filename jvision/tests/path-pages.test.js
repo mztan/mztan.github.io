@@ -528,7 +528,7 @@ test('crop page: find, failed Apply, correct, then results, rating and local sav
 test('crop page: a connected native host receives exactly one validated row; Skip keeps abandoned runs local', () => {
     const { validate } = require('../transport.js');
     const sent = [];
-    const transport = { isNative: () => true, enqueue: message => { validate(Object.assign({ id: 'x' }, message)); sent.push(message); return 'x'; } };
+    const transport = { isNative: () => true, submitTouchpad: message => { validate(Object.assign({ id: 'x' }, message)); sent.push(message); return 'x'; } };
     let p = page('crop-canvas', { SurfaceInputsTransport: transport });
     let c = cropTwin(p);
     c.start();
@@ -696,7 +696,7 @@ test('map page: framing failure, recovery and three selections, then results, ra
 test('map page: a native host receives one validated row per selected landmark; a pan release over a marker opens nothing; Skip stays local', () => {
     const { validate } = require('../transport.js');
     const sent = [];
-    const transport = { isNative: () => true, enqueue: message => { validate(Object.assign({ id: 'x' }, message)); sent.push(message); return 'x'; } };
+    const transport = { isNative: () => true, submitTouchpad: message => { validate(Object.assign({ id: 'x' }, message)); sent.push(message); return 'x'; } };
     let p = page('map-canvas', { SurfaceInputsTransport: transport });
     let m = mapTwin(p);
     m.start();

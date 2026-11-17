@@ -120,3 +120,17 @@ test('feedback validates linkage/ratings/UTF8 and requires browser callback, nev
     e.ready(); e.transport.submitFeedback(feedback()); assert.equal(e.port.sent.at(-1).type, 'feedback');
     assert.equal(routed.length, 1); assert.equal(e.transport.pendingCount(), 1);
 });
+
+test('every transport method the task pages call exists on the real transport API', () => {
+    const fs = require('node:fs');
+    const path = require('node:path');
+    const api = setup().transport;
+    const pages = fs.readdirSync(path.join(__dirname, '..', 'touchpad')).filter(name => name.endsWith('-task.js'));
+    const called = new Set();
+    pages.forEach(name => {
+        const source = fs.readFileSync(path.join(__dirname, '..', 'touchpad', name), 'utf8');
+        for (const match of source.matchAll(/\btransport\.(\w+)\s*\(/g)) called.add(name + ':' + match[1]);
+    });
+    assert.ok(called.size > 0);
+    called.forEach(entry => assert.equal(typeof api[entry.split(':')[1]], 'function', entry + ' is not on the transport API'));
+});
