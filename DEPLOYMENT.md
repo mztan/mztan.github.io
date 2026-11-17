@@ -8,7 +8,7 @@
 - Development URL: https://mztan.github.io/surface-inputs-dev/
 - Branch: `main`; GitHub Pages publishes the committed repository content.
 
-These are separate static paths in one repository. They do not provide separate credentials or backends. Production now includes the reviewed dev snapshot `6070f03`, promoted on 2026-11-17: Home/back navigation on every HTML subpage and hidden Targeting return-screen history, in addition to the previously promoted themes, clipping fix, feedback UI and URL-only form changes. Production and dev now use the same active Typing, Targeting and Scrolling form URLs, with existing `entry.*` names unchanged; field mapping and respondent access are unverified. Browser feedback is local/export-only, and native feedback acknowledgement is sink handoff rather than server receipt. There is no upload-blocking guard. `jvision/` remains a separate, unchanged preview. Do not use real participant data for a casual UI test unless that collection is intended.
+These are separate static paths in one repository, not separate backends. Production remains on the previously promoted Home/back navigation, Targeting cleanup, themes and URL-only Form URLs, with legacy unverified field bindings and browser-local feedback. Development now uses the guided sequence and enabled task-specific Form adapter with owner-supplied prefilled-link mappings. Publication was confirmed by the owner; accepting-responses/sign-in settings and server storage are not independently verified. Opaque browser POST or native sink ACK never means confirmed server receipt. Neither environment has a dev upload-blocking guard. `jvision/` is a separate preview and unchanged by this release. Tests must mock uploads unless real collection is explicitly intended.
 
 ## Development changes
 
@@ -66,7 +66,7 @@ Run `node surface-inputs-dev/tests/generate-contract.js --check`, the dev confor
 
 The development main page uses one Start Dogfooding action and the ordered Targeting → Scrolling → Typing flow. Each touchpad task runs six sets before feedback; Typing retains three prompts. Next/Finish deliver feedback before navigation, and only the exact dev path enables Skip task. See `surface-inputs-dev/GUIDED_DOGFOOD.md` for recovery and Form mapping provenance.
 
-The new task-specific upload adapter uses 62 question IDs supplied through the owner’s blank prefilled links. Access flags remain closed until the owner confirms the Forms are published, accepting responses and accessible to intended dogfooders. Use mocked requests for tests, not real participant submissions. Native-bound traffic remains on the shared SDK. This staging change does not promote the flow to production or install an APK.
+The new task-specific upload adapter uses 62 question IDs supplied through the owner’s blank prefilled links. The owner confirmed all three Forms published on 2026-11-17, enabling browser requests; respondent restrictions and stored responses are not independently verified. Use mocked requests for tests, not real participant submissions, and retain failed uploads. Native-bound traffic remains on the shared SDK. This staging change does not promote the flow to production or install an APK.
 
 ## Credentials
 

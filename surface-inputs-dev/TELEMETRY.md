@@ -12,7 +12,7 @@ The sections below retain the legacy v1 field definitions and browser behavior; 
 
 ## Browser behavior
 
-The keyboard and touchpad pages keep their browser identity controls, test logic, geometry, timings and public corpora. The active dev Typing (UXR/UXR2/dogfooding), Targeting and Scrolling pages now point to the new task-specific Google Forms. This is a URL-only replacement: existing `entry.*` field names remain unchanged, field mappings and form access are unverified, and no Forms requests were made to validate it. Browser feedback remains local/export-only; the dormant collector is not enabled. Other legacy task/variant form URLs are unchanged. URL parameters do not select native mode. The launcher also loads the handshake transport so its links are usable after the APK's input gate is released; standalone browser links remain unchanged.
+The primary Typing, Targeting and Scrolling pages use the shared `task-uploads.js` browser outbox and `forms-config.js` mappings from the owner's prefilled links (28/22/12 fields). The owner confirmed all three Forms published. The adapter preserves separate result rows and adds linked feedback rows; unavailable measurements are omitted, not invented. Respondent restrictions and actual stored-response arrival are unverified. Opaque POST means request sent only; failures stay queued. Native binding still bypasses Forms. The main page now starts the guided session; see [GUIDED_DOGFOOD.md](GUIDED_DOGFOOD.md). Other legacy variants remain unchanged, and the unrelated dormant collector stays isolated.
 
 ## Native capability handshake
 
@@ -67,13 +67,11 @@ Selection emits the actual prescribed target text and exact-selection completion
 - Optional `pain_points`: at most eight nonempty strings, each at most 64 UTF-8 bytes.
 - The complete serialized feedback message is at most 2048 UTF-8 bytes.
 
-Native feedback uses the private port. The post-task widget checks both the message and the receiver's final details object against 2048 UTF-8 encoded bytes; escape-heavy comments are rejected visibly, never truncated. Browser feedback through the transport API still requires an explicitly configured callback. There is no configured browser collector in this deployment, so the widget saves browser feedback locally and offers JSON export without calling a guessed form.
+Browser feedback uses an explicitly configured SDK callback to the corresponding task-specific Form through the bounded outbox. Native feedback uses the private port. Size limits and immutable payloads are unchanged. The Next/Finish transition waits for a request-sent result or native sink acceptance; neither establishes server storage. Failures restore the saved response and keep the current step retryable.
 
 ### Post-task feedback UI
 
-The root development Targeting and Scrolling pages and keyboard main page load a shared feedback dialog. It opens after nine targeting hits, six scrolling targets, or the full selected typing/shortcut/arrow block. Practice completions also get feedback. Task calculations and timing finish before opening it; individual targets or prompts do not open it.
-
-The dialog is titled **Feedback** and its primary button is **Upload**. The ease question and five scale anchors remain unchanged; freeform text may be blank without an optional label. Branding, task-complete titles, number underlines, placeholder text, the byte counter, export/clear buttons and the Skip button are removed. Escape remains an accessibility exit without manufacturing a rating. Native sink acceptance closes the dialog; browser-local persistence does not, and its status explicitly says that no upload occurred.
+In a guided session, feedback opens after six complete Targeting sets (54 hits) and six complete Scrolling sets (36 targets), then after the three-prompt Typing block. Direct standalone task completion still opens feedback. Measurements finish before the dialog; the primary control is Next, or Finish for Typing. Finish reaches the thank-you page. A dev-only task Skip is separate from the feedback modal and never manufactures a rating or successful set.
 
 The widget assigns an ASCII feedback-block identifier. It identifies that local completed-task feedback context; it is not an objective observation attempt ID and does not prove a join to individual intent events. Keyboard observations remain independent and carry no added attempt/order metadata.
 

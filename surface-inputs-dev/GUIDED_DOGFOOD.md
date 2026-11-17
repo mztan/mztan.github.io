@@ -24,7 +24,7 @@ Completed set counts and the current task are stored in sessionStorage. Partial 
 
 A bounded local outbox retains failed requests and preserves immutable payloads on retry. A resolved opaque Google Forms POST means **request sent**, not confirmed server storage. Native-bound observations and feedback stay on the shared native SDK, never fall back to Forms.
 
-Browser upload access remains gated until the owner confirms the Forms are published, accepting responses and accessible to the intended dogfooders. Tests override that gate with intercepted network requests; they are not proof of real response storage. No actual participant response or test row was submitted to the real Forms during implementation.
+The owner confirmed **all three Forms are published** on 2026-11-17. Browser submissions are enabled using the supplied mappings. Accepting-responses, sign-in settings and actual server storage have not been independently verified. A resolved opaque POST only establishes that a request was sent; failures remain retained for retry. Tests intercept every submission, so they never write test rows to the real Forms.
 
 ## Release scope
 
