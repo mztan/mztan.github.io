@@ -22,6 +22,12 @@ Production includes the dev snapshot's Arcade themes for Targeting, Scrolling an
 
 The home page derives environment identity from its URL. The **DEV** pill is absent at `/surface-inputs/`. The original source notices and provenance below remain in place. Browser feedback is local/export-only; native sink acceptance is not a downstream upload receipt.
 
+## Page navigation
+
+Every HTML task/demo subpage has a **Home/back** control returning to the production main page. Typing places it after the app controls; Scrolling uses a compact arrow in free space or a reachable footer below the pane on short screens. The controls do not cover measured task regions. Existing native pending-message guards and feedback-modal inert behavior are preserved.
+
+Targeting no longer shows the result-history card on its return screen. Measurements, logs and collection paths are unchanged. Legacy `exec_demo` and Fitts latency pages use the common capability handshake for APK navigation; native intent measurements were not added to those implementations.
+
 ## Upstream provenance
 
 - Keyboard: [fbotros/si_eval_app](https://github.com/fbotros/si_eval_app), commit `082f9d740ba2e65a6a2714c4b40065082c28e58e`.

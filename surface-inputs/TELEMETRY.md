@@ -4,6 +4,10 @@
 
 The keyboard and touchpad pages keep their browser identity controls, test logic, geometry, timings and public corpora. The active production and dev Typing (UXR/UXR2/dogfooding), Targeting and Scrolling pages now point to the new task-specific Google Forms. This is a URL-only replacement: existing `entry.*` field names remain unchanged, field mappings and form access are unverified, and no Forms requests were made to validate it. Browser feedback remains local/export-only; the dormant collector is not enabled. Other legacy task/variant form URLs are unchanged. URL parameters do not select native mode. The launcher also loads the handshake transport so its links are usable after the APK's input gate is released; standalone browser links remain unchanged.
 
+## Page navigation and results UI
+
+All HTML subpages have an environment-local Home/back link. Targeting's return-screen history card is hidden, without removing its measurement/logging code. Pending native observations block navigation until acknowledgement, and open feedback dialogs keep background navigation inert. Legacy demos and Fitts latency load the shared ready handshake for navigation, not new native intent measurements.
+
 ## Native capability handshake
 
 - Host origin: `https://mztan.github.io`, top frame only.
