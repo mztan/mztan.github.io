@@ -23,19 +23,15 @@ test('active task form actions use the new URLs without changing any form fields
     }
 });
 
-test('typing UXR2 runtime action uses the same new typing URL and has no other engine edits', () => {
-    const code = read(root, 'keyboard/script.js');
-    assert.equal(code.split(typing).length - 1, 1);
-    const original = code.replace(typing, 'https://docs.google.com/forms/d/e/1FAIpQLSdAuVaWh53BvFkNTSHVki0QqIlw7CQn-xTptVpmRtHrk2ULEA/formResponse')
-        .replace(/^[ \t]*\/\/ BEGIN POST-TASK FEEDBACK HOOK\n[ \t]*if \(window\.SurfaceInputsFeedback\) window\.SurfaceInputsFeedback\.complete\(nativeActivity\(\)\);\n[ \t]*\/\/ END POST-TASK FEEDBACK HOOK\n/gm, '');
-    const baseline = read(prod, 'keyboard/script.js')
-        .replace(typing, 'https://docs.google.com/forms/d/e/1FAIpQLSdAuVaWh53BvFkNTSHVki0QqIlw7CQn-xTptVpmRtHrk2ULEA/formResponse')
-        .replace(/^[ \t]*\/\/ BEGIN POST-TASK FEEDBACK HOOK\n[ \t]*if \(window\.SurfaceInputsFeedback\) window\.SurfaceInputsFeedback\.complete\(nativeActivity\(\)\);\n[ \t]*\/\/ END POST-TASK FEEDBACK HOOK\n/gm, '');
-    assert.equal(original, baseline);
+test('typing UXR2 URL and browser submitters remain unchanged under the SDK facade', () => {
+    const code = read(root,'keyboard/script.js'), baseline=read(prod,'keyboard/script.js');
+    assert.equal(code.split(typing).length-1,1);
+    assert.equal(code.slice(code.indexOf('    function submitPromptResultToGoogleForm(')),baseline.slice(baseline.indexOf('    function submitPromptResultToGoogleForm(')));
 });
 
-test('native transport and feedback behavior are untouched; dormant collector is not activated', () => {
-    assert.equal(read(root, 'transport.js'), read(prod, 'transport.js'));
+test('browser feedback behavior stays unchanged and the dormant collector remains unloaded', () => {
+    const template = source => source.match(/container\.innerHTML = `([\s\S]*?)`;/)[1];
+    assert.equal(template(read(root, 'post-task-feedback.js')), template(read(prod, 'post-task-feedback.js')));
     for (const file of ['keyboard/index.html', 'touchpad/index.html', 'touchpad/scroll.html']) {
         assert.ok(!read(root, file).includes('form-collector.js'));
     }

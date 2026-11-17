@@ -1,5 +1,15 @@
 # Shared browser and APK telemetry
 
+## Stable two-channel SDK
+
+The development SDK negotiates v2 after the unchanged v1 ready exchange. [BRIDGE_CONTRACT.md](BRIDGE_CONTRACT.md) and [telemetry-contract.json](telemetry-contract.json) define the fixed typed intent channel and the separate opaque Arcade JSON channel. Current producer `activity_id` values map to v2 `task_id` at the SDK boundary; any future task ID may use applicable fixed metric families.
+
+Current Typing prompt/shortcut results and Targeting/Scrolling summaries also emit opaque `uxr_result` events on v2. Typed fields, formulas and complete keyboard input streams remain unchanged. Keyboard typed/result messages enqueue atomically with original completion snapshots for retry; extra UXR records are explicitly unsupported/skipped on a confirmed legacy host, not redirected to Forms. Web context IDs link UXR results and feedback without adding attempt metadata to typed intent.
+
+The existing feedback facade converts to an opaque `feedback_submitted` event on v2 and stays v1 on old APKs. New rating scales use `submitArcadeEvent`, with no native per-question/range whitelist. Opaque wire `details` is a single serialized JSON-object string, forwarded exactly by native. Legacy exec demos/latency remain ready/navigation-only until instrumented. This change adds no Google Forms access, collectors, atom fields, production promotion or device installation.
+
+The sections below retain the legacy v1 field definitions and browser behavior; v2 wire naming/capability/limits differences are in the stable contract.
+
 ## Browser behavior
 
 The keyboard and touchpad pages keep their browser identity controls, test logic, geometry, timings and public corpora. The active dev Typing (UXR/UXR2/dogfooding), Targeting and Scrolling pages now point to the new task-specific Google Forms. This is a URL-only replacement: existing `entry.*` field names remain unchanged, field mappings and form access are unverified, and no Forms requests were made to validate it. Browser feedback remains local/export-only; the dormant collector is not enabled. Other legacy task/variant form URLs are unchanged. URL parameters do not select native mode. The launcher also loads the handshake transport so its links are usable after the APK's input gate is released; standalone browser links remain unchanged.

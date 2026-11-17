@@ -9,12 +9,12 @@
         "replay_eligible": true,
         "final_text": "world"
       },
+      "id": "web_00000000-0000-4000-8000-000000000001_3",
       "activity_id": "keyboard_natural_language",
       "prompt_id": "natural-language_1",
       "elapsed_ms": 0,
       "version": 1,
-      "type": "keyboard",
-      "id": "web_00000000-0000-4000-8000-000000000001_1"
+      "type": "keyboard"
     }
   },
   {
@@ -27,20 +27,21 @@
         "stream_format": "keychord_labels_v1",
         "final_text": "Ctrl+C Ctrl+V"
       },
+      "id": "web_00000000-0000-4000-8000-000000000002_4",
       "activity_id": "keyboard_shortcuts",
       "prompt_id": "shortcuts_0",
       "elapsed_ms": 100,
       "version": 1,
-      "type": "keyboard",
-      "id": "web_00000000-0000-4000-8000-000000000002_1"
+      "type": "keyboard"
     }
   },
   {
     "name": "targeting_1",
     "message": {
       "activity_id": "touchpad_targeting",
-      "metric_family": "cursor_movement",
       "elapsed_ms": 200,
+      "id": "web_00000000-0000-4000-8000-000000000003_3",
+      "metric_family": "cursor_movement",
       "details": {
         "details_version": 1,
         "cursor_trace": "observed"
@@ -58,16 +59,16 @@
       "stp_cursor_movement_overshoot_count": 0,
       "stp_cursor_movement_endpoint_error_px": 0,
       "version": 1,
-      "type": "touchpad",
-      "id": "web_00000000-0000-4000-8000-000000000003_1"
+      "type": "touchpad"
     }
   },
   {
     "name": "targeting_2",
     "message": {
       "activity_id": "touchpad_targeting",
-      "metric_family": "clicks",
       "elapsed_ms": 200,
+      "id": "web_00000000-0000-4000-8000-000000000003_4",
+      "metric_family": "clicks",
       "details": {
         "details_version": 1
       },
@@ -77,13 +78,13 @@
       "stp_clicks_on_target": 1,
       "stp_clicks_miss_count": 0,
       "version": 1,
-      "type": "touchpad",
-      "id": "web_00000000-0000-4000-8000-000000000003_2"
+      "type": "touchpad"
     }
   },
   {
     "name": "scrolling_1",
     "message": {
+      "id": "web_00000000-0000-4000-8000-000000000004_2",
       "activity_id": "touchpad_scrolling",
       "metric_family": "scrolling",
       "elapsed_ms": 400,
@@ -101,8 +102,7 @@
       "stp_scrolling_direction": "down",
       "stp_scrolling_cursor_travel_without_scroll_px": -1,
       "version": 1,
-      "type": "touchpad",
-      "id": "web_00000000-0000-4000-8000-000000000004_1"
+      "type": "touchpad"
     }
   },
   {
@@ -118,7 +118,7 @@
       "stp_drag_target_text": "prescribed phrase",
       "version": 1,
       "type": "touchpad",
-      "id": "web_00000000-0000-4000-8000-000000000005_1"
+      "id": "web_00000000-0000-4000-8000-000000000005_2"
     }
   },
   {
@@ -145,7 +145,7 @@
       "stp_zooming_cursor_travel_without_zoom_px": -1,
       "version": 1,
       "type": "touchpad",
-      "id": "web_00000000-0000-4000-8000-000000000006_1"
+      "id": "web_00000000-0000-4000-8000-000000000006_2"
     }
   },
   {
@@ -171,7 +171,7 @@
       ],
       "version": 1,
       "type": "feedback",
-      "id": "web_00000000-0000-4000-8000-000000000007_1"
+      "id": "web_00000000-0000-4000-8000-000000000007_2"
     }
   },
   {
@@ -183,7 +183,7 @@
       "comment": "Freeform session feedback.",
       "version": 1,
       "type": "feedback",
-      "id": "web_00000000-0000-4000-8000-000000000007_2"
+      "id": "web_00000000-0000-4000-8000-000000000007_3"
     }
   }
 ]

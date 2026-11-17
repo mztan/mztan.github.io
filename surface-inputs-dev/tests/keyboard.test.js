@@ -111,7 +111,7 @@ test('actual keyboard prompt begun before port transfer retains committed stream
     const input = e.doc.getElementById('input-area'), prompt = e.doc.getElementById('sample-text').innerText;
     input.value = prompt; input.dispatchEvent({ type: 'input', data: prompt, inputType: 'insertText' });
     e.handshake(); e.setNow(1010); input.dispatchEvent(event('Enter', { type: 'keydown' }));
-    assert.equal(e.win.SurfaceInputsTransport.pendingCount(), 1); assert.equal(e.port.sent.length, 1);
+    assert.equal(e.win.SurfaceInputsTransport.pendingCount(), 2); assert.equal(e.port.sent.length, 1); // typed + held optional UXR result
     e.port.receive({ version: 1, type: 'ready' });
     assert.equal(e.port.sent.at(-1).input_event_stream, prompt + '⏎');
 });

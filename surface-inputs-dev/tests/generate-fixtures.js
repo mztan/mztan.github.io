@@ -9,7 +9,7 @@ function key(type, value, extra = {}) {
     return Object.assign({ type, key: value, code: value, keyCode: 0, ctrlKey: false, shiftKey: false,
         metaKey: false, altKey: false, preventDefault() {} }, extra);
 }
-async function fixtures() {
+async function fixtures(nativeVersion = 'legacy') {
     const results = [];
     let caseNumber = 0;
     function setup(kind) {
@@ -21,6 +21,7 @@ async function fixtures() {
         e.load('transport.js');
         if (kind === 'keyboard') { e.load('keyboard-capture.js'); e.load('keyboard/keyboard-layout.js'); }
         else { e.load('metrics.js'); e.load('touchpad-observer.js'); }
+        e.port.capabilityBehavior = nativeVersion;
         e.ready();
         return e;
     }
@@ -56,7 +57,9 @@ async function fixtures() {
     fitts.mouseMoved(0, 0); vm.runInContext('startExperience()', cursor.context);
     cursor.setNow(1100); fitts.mouseMoved(fitts.target.x / 2, fitts.target.y / 2);
     cursor.setNow(1200); fitts.mouseMoved(fitts.target.x, fitts.target.y);
-    fitts.mouseClicked(fitts.target.x, fitts.target.y); collect(cursor, 'targeting');
+    fitts.mouseClicked(fitts.target.x, fitts.target.y);
+    if (nativeVersion === 'v2') for (let i=1;i<9;i++) { cursor.setNow(1200+i*100);fitts.mouseMoved(fitts.target.x,fitts.target.y);fitts.mouseClicked(fitts.target.x,fitts.target.y); }
+    collect(cursor, 'targeting');
 
     const scrolling = setup('touchpad');
     const scroller = scrolling.doc.getElementById('scroll-container'); scroller.scrollTop = 0;
@@ -65,7 +68,16 @@ async function fixtures() {
     scrolling.doc.getElementById('targetbox').rect = { top: 100.25, bottom: 140.25 };
     scrolling.win.SurfaceInputsTouchpad.beginScroll(false);
     scroller.scrollTop = 90; scrolling.setNow(1100); scrolling.win.SurfaceInputsTouchpad.scrollMove();
-    scrolling.setNow(1400); scrolling.win.SurfaceInputsTouchpad.finishScroll(); collect(scrolling, 'scrolling');
+    scrolling.setNow(1400); scrolling.win.SurfaceInputsTouchpad.finishScroll();
+    if (nativeVersion === 'v2') {
+        scrolling.context.EventLogger = new Proxy({}, {get:()=>()=>{}});
+        scrolling.load('touchpad/scripts_dc.js');
+        const paragraphs=Array.from({length:4},()=>{const value=new Element();value.textContent='one two three four five six seven eight nine';return value;});
+        scrolling.doc.querySelectorAll=query=>query==='.scroll-text'?paragraphs:[];
+        scrolling.context.EXPERIENCE_NAME='Scroll';
+        vm.runInContext("rng=new RandomGenerator(42); successfulClicks=6; elapsed=1400;gestureCount=3; scrollingTaskContext='scroll_fixture_block'; highlightRandomPhraseScroll()",scrolling.context);
+    }
+    collect(scrolling, 'scrolling');
 
     const drag = setup('touchpad'), target = new Element('highlight'); target.textContent = 'prescribed phrase';
     drag.elements.set('highlight', target); drag.win.SurfaceInputsTouchpad.beginSelection(false);

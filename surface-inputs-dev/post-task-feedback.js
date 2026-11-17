@@ -187,10 +187,11 @@
                     local().clear(exportedIds); exportedIds = [];
                 }
             },
-            complete(activity) {
+            complete(activity, taskContextId) {
                 if (!ACTIVITIES.includes(activity) || current) return;
                 const token = prefix + '_' + (++sequence).toString(36);
-                current = {activity, round:token, id:token};
+                if (taskContextId && !/^[\x21-\x7e]{1,64}$/.test(taskContextId)) throw new Error('Invalid feedback task context');
+                current = {activity, round:taskContextId || token, id:token};
                 win.setTimeout(() => {
                     render();
                     returnFocus = doc.activeElement;

@@ -274,7 +274,37 @@ function setExperienceTitle(title, explanation) {
     document.title = title;
 }
 
+function finishScrollTask() {
+    if (scrollTaskCompleted) return;
+    scrollTaskCompleted = true;
+    document.getElementById('start-screen').style.display = "";
+    document.getElementById('scroll-body').style.display = "none";
+    removeHighlight();
+    document.getElementById('scroll-body').removeEventListener('scroll', onScrollCallback);
+    if (!isPractice) {
+        EventLogger.stopTrace('scrollPosition');
+        document.removeEventListener('mousemove', scrollMouseMoveHandler);
+        document.removeEventListener('touchmove', scrollTouchMoveHandler);
+        let startText = document.getElementById('start-text');
+        let elapsedStr = (elapsed / 1000).toFixed(2);
+        if (SurfaceInputsTransport.usesNative()) {
+            if (!scrollingTaskContext) scrollingTaskContext = SurfaceInputsTransport.newObservationId();
+            SurfaceInputsTransport.submitCurrentResult({id:scrollingTaskContext+'_result',task_id:'touchpad_scrolling',
+                event_name:'uxr_result',task_context_id:scrollingTaskContext,elapsed_ms:Math.max(0,Math.round(elapsed)),
+                details:{details_version:1,result_schema:'scrolling_task_result_v1',result:{trial_num:trialNum,time_to_complete:elapsedStr,gesture_count:gestureCount}}});
+        }
+        startText.innerText = `#${trialNum}, TTC: ${elapsedStr}s, Gestures: ${gestureCount}\n` + startText.innerText;
+        submitForm(trialNum, elapsedStr, gestureCount);
+        EventLogger.endTrial({trialNum:trialNum,timeToComplete:elapsedStr,gestureCount:gestureCount});
+        EventLogger.downloadLog(); EventLogger.clearLog();
+    }
+    trialNum += 1;
+    // BEGIN POST-TASK FEEDBACK HOOK
+    if (window.SurfaceInputsFeedback) window.SurfaceInputsFeedback.complete('touchpad_scrolling', scrollingTaskContext);
+    // END POST-TASK FEEDBACK HOOK
+}
 function highlightRandomPhraseScroll() {
+    if (successfulClicks >= MAX_SCROLL_TRIALS) { finishScrollTask(); return; }
     let paragraphs = document.querySelectorAll('.scroll-text');
     paragraphs = Array.from(paragraphs).slice(1, -1);  // remove first and last element so the text is always possible to scroll to
     const randomParagraph = paragraphs[Math.floor(rng.random() * paragraphs.length)];
@@ -300,33 +330,8 @@ function highlightRandomPhraseScroll() {
 
     showUpDownArrows();
 
-    if (successfulClicks >= MAX_SCROLL_TRIALS) {
-        document.getElementById('start-screen').style.display = "";
-        document.getElementById('scroll-body').style.display = "none";
-        removeHighlight();
-
-        document.getElementById('scroll-body').removeEventListener('scroll', onScrollCallback);
-
-        if (!isPractice) {
-            EventLogger.stopTrace('scrollPosition');
-            document.removeEventListener('mousemove', scrollMouseMoveHandler);
-            document.removeEventListener('touchmove', scrollTouchMoveHandler);
-            let startText = document.getElementById('start-text');
-            let elapsedStr = (elapsed / 1000).toFixed(2)
-            startText.innerText = `#${trialNum}, TTC: ${elapsedStr}s, Gestures: ${gestureCount}\n` + startText.innerText;
-            submitForm(trialNum, elapsedStr, gestureCount);
-            EventLogger.endTrial({ trialNum: trialNum, timeToComplete: elapsedStr, gestureCount: gestureCount });
-            EventLogger.downloadLog();
-            EventLogger.clearLog();
-        }
-        trialNum += 1;
-        // BEGIN POST-TASK FEEDBACK HOOK
-        if (window.SurfaceInputsFeedback) window.SurfaceInputsFeedback.complete('touchpad_scrolling');
-        // END POST-TASK FEEDBACK HOOK
-    } else {
-        SurfaceInputsTouchpad.beginScroll(isPractice);
-        EventLogger.setIsInTarget(false);
-    }
+    SurfaceInputsTouchpad.beginScroll(isPractice);
+    EventLogger.setIsInTarget(false);
 }
 
 
@@ -464,7 +469,10 @@ function onScrollCallback() {
     }
 }
 
+var scrollingTaskContext = null, scrollTaskCompleted = false;
 function startScrollExperience() {
+    scrollTaskCompleted = false;
+    scrollingTaskContext = SurfaceInputsTransport.usesNative() ? SurfaceInputsTransport.newObservationId() : null;
     rng = new RandomGenerator();
     successfulClicks = 0;
     gestureCount = 0;

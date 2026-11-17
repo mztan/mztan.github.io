@@ -67,28 +67,31 @@ def main():
             if target.is_dir():
                 target /= 'index.html'
             assert target.is_file(), (entry, ref)
-    for name in ('transport.js', 'transport-ui.js', 'touchpad/event-logger.js'):
+    for name in ('transport-ui.js', 'touchpad/event-logger.js'):
         assert (DEV / name).read_bytes() == (PROD / name).read_bytes(), (name, 'Collection code changed')
-    hooks = {'keyboard/script.js': ('nativeActivity()', 2),
-             'touchpad/fitts-law.js': ("'touchpad_targeting'", 1),
-             'touchpad/scripts_dc.js': ("'touchpad_scrolling'", 1)}
-    for name, (argument, count) in hooks.items():
+    subprocess.run(['node', 'surface-inputs-dev/tests/generate-contract.js', '--check'], cwd=ROOT, check=True)
+    # SDK is intentionally dev-only; standard fields stay equal to the installed v1 producer contract.
+    subprocess.run(['node', '-e', "require('node:assert/strict').deepEqual(require('./surface-inputs-dev/transport.js').metrics, require('./surface-inputs/transport.js').metrics)"], cwd=ROOT, check=True)
+    assert not (DEV / 'collector-config.js').exists() and not (DEV / 'form-collector.js').exists(), 'Dormant Forms collector must remain isolated'
+    hooks = {'keyboard/script.js': 2, 'touchpad/fitts-law.js': 1, 'touchpad/scripts_dc.js': 1}
+    for name, count in hooks.items():
         source = (DEV / name).read_text()
-        pattern = (r'^[ \t]*// BEGIN POST-TASK FEEDBACK HOOK\n'
-                   r'[ \t]*if \(window\.SurfaceInputsFeedback\) window\.SurfaceInputsFeedback\.complete\('
-                   + re.escape(argument) + r'\);\n[ \t]*// END POST-TASK FEEDBACK HOOK\n')
-        original, removed = re.subn(pattern, '', source, flags=re.MULTILINE)
-        assert removed == count, (name, 'Unexpected feedback completion hooks')
-        baseline, baseline_removed = re.subn(pattern, '', (PROD / name).read_text(), flags=re.MULTILINE)
-        assert baseline_removed in (0, count), (name, 'Unexpected production feedback hooks')
-        if name == 'keyboard/script.js':
-            new_url = 'https://docs.google.com/forms/d/e/1FAIpQLSfEcRfQeisYOj7K3Z1rWrbPji4rV4_9EqDlMEL4SyJi45FtRA/formResponse'
-            old_url = 'https://docs.google.com/forms/d/e/1FAIpQLSdAuVaWh53BvFkNTSHVki0QqIlw7CQn-xTptVpmRtHrk2ULEA/formResponse'
-            assert original.count(new_url) == 1, 'Unexpected typing URL-only override'
-            assert baseline.count(new_url) in (0, 1), 'Unexpected production typing override'
-            original = original.replace(new_url, old_url)
-            baseline = baseline.replace(new_url, old_url)
-        assert original == baseline, (name, 'Task engine changed outside completion hooks and the typing URL override')
+        assert source.count('// BEGIN POST-TASK FEEDBACK HOOK') == count, (name, 'Unexpected completion hooks')
+    for name in ('metrics.js', 'keyboard-capture.js', 'keyboard/keyboard-layout.js'):
+        assert (DEV / name).read_bytes() == (PROD / name).read_bytes(), (name, 'Standard calculation/capture changed')
+    # Native facade wiring is intentional; browser Form submitters and fixed calculators are
+    # checked separately so this verifier does not bless a global engine-byte replacement.
+    def section(text, start, end):
+        first = text.index(start)
+        return text[first:text.index(end, first)]
+    keyboard, old_keyboard = (DEV / 'keyboard/script.js').read_text(), (PROD / 'keyboard/script.js').read_text()
+    assert section(keyboard, '    function calculatePromptResult()', '    function calculateAverageResults()') == section(old_keyboard, '    function calculatePromptResult()', '    function calculateAverageResults()')
+    assert keyboard[keyboard.index('    function submitPromptResultToGoogleForm('):] == old_keyboard[old_keyboard.index('    function submitPromptResultToGoogleForm('):]
+    fitts, old_fitts = (DEV / 'touchpad/fitts-law.js').read_text(), (PROD / 'touchpad/fitts-law.js').read_text()
+    assert fitts[:fitts.index('var targetingTaskContext')] == old_fitts[:old_fitts.index('function startExperience()')]
+    assert fitts[fitts.index('function submitForm('):] == old_fitts[old_fitts.index('function submitForm('):]
+    scroll, old_scroll = (DEV / 'touchpad/scripts_dc.js').read_text(), (PROD / 'touchpad/scripts_dc.js').read_text()
+    assert scroll[scroll.index('function startTimer()'):] == old_scroll[old_scroll.index('function startTimer()'):]
     assert not (DEV / 'dev-bootstrap.js').exists()
     assert not (ROOT / 'development-tools').exists()
     assert (DEV / 'touchpad/arcade-targeting.css').is_file()
