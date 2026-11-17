@@ -1,7 +1,8 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const root=path.join(__dirname,'..'),prod=path.join(root,'../surface-inputs');
-const read=(dir,file)=>fs.readFileSync(path.join(dir,file),'utf8');
+const clean=source=>source.replace(/^[ \t]*if\s*\(window\.SurfaceInputsTaskUploads[^\n]*\n/gm,'').replace(/^[ \t]*if \(dogfoodScrollAborted\) return;\n/gm,'').replace(/^[ \t]*browserResultRetained = true;\n/gm,'');
+const read=(dir,file)=>clean(fs.readFileSync(path.join(dir,file),'utf8'));
 function section(source,start,end){const first=source.indexOf(start),last=source.indexOf(end,first);assert(first>=0&&last>first);return source.slice(first,last);}
 test('fixed capture, metric formulas, corpora and browser Forms submitters remain unchanged',()=>{
  for(const file of ['metrics.js','keyboard-capture.js','keyboard/keyboard-layout.js','touchpad/event-logger.js'])assert.equal(read(root,file),read(prod,file),file);

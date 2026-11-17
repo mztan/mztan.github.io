@@ -13,7 +13,7 @@ test('feedback UI uses the simplified copy and controls without changing field b
     const source=fs.readFileSync(path.join(__dirname,'../post-task-feedback.js'),'utf8');
     const template=source.match(/container\.innerHTML = `([\s\S]*?)`;/)[1];
     assert.match(template,/<h2 id="feedback-title">Feedback<\/h2>/);
-    assert.match(template,/id="feedback-save" type="button">Upload<\/button>/);
+    assert.match(template,/id="feedback-save" type="button">Next<\/button>/);
     for(const removed of ['feedback-brand','feedback-continue','feedback-export','feedback-clear','feedback-count','placeholder=','(optional)','Task complete'])assert.equal(template.includes(removed),false,removed);
     const css=fs.readFileSync(path.join(__dirname,'../post-task-feedback.css'),'utf8');
     const values=css.match(/\.feedback-value \{([^}]+)\}/)[1];assert.equal(values.includes('border'),false);

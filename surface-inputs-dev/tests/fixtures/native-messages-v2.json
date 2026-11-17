@@ -502,7 +502,7 @@
   {
     "name": "targeting_19",
     "message": {
-      "id": "web_00000000-0000-4000-8000-000000000003_2_result",
+      "id": "web_00000000-0000-4000-8000-000000000003_l",
       "task_id": "touchpad_targeting",
       "event_name": "uxr_result",
       "task_context_id": "web_00000000-0000-4000-8000-000000000003_2",
@@ -511,7 +511,7 @@
       "version": 2,
       "type": "arcade"
     },
-    "raw": "{\"id\":\"web_00000000-0000-4000-8000-000000000003_2_result\",\"task_id\":\"touchpad_targeting\",\"event_name\":\"uxr_result\",\"task_context_id\":\"web_00000000-0000-4000-8000-000000000003_2\",\"elapsed_ms\":0,\"details\":\"{\\\"details_version\\\":1,\\\"result_schema\\\":\\\"targeting_round_result_v1\\\",\\\"result\\\":{\\\"trial_num\\\":1,\\\"condition_num\\\":\\\"2\\\",\\\"index_of_difficulty\\\":\\\"3.15\\\",\\\"effective_id\\\":\\\"Infinity\\\",\\\"throughput\\\":\\\"Infinity\\\",\\\"time_to_complete\\\":\\\"0.00\\\",\\\"clicks_total\\\":9,\\\"clicks_on_target\\\":9,\\\"target_entries\\\":2,\\\"drag_count\\\":0,\\\"total_cursor_distance\\\":\\\"2363.5\\\"}}\",\"version\":2,\"type\":\"arcade\"}",
+    "raw": "{\"id\":\"web_00000000-0000-4000-8000-000000000003_l\",\"task_id\":\"touchpad_targeting\",\"event_name\":\"uxr_result\",\"task_context_id\":\"web_00000000-0000-4000-8000-000000000003_2\",\"elapsed_ms\":0,\"details\":\"{\\\"details_version\\\":1,\\\"result_schema\\\":\\\"targeting_round_result_v1\\\",\\\"result\\\":{\\\"trial_num\\\":1,\\\"condition_num\\\":\\\"2\\\",\\\"index_of_difficulty\\\":\\\"3.15\\\",\\\"effective_id\\\":\\\"Infinity\\\",\\\"throughput\\\":\\\"Infinity\\\",\\\"time_to_complete\\\":\\\"0.00\\\",\\\"clicks_total\\\":9,\\\"clicks_on_target\\\":9,\\\"target_entries\\\":2,\\\"drag_count\\\":0,\\\"total_cursor_distance\\\":\\\"2363.5\\\"}}\",\"version\":2,\"type\":\"arcade\"}",
     "expected_details": "{\"details_version\":1,\"result_schema\":\"targeting_round_result_v1\",\"result\":{\"trial_num\":1,\"condition_num\":\"2\",\"index_of_difficulty\":\"3.15\",\"effective_id\":\"Infinity\",\"throughput\":\"Infinity\",\"time_to_complete\":\"0.00\",\"clicks_total\":9,\"clicks_on_target\":9,\"target_entries\":2,\"drag_count\":0,\"total_cursor_distance\":\"2363.5\"}}"
   },
   {
@@ -542,7 +542,7 @@
   {
     "name": "scrolling_2",
     "message": {
-      "id": "scroll_fixture_block_result",
+      "id": "web_00000000-0000-4000-8000-000000000004_3",
       "task_id": "touchpad_scrolling",
       "event_name": "uxr_result",
       "task_context_id": "scroll_fixture_block",
@@ -551,7 +551,7 @@
       "version": 2,
       "type": "arcade"
     },
-    "raw": "{\"id\":\"scroll_fixture_block_result\",\"task_id\":\"touchpad_scrolling\",\"event_name\":\"uxr_result\",\"task_context_id\":\"scroll_fixture_block\",\"elapsed_ms\":1400,\"details\":\"{\\\"details_version\\\":1,\\\"result_schema\\\":\\\"scrolling_task_result_v1\\\",\\\"result\\\":{\\\"trial_num\\\":1,\\\"time_to_complete\\\":\\\"1.40\\\",\\\"gesture_count\\\":3}}\",\"version\":2,\"type\":\"arcade\"}",
+    "raw": "{\"id\":\"web_00000000-0000-4000-8000-000000000004_3\",\"task_id\":\"touchpad_scrolling\",\"event_name\":\"uxr_result\",\"task_context_id\":\"scroll_fixture_block\",\"elapsed_ms\":1400,\"details\":\"{\\\"details_version\\\":1,\\\"result_schema\\\":\\\"scrolling_task_result_v1\\\",\\\"result\\\":{\\\"trial_num\\\":1,\\\"time_to_complete\\\":\\\"1.40\\\",\\\"gesture_count\\\":3}}\",\"version\":2,\"type\":\"arcade\"}",
     "expected_details": "{\"details_version\":1,\"result_schema\":\"scrolling_task_result_v1\",\"result\":{\"trial_num\":1,\"time_to_complete\":\"1.40\",\"gesture_count\":3}}"
   },
   {

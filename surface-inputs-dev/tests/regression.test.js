@@ -52,7 +52,9 @@ test('launcher negotiates the APK ready handshake without changing browser links
     const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
     const scripts = [...html.matchAll(/<script[^>]*\bsrc="([^"]+)"/g)].map(value => value[1].split(/[?#]/)[0]);
     assert.ok(scripts.includes('../environment.js'));
-    const transportScripts = scripts.filter(script => script !== '../environment.js');
+    const transportScripts = scripts.filter(script => script !== '../environment.js' && script !== 'dogfood-flow.js');
+    assert(scripts.includes('dogfood-flow.js'));
+    assert(html.includes('id="start-dogfooding"'));
     assert.deepEqual(transportScripts, ['transport.js', 'transport-ui.js']);
     const e = environment();
     transportScripts.forEach(script => e.load(script));
@@ -63,11 +65,7 @@ test('launcher negotiates the APK ready handshake without changing browser links
     assert.equal(e.win.SurfaceInputsTransport.isNative(), true);
     assert.equal(e.requests.length, 0);
     const links = [...html.matchAll(/<a[^>]*href="([^"]+)"/g)].map(value => value[1]);
-    assert.deepEqual(links, [
-        'touchpad/index.html?session_id=df_202611',
-        'touchpad/scroll.html?session_id=df_202611',
-        'keyboard/?setting_preset=df&amp;num_prompts=3&amp;session_id=df_202611'
-    ]);
+    assert.deepEqual(links, []); // task choices are replaced by the guided Start action
 });
 
 test('identity hiding is only installed after real private port ready reply, not URL or untrusted dispatch', () => {

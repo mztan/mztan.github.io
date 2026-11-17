@@ -4,7 +4,7 @@ This folder consolidates the existing public keyboard and touchpad web test impl
 
 ## Run the tests
 
-The [start page](index.html) presents Targeting, Scrolling, and Typing with the Surface Inputs Arcade aesthetic: a navy background, cream/red condensed wordmark, flat dark activity tiles, mint icons, and 2px corners. The desktop row becomes a compact stacked layout on narrow screens. There is no source footer. All three actions navigate to the local copies in the same tab, so the launcher also works without JavaScript and can be used in a WebView. The shared `df_202611` session label is retained; Typing uses the existing `df` preset with `num_prompts=3` to match the requested short block. This launcher does not itself orchestrate multiple activities or enforce three touchpad runs.
+The [start page](index.html) has one **Start Dogfooding** action. It guides participants through six Targeting sets, six Scrolling sets and the existing three-prompt Typing block. Feedback follows each complete block, with **Next**, **Next** and **Finish** leading to a thank-you page. Only the exact development path has **Skip task**. See [GUIDED_DOGFOOD.md](GUIDED_DOGFOOD.md) for set counts, upload mapping and recovery.
 
 - [Keyboard test](keyboard/?setting_preset=uxr): natural language, punctuation/capitalization, email, password, shortcuts, and arrows.
 - [Touchpad targeting](touchpad/index.html).
@@ -30,9 +30,9 @@ The Targeting return screen no longer shows the result-history card. Its calcula
 
 ## Post-task feedback
 
-After a complete Targeting, Scrolling or Typing task, the shared dialog is titled **Feedback** and asks **How easy or difficult was this task?** on the unchanged 1–5 scale. The freeform question remains **What worked well, or what could be improved?**; blank text is allowed without an optional label. Branding, placeholders, number underlines, the byte counter, export/clear controls and the Skip button are absent. The primary control is **Upload**. Escape remains available for accessibility.
+After a complete Targeting, Scrolling or Typing task, the shared dialog is titled **Feedback** and asks **How easy or difficult was this task?** on the unchanged 1–5 scale. The freeform question remains **What worked well, or what could be improved?**; blank text is allowed without an optional label. Branding, placeholders, number underlines, the byte counter, export/clear controls and the Skip button are absent. The primary control is **Next**, or **Finish** for the final guided task. Escape remains available for accessibility.
 
-The existing response bounds, immutable IDs and local persistence remain. Native sink acceptance closes the dialog; it is not a server-upload receipt. Browser responses remain visibly local-only and are never described as uploaded because no feedback collector is configured. Non-UI developer APIs `getSavedFeedback()`, `exportSavedFeedback()` and `clearExportedFeedback()` remain for managing retained browser responses; clearing requires confirmation and only affects the exported snapshot. Task measurements and objective Forms are unchanged.
+The existing response bounds, immutable IDs and local persistence remain. Native sink acceptance is still not a server-upload receipt. The new task-specific browser adapter uses the question mappings supplied by the owner’s prefilled links and retains failed requests. Respondent-access flags stay closed until the owner confirms published/accepting/intended access; mocked validation is not actual response-storage proof. The guided buttons are Next/Finish, and successful delivery moves to the next task or thank-you page. Task metric definitions are unchanged.
 
 See [the telemetry contract](TELEMETRY.md#post-task-feedback-ui) for completion boundaries, retention and the limited meaning of feedback-block IDs.
 

@@ -482,7 +482,9 @@ function startTimer() {
 
 var targetingTaskContext = null;
 function startExperience() {
-    targetingTaskContext = SurfaceInputsTransport.usesNative() ? SurfaceInputsTransport.newObservationId() : null;
+    const dogfood = window.SurfaceInputsDogfood;
+    if (dogfood && dogfood.active('targeting')) { if (!dogfood.begin('targeting')) return; trialNum=dogfood.getState().tasks[0].sets+1; }
+    targetingTaskContext = dogfood && dogfood.active('targeting') ? dogfood.context('targeting') : (SurfaceInputsTransport.usesNative() ? SurfaceInputsTransport.newObservationId() : null);
 	resetTrialData();
 	let condition = nextCondition();
 	currentCondition = condition;
@@ -509,6 +511,7 @@ function startExperience() {
 	EventLogger.startCursorTrace(testAreaSVG.node());
 }
 
+window.addEventListener('dogfood-task-abort', () => { fittsTest.active=false;SurfaceInputsTouchpad.abort();clearTimeout(stopTimeout); });
 function endExperience() {
 	SurfaceInputsTouchpad.resetCursor();
 	experienceScreen.style.display = "none";
@@ -590,7 +593,7 @@ function endExperience() {
     if (!isPractice && SurfaceInputsTransport.usesNative()) {
         if (!targetingTaskContext) targetingTaskContext = SurfaceInputsTransport.newObservationId();
         SurfaceInputsTransport.submitCurrentResult({
-        id:targetingTaskContext + '_result',task_id:'touchpad_targeting',event_name:'uxr_result',
+        id:SurfaceInputsTransport.newObservationId(),task_id:'touchpad_targeting',event_name:'uxr_result',
         task_context_id:targetingTaskContext,elapsed_ms:Math.max(0,Math.round(elapsed)),
         details:{details_version:1,result_schema:'targeting_round_result_v1',result:{trial_num:trialNum,condition_num:currentCondition,
             index_of_difficulty:idStr,effective_id:ideStr,throughput:tpStr,time_to_complete:elapsedStr,
@@ -602,7 +605,10 @@ function endExperience() {
 
 	if (!isPractice) {
 		startText.innerText = `#${trialNum} C:${currentCondition} TTC:${elapsedStr}s ID:${idStr} IDe:${ideStr} TP:${tpStr} CT:${ct} TE:${te} TCD:${tcd}px\n` + startText.innerText;
-		submitForm(trialNum, currentCondition, idStr, ideStr, tpStr, elapsedStr, ct, cot, te, tcd);
+		if (submitForm(trialNum, currentCondition, idStr, ideStr, tpStr, elapsedStr, ct, cot, te, tcd) === false) {
+            if (window.SurfaceInputsDogfood) window.SurfaceInputsDogfood.pauseCompletion('targeting', endExperience);
+            return;
+        }
 		EventLogger.endTrial({ trialNum: trialNum, condition: currentCondition, timeToComplete: elapsedStr, indexOfDifficulty: idStr, effectiveId: ideStr, throughput: tpStr, clicksTotal: ct, clicksOnTarget: cot, targetEntries: te, dragCount: dragCount, totalCursorDistance: tcd });
 		EventLogger.stopCursorTrace();
 		EventLogger.downloadLog();
@@ -627,7 +633,7 @@ function endExperience() {
 	testAreaSVG.selectAll('line').remove(); // remove all cursor trails
 	//fittsTest.advanceParams();
 	// BEGIN POST-TASK FEEDBACK HOOK
-	if (window.SurfaceInputsFeedback) window.SurfaceInputsFeedback.complete('touchpad_targeting', targetingTaskContext);
+	if (!(window.SurfaceInputsDogfood && window.SurfaceInputsDogfood.complete('targeting', startExperience, 'touchpad_targeting')) && window.SurfaceInputsFeedback) window.SurfaceInputsFeedback.complete('touchpad_targeting', targetingTaskContext);
 	// END POST-TASK FEEDBACK HOOK
 }
 
@@ -685,6 +691,7 @@ function submitForm(trial, condition, id, ide, tp, ttc, ct, cot, te, tcd) {
 	document.getElementById('session_id').value = sessionId;
 
     // Dispatch a synthetic submit event
+    if (window.SurfaceInputsTaskUploads) return window.SurfaceInputsTaskUploads.result('targeting', form);
     form.dispatchEvent(new Event('submit', { cancelable: true }));
 }
 

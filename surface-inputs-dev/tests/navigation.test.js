@@ -40,8 +40,10 @@ function page() {
 
 test('every tracked dev HTML subpage links the shared Home script in its own environment', () => {
     const pages = execFileSync('git', ['ls-files', 'surface-inputs-dev'], { cwd: repo, encoding: 'utf8' })
-        .trim().split('\n').filter(file => file.endsWith('.html') && file !== 'surface-inputs-dev/index.html');
+        .trim().split('\n').filter(file => file.endsWith('.html') && file !== 'surface-inputs-dev/index.html' && file !== 'surface-inputs-dev/thanks.html');
     assert.equal(pages.length, 13);
+    const thanks=fs.readFileSync(path.join(root,'thanks.html'),'utf8');
+    assert.match(thanks,/<a href="index.html">Return to main page<\/a>/);
     for (const file of pages) {
         const html = fs.readFileSync(path.join(repo, file), 'utf8');
         const scripts = [...html.matchAll(/<script[^>]+src="([^"]+)"/g)].map(match => match[1]);

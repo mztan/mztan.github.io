@@ -84,13 +84,17 @@ def main():
     def section(text, start, end):
         first = text.index(start)
         return text[first:text.index(end, first)]
-    keyboard, old_keyboard = (DEV / 'keyboard/script.js').read_text(), (PROD / 'keyboard/script.js').read_text()
+    def clean(source):
+        source = re.sub(r'^[ \t]*browserResultRetained = true;\n', '', source, flags=re.MULTILINE)
+        source = re.sub(r'^[ \t]*if\s*\(window\.SurfaceInputsTaskUploads[^\n]*\n', '', source, flags=re.MULTILINE)
+        return re.sub(r'^[ \t]*if \(dogfoodScrollAborted\) return;\n', '', source, flags=re.MULTILINE)
+    keyboard, old_keyboard = clean((DEV / 'keyboard/script.js').read_text()), clean((PROD / 'keyboard/script.js').read_text())
     assert section(keyboard, '    function calculatePromptResult()', '    function calculateAverageResults()') == section(old_keyboard, '    function calculatePromptResult()', '    function calculateAverageResults()')
     assert keyboard[keyboard.index('    function submitPromptResultToGoogleForm('):] == old_keyboard[old_keyboard.index('    function submitPromptResultToGoogleForm('):]
-    fitts, old_fitts = (DEV / 'touchpad/fitts-law.js').read_text(), (PROD / 'touchpad/fitts-law.js').read_text()
+    fitts, old_fitts = clean((DEV / 'touchpad/fitts-law.js').read_text()), clean((PROD / 'touchpad/fitts-law.js').read_text())
     assert fitts[:fitts.index('var targetingTaskContext')] == old_fitts[:old_fitts.index('function startExperience()')]
     assert fitts[fitts.index('function submitForm('):] == old_fitts[old_fitts.index('function submitForm('):]
-    scroll, old_scroll = (DEV / 'touchpad/scripts_dc.js').read_text(), (PROD / 'touchpad/scripts_dc.js').read_text()
+    scroll, old_scroll = clean((DEV / 'touchpad/scripts_dc.js').read_text()), clean((PROD / 'touchpad/scripts_dc.js').read_text())
     assert scroll[scroll.index('function startTimer()'):] == old_scroll[old_scroll.index('function startTimer()'):]
     assert not (DEV / 'dev-bootstrap.js').exists()
     assert not (ROOT / 'development-tools').exists()

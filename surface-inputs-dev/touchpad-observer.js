@@ -32,6 +32,7 @@
         return { value, lower: value + h.bottom - b.bottom, upper: value + h.top - b.top };
     }
     win.SurfaceInputsTouchpad = {
+        abort() { cursor=null;scroll=null;selection=null;zoom=null;latestPointer=null; },
         resetCursor() { cursor = null; },
         beginCursor(target, practice) {
             const at = now(), geometry = { x: target.x, y: target.y, radius: target.w / 2 };

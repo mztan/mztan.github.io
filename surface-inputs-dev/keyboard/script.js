@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             'passwords': 'keyboard_password', 'metal-keys': 'keyboard_punctuation',
             'shortcuts': 'keyboard_shortcuts', 'arrows': 'keyboard_arrows' }[dataset];
     }
-    let pendingNativeCompletion = null, keyboardTaskContext = null;
+    let pendingNativeCompletion = null, keyboardTaskContext = null, pendingBrowserCompletion = null, browserResultRetained = true;
     function emitNativePrompt(prompt, finalText, elapsedMs, promptId, format, resultFactory) {
         if (!nativeBound()) return true;
         try {
@@ -353,6 +353,10 @@ document.addEventListener('DOMContentLoaded', async function () {
         if (testActive) return;
 
         // Start the test
+        if (window.SurfaceInputsDogfood && window.SurfaceInputsDogfood.active('typing')) {
+            if (!window.SurfaceInputsDogfood.begin('typing')) return;
+            keyboardTaskContext = window.SurfaceInputsDogfood.context('typing');
+        }
         if (nativeBound() && !keyboardTaskContext) keyboardTaskContext = transport.newObservationId();
         testActive = true;
         results.style.display = 'none';
@@ -573,6 +577,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
         // Fresh run: build new random sequences + reset counters.
         pendingNativeCompletion = null;
+        pendingBrowserCompletion = null;
         keyboardTaskContext = nativeBound() ? transport.newObservationId() : null;
         buildShortcutSequences();
         kcResults = [];
@@ -755,7 +760,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
         flushDetailedLogs(); // download the per-prompt JSON (no-op if logging off)
         // BEGIN POST-TASK FEEDBACK HOOK
-        if (window.SurfaceInputsFeedback) window.SurfaceInputsFeedback.complete(nativeActivity(), keyboardTaskContext);
+        if (!(window.SurfaceInputsDogfood && window.SurfaceInputsDogfood.complete('typing', resetTest, nativeActivity())) && window.SurfaceInputsFeedback) window.SurfaceInputsFeedback.complete(nativeActivity(), keyboardTaskContext);
         // END POST-TASK FEEDBACK HOOK
     }
 
@@ -1671,8 +1676,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     // Handle key presses for Enter key
     inputArea.addEventListener('keydown', function (e) {
-        if (pendingNativeCompletion && nativeBound()) {
-            // Retry the frozen completion before capture can append another control token.
+        if ((pendingNativeCompletion && nativeBound()) || pendingBrowserCompletion) {
             e.preventDefault();
             if (e.key !== 'Enter') return;
         } else if (!capture.key(e)) return;
@@ -1766,7 +1770,10 @@ document.addEventListener('DOMContentLoaded', async function () {
                 nativePromptId(getCurrentPromptOriginalIndex()), undefined, calculatePromptResult)) return;
 
             // Native retry uses the once-measured immutable result; browser scoring is unchanged.
-            const promptResult = nativeBound() ? pendingNativeCompletion.result : calculatePromptResult();
+            const promptResult = nativeBound() ? pendingNativeCompletion.result : (pendingBrowserCompletion || calculatePromptResult());
+            if(!nativeBound()&&pendingBrowserCompletion){browserResultRetained=true;document.dispatchEvent(new CustomEvent('promptFinishedEvent',{detail:{message:promptResult}}));}
+            if(!nativeBound()&&!browserResultRetained){pendingBrowserCompletion=promptResult;inputArea.readOnly=true;if(window.SurfaceInputsDogfood)window.SurfaceInputsDogfood.show('Completed prompt is not saved. Keep the page open and press Enter to retry.');return;}
+            pendingBrowserCompletion=null;inputArea.readOnly=false;
             pendingNativeCompletion = null;
             promptResults.push(promptResult);
 
@@ -1874,6 +1881,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         }
     }
 
+    window.addEventListener('dogfood-task-abort', () => {testActive=false;keychordActive=false;releaseKeychordLock();inputArea.disabled=true;pendingNativeCompletion=null;});
     // Reset button functionality
     startButton.addEventListener('click', function () {
         if (currentMode === 'keychord') {
@@ -1902,12 +1910,13 @@ document.addEventListener('DOMContentLoaded', async function () {
             results.style.display = 'block';
         }
         // BEGIN POST-TASK FEEDBACK HOOK
-        if (window.SurfaceInputsFeedback) window.SurfaceInputsFeedback.complete(nativeActivity(), keyboardTaskContext);
+        if (!(window.SurfaceInputsDogfood && window.SurfaceInputsDogfood.complete('typing', resetTest, nativeActivity())) && window.SurfaceInputsFeedback) window.SurfaceInputsFeedback.complete(nativeActivity(), keyboardTaskContext);
         // END POST-TASK FEEDBACK HOOK
     }
 
     function resetTest() {
         pendingNativeCompletion = null;
+        pendingBrowserCompletion = null;
         keyboardTaskContext = nativeBound() ? transport.newObservationId() : null;
         inputArea.readOnly = false;
         testActive = false;
@@ -2003,6 +2012,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             cer: cer
         };
 
+        browserResultRetained = true;
         const promptFinishedEvent = new CustomEvent('promptFinishedEvent', {
             detail: { message: promptResult },
         });
@@ -2111,6 +2121,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         console.log("Submitting prompt result to Google Form: " + JSON.stringify(data));
 
         // Dispatch a synthetic submit event
+        if(window.SurfaceInputsTaskUploads){browserResultRetained=false;try{browserResultRetained=window.SurfaceInputsTaskUploads.result('typing',form);}catch(error){if(window.SurfaceInputsDogfood)window.SurfaceInputsDogfood.show(error.message);}return browserResultRetained;}
         form.dispatchEvent(new Event('submit', { cancelable: true }));
     }
 
@@ -2162,6 +2173,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
         console.log("Submitting prompt result to DF Google Form: " + JSON.stringify(data));
 
+        if(window.SurfaceInputsTaskUploads){browserResultRetained=false;try{browserResultRetained=window.SurfaceInputsTaskUploads.result('typing',form);}catch(error){if(window.SurfaceInputsDogfood)window.SurfaceInputsDogfood.show(error.message);}return browserResultRetained;}
         form.dispatchEvent(new Event('submit', { cancelable: true }));
     }
 });

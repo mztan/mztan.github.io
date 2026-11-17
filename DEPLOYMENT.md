@@ -62,6 +62,12 @@ All new tasks use the shared SDK described in `surface-inputs-dev/BRIDGE_CONTRAC
 
 Run `node surface-inputs-dev/tests/generate-contract.js --check`, the dev conformance tests and actual SDK fixture generation before release. New typed fields, wire versions or origins need an explicit compatibility upgrade. Legacy readiness/intent/feedback behavior stays supported; no browser uploads become a native fallback. The stopped Forms work and dormant collector remain out of scope. Production promotion and headset installation still require separate owner authorization.
 
+## Guided dogfood staging
+
+The development main page uses one Start Dogfooding action and the ordered Targeting → Scrolling → Typing flow. Each touchpad task runs six sets before feedback; Typing retains three prompts. Next/Finish deliver feedback before navigation, and only the exact dev path enables Skip task. See `surface-inputs-dev/GUIDED_DOGFOOD.md` for recovery and Form mapping provenance.
+
+The new task-specific upload adapter uses 62 question IDs supplied through the owner’s blank prefilled links. Access flags remain closed until the owner confirms the Forms are published, accepting responses and accessible to intended dogfooders. Use mocked requests for tests, not real participant submissions. Native-bound traffic remains on the shared SDK. This staging change does not promote the flow to production or install an APK.
+
 ## Credentials
 
 Never check tokens, key material or SSH-agent configuration into this repository. Use a repository-scoped deploy key or appropriately scoped credential outside the tree. An encrypted SSH key can persist on a development host, while its unlocked agent state ends on reboot/agent shutdown; unlock the existing key rather than generating replacements. Do not paste secrets into chat, scripts, commits, or build logs.

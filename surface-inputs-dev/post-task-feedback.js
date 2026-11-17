@@ -96,7 +96,7 @@
                 <label class="feedback-comment-label" for="feedback-comment">What worked well, or what could be improved?</label>
                 <textarea id="feedback-comment" rows="4"></textarea>
                 <p id="feedback-status" role="status" aria-live="polite"></p>
-                <div class="feedback-actions"><button id="feedback-save" type="button">Upload</button><button id="feedback-retry" type="button" hidden>Retry native delivery</button><button id="feedback-retry-saved" type="button" hidden>Retry saved native feedback</button></div>
+                <div class="feedback-actions"><button id="feedback-save" type="button">Next</button><button id="feedback-retry" type="button" hidden>Retry native delivery</button><button id="feedback-retry-saved" type="button" hidden>Retry saved native feedback</button></div>
               </form>
             </div>`;
             doc.body.appendChild(container);
@@ -104,6 +104,9 @@
             find('feedback-save').addEventListener('click', save);
             find('feedback-retry').addEventListener('click', () => {
                 if (!current || !current.message) return;
+                if(current.deliveryNative&&!win.SurfaceInputsTransport.usesNative()){status('This response was recorded in the APK. Wait for native readiness before retrying.');return;}
+                if(!current.deliveryNative&&win.SurfaceInputsTransport.usesNative()){status('This browser response cannot be redirected to native telemetry. Return to the same browser to retry.');return;}
+                if(!win.SurfaceInputsTransport.usesNative()){browserUpload(current.message);return;}
                 try {
                     const transport = win.SurfaceInputsTransport;
                     try { transport.submitFeedback(current.message); }
@@ -132,6 +135,16 @@
                 }
             });
         }
+        function browserUpload(message) {
+            find('feedback-retry').hidden = false;find('feedback-retry').textContent = 'Retry upload';
+            status('Sending feedback…');
+            let result;try{result=win.SurfaceInputsTransport.submitFeedback(message);}catch(error){status(error.message);return;}
+            Promise.resolve(result).then(outcome=>{
+                if(!outcome||outcome.status!=='request_sent')throw new Error('No collector request was sent. Your feedback is retained.');
+                local().put(message,'browser_request_sent');status('Request sent. This does not confirm server storage.');
+                dismiss();if(win.SurfaceInputsDogfood)win.SurfaceInputsDogfood.feedbackDone(message.round_id);
+            }).catch(error=>{local().put(message,'browser_failed');status(error.message+' Your feedback is retained; retry when configured.');});
+        }
         function save() {
             if (!current || current.message) return;
             try {
@@ -140,12 +153,14 @@
                 const transport = win.SurfaceInputsTransport;
                 transport.validate(message);
                 // Persist immutable data before enqueue; reload/export never pretends it was delivered.
-                local().put(message, transport.usesNative() ? 'pending_native' : 'saved_local');
+                local().put(message, transport.usesNative() ? 'pending_native' : (win.SurfaceInputsDogfood && win.SurfaceInputsDogfood.isGuided()?'pending_browser':'saved_local'));
                 current.message = message;
+                current.deliveryNative = transport.usesNative();
                 find('feedback-save').disabled = true;
                 find('feedback-comment').disabled = true;
                 container.querySelectorAll('input[name="feedback-ease"]').forEach(input => { input.disabled = true; });
                 if (!transport.usesNative()) {
+                    if (win.SurfaceInputsTaskUploads) {browserUpload(message);return;}
                     status('Saved on this browser only. No feedback collector is configured; this has not been uploaded.');
                     container.querySelector('.feedback-panel').focus();
                     return;
@@ -168,6 +183,7 @@
                 find('feedback-retry').hidden = true;
                 status('Accepted by the native feedback sink. This is not confirmation of a server upload.');
                 dismiss();
+                if (win.SurfaceInputsDogfood) win.SurfaceInputsDogfood.feedbackDone(message.round_id);
             } else status('Native feedback was rejected. Your response is retained locally; retry it.');
         });
         win.addEventListener('surface-inputs-mode', () => {
@@ -191,8 +207,13 @@
                 if (!ACTIVITIES.includes(activity) || current) return;
                 const token = prefix + '_' + (++sequence).toString(36);
                 if (taskContextId && !/^[\x21-\x7e]{1,64}$/.test(taskContextId)) throw new Error('Invalid feedback task context');
-                current = {activity, round:taskContextId || token, id:token};
+                if (!win.SurfaceInputsTransport.usesNative() && win.SurfaceInputsTaskUploads) taskContextId=win.SurfaceInputsDogfood&&win.SurfaceInputsDogfood.isGuided()?taskContextId:win.SurfaceInputsTaskUploads.blockForActivity(activity)||taskContextId;
+                let restored;try{restored=local().list().filter(entry=>entry.message&&entry.message.round_id===(taskContextId||token)&&entry.message.activity_id===activity).at(-1);}catch(_){}
+                current = {activity, round:taskContextId || token, id:restored?restored.message.id:token, message:restored?restored.message:null, restoredStatus:restored?restored.status:null};
                 win.setTimeout(() => {
+                    if(current.message&&['native_sink_accepted','browser_request_sent'].includes(current.restoredStatus)&&win.SurfaceInputsDogfood&&win.SurfaceInputsDogfood.isGuided()){
+                        const round=current.message.round_id;current=null;win.SurfaceInputsDogfood.feedbackDone(round);return;
+                    }
                     render();
                     returnFocus = doc.activeElement;
                     background = [...doc.body.children].filter(element => element !== container).map(element => [element, element.inert]);
@@ -200,14 +221,21 @@
                     container.hidden = false;
                     find('feedback-form').reset();
                     find('feedback-title').textContent = 'Feedback';
+                    find('feedback-save').textContent = win.SurfaceInputsDogfood && win.SurfaceInputsDogfood.isFinal() ? 'Finish' : 'Next';
                     find('feedback-save').disabled = false;
                     find('feedback-comment').disabled = false;
                     container.querySelectorAll('input[name="feedback-ease"]').forEach(input => { input.disabled = false; });
-                    find('feedback-retry').hidden = true;
+                    find('feedback-retry').hidden = true;find('feedback-retry').textContent = 'Retry native delivery';
                     try { find('feedback-retry-saved').hidden = !win.SurfaceInputsTransport.usesNative() || !local().list().some(entry => ['pending_native','native_rejected'].includes(entry.status)); }
                     catch (_) { find('feedback-retry-saved').hidden = true; }
                     status('');
-                    container.querySelector('input[name="feedback-ease"]').focus();
+                    if(current.message){
+                        find('feedback-comment').value=current.message.comment||'';find('feedback-comment').disabled=true;find('feedback-save').disabled=true;
+                        container.querySelectorAll('input[name="feedback-ease"]').forEach(input=>{input.checked=Number(input.value)===current.message.ratings.ease;input.disabled=true;});
+                        current.deliveryNative=['pending_native','native_rejected'].includes(current.restoredStatus);
+                        find('feedback-retry').hidden=false;find('feedback-retry').textContent=current.deliveryNative?'Retry native delivery':'Retry upload';
+                        status('Your saved response is restored. Retry the same response to continue.');find('feedback-retry').focus();
+                    }else container.querySelector('input[name="feedback-ease"]').focus();
                 }, 0);
             }
         };

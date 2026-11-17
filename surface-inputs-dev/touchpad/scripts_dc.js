@@ -289,18 +289,22 @@ function finishScrollTask() {
         let elapsedStr = (elapsed / 1000).toFixed(2);
         if (SurfaceInputsTransport.usesNative()) {
             if (!scrollingTaskContext) scrollingTaskContext = SurfaceInputsTransport.newObservationId();
-            SurfaceInputsTransport.submitCurrentResult({id:scrollingTaskContext+'_result',task_id:'touchpad_scrolling',
+            SurfaceInputsTransport.submitCurrentResult({id:SurfaceInputsTransport.newObservationId(),task_id:'touchpad_scrolling',
                 event_name:'uxr_result',task_context_id:scrollingTaskContext,elapsed_ms:Math.max(0,Math.round(elapsed)),
                 details:{details_version:1,result_schema:'scrolling_task_result_v1',result:{trial_num:trialNum,time_to_complete:elapsedStr,gesture_count:gestureCount}}});
         }
         startText.innerText = `#${trialNum}, TTC: ${elapsedStr}s, Gestures: ${gestureCount}\n` + startText.innerText;
-        submitForm(trialNum, elapsedStr, gestureCount);
+        if (submitForm(trialNum, elapsedStr, gestureCount) === false) {
+            scrollTaskCompleted = false;
+            if (window.SurfaceInputsDogfood) window.SurfaceInputsDogfood.pauseCompletion('scrolling', finishScrollTask);
+            return;
+        }
         EventLogger.endTrial({trialNum:trialNum,timeToComplete:elapsedStr,gestureCount:gestureCount});
         EventLogger.downloadLog(); EventLogger.clearLog();
     }
     trialNum += 1;
     // BEGIN POST-TASK FEEDBACK HOOK
-    if (window.SurfaceInputsFeedback) window.SurfaceInputsFeedback.complete('touchpad_scrolling', scrollingTaskContext);
+    if (!(window.SurfaceInputsDogfood && window.SurfaceInputsDogfood.complete('scrolling', startScrollExperience, 'touchpad_scrolling')) && window.SurfaceInputsFeedback) window.SurfaceInputsFeedback.complete('touchpad_scrolling', scrollingTaskContext);
     // END POST-TASK FEEDBACK HOOK
 }
 function highlightRandomPhraseScroll() {
@@ -432,6 +436,7 @@ function _getScrollPositionData() {
 }
 
 function onScrollCallback() {
+    if (dogfoodScrollAborted) return;
     SurfaceInputsTouchpad.scrollMove();
     trackGesture(100, 'scroll', _getScrollPositionData);
     var scrollData = _getScrollPositionData();
@@ -469,10 +474,14 @@ function onScrollCallback() {
     }
 }
 
-var scrollingTaskContext = null, scrollTaskCompleted = false;
+var scrollingTaskContext = null, scrollTaskCompleted = false, dogfoodScrollAborted = false;
+window.addEventListener('dogfood-task-abort', () => {dogfoodScrollAborted=true;clearTimeout(highlightTimeout);clearTimeout(gestureStopTimeout);SurfaceInputsTouchpad.abort();});
 function startScrollExperience() {
+    dogfoodScrollAborted = false;
     scrollTaskCompleted = false;
-    scrollingTaskContext = SurfaceInputsTransport.usesNative() ? SurfaceInputsTransport.newObservationId() : null;
+    const dogfood = window.SurfaceInputsDogfood;
+    if (dogfood && dogfood.active('scrolling')) { if (!dogfood.begin('scrolling')) return; trialNum=dogfood.getState().tasks[1].sets+1; }
+    scrollingTaskContext = dogfood && dogfood.active('scrolling') ? dogfood.context('scrolling') : (SurfaceInputsTransport.usesNative() ? SurfaceInputsTransport.newObservationId() : null);
     rng = new RandomGenerator();
     successfulClicks = 0;
     gestureCount = 0;
@@ -745,6 +754,7 @@ function startTimer() {
 	console.log('start timer');
 
 	function loop(timestamp) {
+        if (dogfoodScrollAborted) return;
 		if (!startTime)
 			startTime = timestamp;
 
@@ -796,6 +806,7 @@ function submitForm(trial, ttc, gestures) {
     if (sessionInput) sessionInput.value = sessionId;
 
     // Dispatch a synthetic submit event
+    if (window.SurfaceInputsTaskUploads) return window.SurfaceInputsTaskUploads.result('scrolling', form);
     form.dispatchEvent(new Event('submit', { cancelable: true }));
 }
 
