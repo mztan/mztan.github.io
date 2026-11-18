@@ -225,7 +225,7 @@
                 const transport = win.SurfaceInputsTransport;
                 transport.validate(message);
                 // Persist immutable data before enqueue; reload/export never pretends it was delivered.
-                const deliveries=win.SurfaceInputsTaskUploads?{forms:'pending',native:transport.usesNative()?'pending':'not_required'}:undefined;
+                const deliveries=win.SurfaceInputsTaskUploads?{forms:'pending',native:transport.usesNative()?'pending':'not_required',formsBlock:win.SurfaceInputsTaskUploads.reserveFeedbackContext(message)}:undefined;
                 local().put(message, deliveries?'dual_delivery':(transport.usesNative()?'pending_native':'saved_local'),deliveries);
                 current.deliveries=deliveries;
                 current.message = message;

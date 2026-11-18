@@ -44,13 +44,25 @@ function create(win,config){
  function commitResult(task){const entry=pendingResults.get(task);if(!entry)return;pendingResults.delete(task);send(entry).catch(error=>{if(flow())flow().show(error.message+' Forms result retained.');});}
  function result(task,element){if(!stageResult(task,element))return false;commitResult(task);return true;}
  async function retryBlock(block){for(const entry of rows().filter(r=>r.block===block&&r.status!=='request_sent')){const current=rows().find(r=>r.id===entry.id);if(current&&current.status!=='request_sent')await send(current);}}
+ function reserveFeedbackContext(message){
+  const task=message.activity_id.startsWith('keyboard_')?'typing':message.activity_id==='touchpad_targeting'?'targeting':'scrolling';
+  const key=contextPrefix+'feedback:'+message.id,raw=store.getItem(key);
+  if(raw){const association=JSON.parse(raw);if(association.task!==task||association.context!==message.round_id||typeof association.block!=='string'||!(/^[\x21-\x7e]{1,64}$/).test(association.block))throw new Error('Cannot change a saved Forms feedback context.');return association.block;}
+  const existing=rows().find(row=>row.id===message.id);
+  const saved=JSON.parse(store.getItem('surface-inputs-dev-feedback-v1')||'[]').find(entry=>entry.message.id===message.id);
+  let block=existing?.block||saved?.deliveries?.formsBlock;
+  if(!block&&saved)throw new Error('This saved response has no retained Forms block. Do not guess another task context.');
+  if(!block)block=flow()&&flow().active(task)?message.round_id:directBlocks.get(task);
+  if(!block&&rows().some(row=>row.task===task&&row.values.submission_type==='result'&&row.status!=='request_sent'))throw new Error('The pending direct Forms result has no recoverable feedback context. Do not guess a block.');
+  if(!block){block='block_'+win.crypto.randomUUID();directBlocks.set(task,block);}
+  if(typeof block!=='string'||!(/^[\x21-\x7e]{1,64}$/).test(block))throw new Error('Invalid saved Forms feedback block.');
+  store.setItem(key,JSON.stringify({task,context:message.round_id,block}));return block;
+ }
  function retainFeedback(message){
   const task=message.activity_id.startsWith('keyboard_')?'typing':message.activity_id==='touchpad_targeting'?'targeting':'scrolling';
   const existing=rows().find(row=>row.id===message.id);
   if(existing){if((existing.feedback_context||existing.block)!==message.round_id||existing.values.comment!==(message.comment||'')||existing.values.ease!==String(message.ratings.ease))throw new Error('Cannot change a retained feedback response.');return existing;}
-  // Native feedback keeps its SDK context; Forms have their own result-block identifier.
-  let block=flow()&&flow().active(task)?message.round_id:directBlocks.get(task);
-  if(!block){block='block_'+win.crypto.randomUUID();directBlocks.set(task,block);}
+  const block=reserveFeedbackContext(message);
   const candidates=[latestContexts.get(block),JSON.parse(store.getItem(contextPrefix+block)||'null'),...rows().filter(r=>r.block===block&&r.values.submission_type==='result')].filter(Boolean);
   const latest=candidates.sort((a,b)=>(b.sequence||0)-(a.sequence||0))[0]?.values,values={};
   for(const key of contexts[task])if(latest&&latest[key]!==undefined)values[key]=latest[key];
@@ -72,11 +84,11 @@ function create(win,config){
   for(const block of directBlocks.values())protectedBlocks.add(block);
   const current=flow();if(current&&current.isGuided&&current.isGuided()&&current.getState().stage<3)protectedBlocks.add(current.context());
   const feedback=JSON.parse(store.getItem('surface-inputs-dev-feedback-v1')||'[]');
-  for(const entry of feedback){if(entry.deliveries&&(entry.deliveries.forms!=='request_sent'||!['accepted','not_required'].includes(entry.deliveries.native))){protectedBlocks.add(entry.message.round_id);const receipt=rows().find(row=>row.id===entry.message.id);if(receipt)protectedBlocks.add(receipt.block);}}
-  let removed=0;for(const item of exportedRecords){const raw=store.getItem(prefix+item.id);if(!raw)continue;const row=JSON.parse(raw);if(row.status==='request_sent'&&immutable(row)===item.body&&!protectedBlocks.has(row.block)&&!inflight.has(row.id)){store.removeItem(prefix+row.id);completedRequests.delete(row.id);removed++;}}
+  for(const entry of feedback){if(entry.deliveries&&(entry.deliveries.forms!=='request_sent'||!['accepted','not_required'].includes(entry.deliveries.native))){protectedBlocks.add(entry.message.round_id);if(entry.deliveries.formsBlock)protectedBlocks.add(entry.deliveries.formsBlock);const receipt=rows().find(row=>row.id===entry.message.id);if(receipt)protectedBlocks.add(receipt.block);}}
+  let removed=0;for(const item of exportedRecords){const raw=store.getItem(prefix+item.id);if(!raw)continue;const row=JSON.parse(raw);if(row.status==='request_sent'&&immutable(row)===item.body&&!protectedBlocks.has(row.block)&&!inflight.has(row.id)){store.removeItem(prefix+row.id);completedRequests.delete(row.id);store.removeItem(contextPrefix+'feedback:'+row.id);removed++;}}
   exportedRecords=[];return{removed};
  }
  win.SurfaceInputsTransport.setBrowserFeedbackCallback(feedback);
- return{result,stageResult,commitResult,retainFeedback,feedback,retryBlock,getPending:()=>rows().filter(r=>r.status!=='request_sent'),getRecords:rows,exportRecords,clearExportedRecords,blockForActivity:activity=>directBlocks.get(activity.startsWith('keyboard_')?'typing':activity==='touchpad_targeting'?'targeting':'scrolling'),canBegin,snapshot};
+ return{result,stageResult,commitResult,retainFeedback,reserveFeedbackContext,feedback,retryBlock,getPending:()=>rows().filter(r=>r.status!=='request_sent'),getRecords:rows,exportRecords,clearExportedRecords,blockForActivity:activity=>directBlocks.get(activity.startsWith('keyboard_')?'typing':activity==='touchpad_targeting'?'targeting':'scrolling'),canBegin,snapshot};
 }
 return{create,limits:{MAX,MAX_BYTES}};});

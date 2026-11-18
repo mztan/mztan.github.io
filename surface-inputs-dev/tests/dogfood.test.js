@@ -104,6 +104,24 @@ test('cleanup protects the actual Forms block when native feedback context diffe
  const message={id:'separate-feedback-context',activity_id:'touchpad_scrolling',round_id:'native-sdk-context',ratings:{ease:4},comment:'separate'};await h.api.feedback(message);
  h.saved.setItem('surface-inputs-dev-feedback-v1',JSON.stringify([{message,deliveries:{forms:'request_sent',native:'pending'}}]));h.api.exportRecords();h.win.confirm=()=>true;assert.equal(h.api.clearExportedRecords().removed,0);assert.equal(h.api.getRecords().length,2);
 });
+test('direct Forms feedback context survives row-retention failure and reload',async()=>{
+ const h=setup(true);h.win.SurfaceInputsDogfood.active=()=>false;h.win.SurfaceInputsDogfood.isGuided=()=>false;
+ h.api.result('targeting',fakeForm({participant_id:'fixture-user',trial_num:'1',condition_num:'2',session_id:'explicit-web-session'}));await new Promise(r=>setImmediate(r));const block=h.api.getRecords()[0].block;
+ const write=h.saved.setItem;h.saved.setItem=(key,value)=>{if(key.startsWith('arcade-task-post-v1')&&key.endsWith('reload-context-feedback'))throw Error('feedback quota');write(key,value);};
+ const message={id:'reload-context-feedback',activity_id:'touchpad_targeting',round_id:'native-sdk-context',ratings:{ease:4},comment:'same'};await assert.rejects(h.api.feedback(message),/quota/);h.saved.setItem=write;
+ h.win.fetch=async(url,opts)=>{h.requests.push({url,body:opts.body});return{type:'opaque',ok:false,status:0};};const reloaded=upload.create(h.win,h.mock);await reloaded.feedback(message);
+ const last=h.requests.at(-1).body,fields=h.mock.forms.targeting.fields;assert.equal(last.get(fields.task_block_id),block);assert.equal(last.get(fields.condition_num),'2');assert.equal(last.get(fields.session_id),'explicit-web-session');assert.equal(reloaded.getPending().length,0);
+});
+test('a saved direct response without recoverable Forms context fails explicitly',async()=>{
+ const h=setup();h.win.SurfaceInputsDogfood.active=()=>false;h.win.SurfaceInputsDogfood.isGuided=()=>false;
+ const message={id:'missing-context',activity_id:'touchpad_targeting',round_id:'native-sdk-context',ratings:{ease:4},comment:'same'};h.saved.setItem('surface-inputs-dev-feedback-v1',JSON.stringify([{message,deliveries:{forms:'pending',native:'accepted'}}]));
+ await assert.rejects(h.api.feedback(message),/no retained Forms block/);assert.equal(h.requests.length,0);assert.equal(h.api.getRecords().length,0);
+});
+test('cleanup protects reserved Forms blocks even when feedback-row and context writes failed',async()=>{
+ const h=setup();h.win.SurfaceInputsDogfood.active=()=>false;h.win.SurfaceInputsDogfood.isGuided=()=>false;h.api.result('targeting',fakeForm({participant_id:'fixture-user',trial_num:'1',condition_num:'2',session_id:'explicit-web-session'}));await new Promise(r=>setImmediate(r));const block=h.api.getRecords()[0].block;
+ h.saved.removeItem('arcade-task-context-v1:surface-inputs-dev:'+block);const message={id:'reserved-only-feedback',activity_id:'touchpad_targeting',round_id:'native-sdk-context',ratings:{ease:4},comment:'same'};h.saved.setItem('surface-inputs-dev-feedback-v1',JSON.stringify([{message,deliveries:{forms:'pending',native:'accepted',formsBlock:block}}]));
+ const reloaded=upload.create(h.win,h.mock);reloaded.exportRecords();h.win.confirm=()=>true;assert.equal(reloaded.clearExportedRecords().removed,0);await reloaded.feedback(message);const body=h.requests.at(-1).body,f=h.mock.forms.targeting.fields;assert.equal(body.get(f.trial_num),'1');assert.equal(body.get(f.condition_num),'2');assert.equal(body.get(f.session_id),'explicit-web-session');
+});
 test('guided task sequence requires six nine-hit sets and six six-target scroll sets',()=>{assert.deepEqual(flow.tasks,['targeting','scrolling','typing']);assert.deepEqual(flow.sets,{targeting:6,scrolling:6,typing:1});});
 test('saved session shape bounds task stages and completed set counts',()=>{const s={version:1,id:'df_fixture',stage:0,tasks:[{sets:0,phase:'idle'},{sets:0,phase:'idle'},{sets:0,phase:'idle'}]};assert(flow.valid(s));assert(!flow.valid({...s,stage:4}));assert(!flow.valid({...s,tasks:[{sets:7,phase:'idle'},...s.tasks.slice(1)]}));});
 test('manual prefilled question mappings are enabled after owner-confirmed publication',()=>{const counts={typing:28,targeting:22,scrolling:12};for(const[task,form]of Object.entries(config.forms)){assert.equal(form.enabled,true);assert.equal(form.fieldsVerified,true);assert.equal(Object.keys(form.fields).length,counts[task]);assert.equal(new Set(Object.values(form.fields)).size,counts[task]);assert.match(form.endpoint,/formResponse$/);}});
