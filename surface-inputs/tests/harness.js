@@ -48,7 +48,7 @@ function environment(search = '') {
     doc.querySelectorAll = query => query.includes('input[name="dataset"]') ? [dataset] : [];
     class CustomEvent { constructor(type, options = {}) { this.type = type; this.detail = options.detail; } }
     class Event { constructor(type) { this.type = type; } }
-    class FakeDate extends Date { static now() { return now; } }
+    class FakeDate extends Date { constructor(...args) { super(...(args.length ? args : [now])); } static now() { return now; } }
     Object.assign(win, { document: doc, location: { origin: 'https://mztan.github.io', search },
         CustomEvent, Event, crypto: { randomUUID: () => '11111111-2222-3333-4444-555555555555' },
         setTimeout: fn => { timers.set(++timerId, fn); return timerId; }, clearTimeout: id => timers.delete(id),
@@ -69,8 +69,20 @@ function environment(search = '') {
         for (const [key, value] of Object.entries(win)) if (key.startsWith('SurfaceInputs')) context[key] = value;
         return result;
     };
-    const port = { sent: [], start() {}, postMessage(data) { this.sent.push(JSON.parse(data)); },
-        receive(data) { this.onmessage({ data: JSON.stringify(data) }); } };
+    // Keep capability controls separate from observation fixtures and legacy producer assertions.
+    const port = { sent: [], controls: [], capabilityBehavior: 'legacy', start() {}, postMessage(data) {
+        const message = JSON.parse(data);
+        if (message.type === 'capabilities') {
+            this.controls.push(message);
+            if (this.capabilityBehavior === 'legacy') this.receive({version:1,id:message.id,status:'rejected',reason:'Unsupported control'});
+            else if (this.capabilityBehavior === 'v2') {
+                const contract = JSON.parse(fs.readFileSync(path.join(__dirname,'../telemetry-contract.json'),'utf8'));
+                this.receive({version:1,type:'capabilities',id:message.id,supported_versions:contract.supported_versions,
+                    message_types:contract.message_types,intent_contract_version:contract.intent_contract_version,
+                    touchpad_metric_families:contract.touchpad_metric_families,limits:contract.limits});
+            }
+        } else this.sent.push(message);
+    }, receive(data) { this.onmessage({ data: JSON.stringify(data) }); } };
     function handshake(overrides = {}) {
         win.dispatchEvent(Object.assign({ type: 'message', source: win, isTrusted: true,
             data: JSON.stringify({ type: 'surface_inputs_host', version: 1 }), ports: [port] }, overrides));

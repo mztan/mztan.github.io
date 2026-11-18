@@ -15,18 +15,27 @@ document.addEventListener('DOMContentLoaded', async function () {
             'passwords': 'keyboard_password', 'metal-keys': 'keyboard_punctuation',
             'shortcuts': 'keyboard_shortcuts', 'arrows': 'keyboard_arrows' }[dataset];
     }
-    function emitNativePrompt(prompt, finalText, elapsedMs, promptId, format) {
+    let pendingNativeCompletion = null, keyboardTaskContext = null, pendingBrowserCompletion = null, browserResultRetained = true;
+    function emitNativePrompt(prompt, finalText, elapsedMs, promptId, format, resultFactory) {
         if (!nativeBound()) return true;
         try {
-            const observation = capture.complete(prompt, finalText, format);
-            transport.submitKeyboard(Object.assign(observation, {
-                activity_id: nativeActivity(), prompt_id: promptId,
-                elapsed_ms: Math.max(0, Math.round(elapsedMs))
-            }));
+            if (!pendingNativeCompletion) {
+                const observation = capture.complete(prompt, finalText, format);
+                const result = resultFactory();
+                if (!keyboardTaskContext) keyboardTaskContext = transport.newObservationId();
+                pendingNativeCompletion = {result, keyboard:Object.assign(observation, {
+                    id:transport.newObservationId(), activity_id:nativeActivity(), prompt_id:promptId,
+                    elapsed_ms:Math.max(0, Math.round(elapsedMs))
+                }), arcade:{id:transport.newObservationId(),task_id:nativeActivity(),event_name:'uxr_result',task_context_id:keyboardTaskContext,
+                    elapsed_ms:Math.max(0,Math.round(elapsedMs)),details:{details_version:1,result_schema:format?'keyboard_shortcut_result_v1':'keyboard_prompt_result_v1',result}}};
+            }
+            transport.submitKeyboardWithResult(pendingNativeCompletion.keyboard,pendingNativeCompletion.arcade);
+            inputArea.readOnly = false;
             return true;
         } catch (error) {
+            if (pendingNativeCompletion) inputArea.readOnly = true;
             window.dispatchEvent(new CustomEvent('surface-inputs-transport-error', { detail: { reason: error.message } }));
-            return false; // Keep this prompt, its full stream and the existing scores unchanged.
+            return false; // Keep complete stream, result snapshot and original timing for retry.
         }
     }
     function getURLParameter(name) {
@@ -344,6 +353,11 @@ document.addEventListener('DOMContentLoaded', async function () {
         if (testActive) return;
 
         // Start the test
+        if (window.SurfaceInputsDogfood && window.SurfaceInputsDogfood.active('typing')) {
+            if (!window.SurfaceInputsDogfood.begin('typing')) return;
+            keyboardTaskContext = window.SurfaceInputsDogfood.context('typing');
+        }
+        if (nativeBound() && !keyboardTaskContext) keyboardTaskContext = transport.newObservationId();
         testActive = true;
         results.style.display = 'none';
         promptResults = []; // Clear previous results
@@ -562,6 +576,9 @@ document.addEventListener('DOMContentLoaded', async function () {
         }
 
         // Fresh run: build new random sequences + reset counters.
+        pendingNativeCompletion = null;
+        pendingBrowserCompletion = null;
+        keyboardTaskContext = nativeBound() ? transport.newObservationId() : null;
         buildShortcutSequences();
         kcResults = [];
         kcWrongAttempts = 0;
@@ -615,11 +632,18 @@ document.addEventListener('DOMContentLoaded', async function () {
         renderKeychordTarget();
     }
 
-    function recordKeychordResult() {
+    function keychordResultSnapshot() {
+        const seq = kcPrompts[currentPromptIndex] || [], correct=seq.length, total=correct+kcWrongAttempts;
+        return {promptText:seq.join(' '),typedText:kcTyped.join(' '),wpm:0,awpm:0,uer:0,cer:0,ter:0,
+            accuracy:total>0?correct/total*100:0,timeSpentMs:kcPromptStartedAt?Date.now()-kcPromptStartedAt:0,
+            totalChars:correct,keyPresses:total,correctedErrors:0,uncorrectedErrors:kcWrongAttempts,
+            surfaceDifference:-1,conditionId:-1,conditionValue:-1,qrHeight:-1};
+    }
+    function recordKeychordResult(snapshot = null) {
         const seq = kcPrompts[currentPromptIndex] || [];
         const correct = seq.length;                 // one correct press per combo
         const total = correct + kcWrongAttempts;    // correct + wrong presses
-        const timeMs = kcPromptStartedAt ? Date.now() - kcPromptStartedAt : 0;
+        const timeMs = snapshot ? snapshot.timeSpentMs : (kcPromptStartedAt ? Date.now() - kcPromptStartedAt : 0);
         const accuracy = total > 0 ? (correct / total) * 100 : 0;
         kcResults.push({ timeMs: timeMs, accuracy: accuracy });
 
@@ -736,7 +760,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
         flushDetailedLogs(); // download the per-prompt JSON (no-op if logging off)
         // BEGIN POST-TASK FEEDBACK HOOK
-        if (window.SurfaceInputsFeedback) window.SurfaceInputsFeedback.complete(nativeActivity());
+        if (!(window.SurfaceInputsDogfood && window.SurfaceInputsDogfood.complete('typing', resetTest, nativeActivity())) && window.SurfaceInputsFeedback) window.SurfaceInputsFeedback.complete(nativeActivity(), keyboardTaskContext);
         // END POST-TASK FEEDBACK HOOK
     }
 
@@ -778,19 +802,26 @@ document.addEventListener('DOMContentLoaded', async function () {
         const chord = parseChord(expected);
         const matched = chordMatches(e, chord);
         logKeychordEvent('keydown', e, { expectedCombo: expected, stepIndex: kcStepIndex, matched: matched });
+        if (pendingNativeCompletion && nativeBound()) {
+            if (!emitNativePrompt('', '', 0, '', 'keychord_labels_v1', keychordResultSnapshot)) return;
+            kcStepIndex += 1; renderKeychordTarget();
+            recordKeychordResult(pendingNativeCompletion.result); pendingNativeCompletion = null;
+            advanceKeychord(); return;
+        }
         if (!capture.appendLabel(eventToComboLabel(e))) return;
         kcTyped.push(eventToComboLabel(e)); // what was actually pressed (incl. wrong)
         if (matched) {
             if (nativeBound() && kcStepIndex === seq.length - 1 &&
                 !emitNativePrompt(seq.join(' '), kcTyped.join(' '),
                     kcPromptStartedAt ? Date.now() - kcPromptStartedAt : 0,
-                    nativePromptId(currentPromptIndex), 'keychord_labels_v1')) {
+                    nativePromptId(currentPromptIndex), 'keychord_labels_v1', keychordResultSnapshot)) {
                 return;
             }
             kcStepIndex += 1;
             renderKeychordTarget(); // turn the just-completed combo green
             if (kcStepIndex >= seq.length) {
-                recordKeychordResult();
+                recordKeychordResult(pendingNativeCompletion ? pendingNativeCompletion.result : null);
+                pendingNativeCompletion = null;
                 advanceKeychord();
             }
         } else {
@@ -1645,7 +1676,10 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     // Handle key presses for Enter key
     inputArea.addEventListener('keydown', function (e) {
-        if (!capture.key(e)) return;
+        if ((pendingNativeCompletion && nativeBound()) || pendingBrowserCompletion) {
+            e.preventDefault();
+            if (e.key !== 'Enter') return;
+        } else if (!capture.key(e)) return;
         // Detailed logging: log every keydown except the submit Enter.
         let keydownEntry = null;
         if (e.key !== 'Enter') {
@@ -1733,10 +1767,14 @@ document.addEventListener('DOMContentLoaded', async function () {
 
             // Enqueue the complete observation before any scoring/form event or advance.
             if (!emitNativePrompt(promptText, typedText, endTime - startTime,
-                nativePromptId(getCurrentPromptOriginalIndex()))) return;
+                nativePromptId(getCurrentPromptOriginalIndex()), undefined, calculatePromptResult)) return;
 
-            // Calculate results for the current prompt
-            const promptResult = calculatePromptResult();
+            // Native retry uses the once-measured immutable result; browser scoring is unchanged.
+            const promptResult = nativeBound() ? pendingNativeCompletion.result : (pendingBrowserCompletion || calculatePromptResult());
+            if(!nativeBound()&&pendingBrowserCompletion){browserResultRetained=true;document.dispatchEvent(new CustomEvent('promptFinishedEvent',{detail:{message:promptResult}}));}
+            if(!nativeBound()&&!browserResultRetained){pendingBrowserCompletion=promptResult;inputArea.readOnly=true;if(window.SurfaceInputsDogfood)window.SurfaceInputsDogfood.show('Completed prompt is not saved. Keep the page open and press Enter to retry.');return;}
+            pendingBrowserCompletion=null;inputArea.readOnly=false;
+            pendingNativeCompletion = null;
             promptResults.push(promptResult);
 
             // Detailed logging: accumulate per-prompt log, clear event buffer
@@ -1843,6 +1881,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         }
     }
 
+    window.addEventListener('dogfood-task-abort', () => {testActive=false;keychordActive=false;releaseKeychordLock();inputArea.disabled=true;pendingNativeCompletion=null;});
     // Reset button functionality
     startButton.addEventListener('click', function () {
         if (currentMode === 'keychord') {
@@ -1871,11 +1910,15 @@ document.addEventListener('DOMContentLoaded', async function () {
             results.style.display = 'block';
         }
         // BEGIN POST-TASK FEEDBACK HOOK
-        if (window.SurfaceInputsFeedback) window.SurfaceInputsFeedback.complete(nativeActivity());
+        if (!(window.SurfaceInputsDogfood && window.SurfaceInputsDogfood.complete('typing', resetTest, nativeActivity())) && window.SurfaceInputsFeedback) window.SurfaceInputsFeedback.complete(nativeActivity(), keyboardTaskContext);
         // END POST-TASK FEEDBACK HOOK
     }
 
     function resetTest() {
+        pendingNativeCompletion = null;
+        pendingBrowserCompletion = null;
+        keyboardTaskContext = nativeBound() ? transport.newObservationId() : null;
+        inputArea.readOnly = false;
         testActive = false;
 
         inputArea.value = '';
@@ -1969,6 +2012,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             cer: cer
         };
 
+        browserResultRetained = true;
         const promptFinishedEvent = new CustomEvent('promptFinishedEvent', {
             detail: { message: promptResult },
         });
@@ -2077,6 +2121,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         console.log("Submitting prompt result to Google Form: " + JSON.stringify(data));
 
         // Dispatch a synthetic submit event
+        if(window.SurfaceInputsTaskUploads){browserResultRetained=false;try{browserResultRetained=window.SurfaceInputsTaskUploads.result('typing',form);}catch(error){if(window.SurfaceInputsDogfood)window.SurfaceInputsDogfood.show(error.message);}return browserResultRetained;}
         form.dispatchEvent(new Event('submit', { cancelable: true }));
     }
 
@@ -2128,6 +2173,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
         console.log("Submitting prompt result to DF Google Form: " + JSON.stringify(data));
 
+        if(window.SurfaceInputsTaskUploads){browserResultRetained=false;try{browserResultRetained=window.SurfaceInputsTaskUploads.result('typing',form);}catch(error){if(window.SurfaceInputsDogfood)window.SurfaceInputsDogfood.show(error.message);}return browserResultRetained;}
         form.dispatchEvent(new Event('submit', { cancelable: true }));
     }
 });

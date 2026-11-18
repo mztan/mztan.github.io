@@ -13,6 +13,15 @@
             return true;
         } catch (failure) { error(failure.message); return false; }
     }
+    function cursorMessages(x,y) {
+        const at=now(), fields=cursor.accumulator.finish(at,{x,y});
+        const valid=cursor.accumulator.observed && !!cursor.accumulator.start && !cursor.interrupted;
+        if(!valid) for(const key of ['stroke_count','first_stroke_share','small_strokes_far_from_target','small_strokes_near_target','target_entries','total_cursor_distance_px','overshoot_count']) fields['stp_cursor_movement_'+key]=-1;
+        const common={activity_id:'touchpad_targeting',elapsed_ms:Math.max(0,at-cursor.started)};
+        return [{...common,id:transport.newObservationId(),metric_family:'cursor_movement',details:{details_version:1,cursor_trace:valid?'observed':'unavailable'},...fields},
+            {...common,id:transport.newObservationId(),metric_family:'clicks',details:{details_version:1},stp_clicks_target_count:1,stp_clicks_completed_count:1,
+                stp_clicks_total:cursor.total+1,stp_clicks_on_target:cursor.onTarget+1,stp_clicks_miss_count:cursor.total-cursor.onTarget}];
+    }
     function scrollGeometry() {
         const container = win.document.getElementById('scroll-container');
         const highlight = win.document.querySelector('.highlight'), box = win.document.getElementById('targetbox');
@@ -23,6 +32,7 @@
         return { value, lower: value + h.bottom - b.bottom, upper: value + h.top - b.top };
     }
     win.SurfaceInputsTouchpad = {
+        abort() { cursor=null;scroll=null;selection=null;zoom=null;latestPointer=null; },
         resetCursor() { cursor = null; },
         beginCursor(target, practice) {
             const at = now(), geometry = { x: target.x, y: target.y, radius: target.w / 2 };
@@ -40,8 +50,16 @@
         cursorClick(x, y, hit) {
             latestPointer = { x, y };
             if (!cursor) return true;
-            if (hit && transport.usesNative() && !cursor.practice && !transport.canQueue(2)) {
+            if (hit && transport.usesNative() && !cursor.practice && !transport.canQueue(transport.getCapabilityState() === 'legacy' ? 2 : 3)) {
+                // Preserve the first physical completion snapshot even while the queue is full.
+                if (!cursor.pendingBatch) cursor.pendingBatch = cursorMessages(x,y);
                 error('Native queue full. Current target retained; retry after sink ACK.'); return false;
+            }
+            if (hit && transport.usesNative() && !cursor.practice) {
+                if (!cursor.pendingBatch) cursor.pendingBatch = cursorMessages(x,y);
+                try { transport.submitTouchpadBatch(cursor.pendingBatch); }
+                catch (failure) { error(failure.message); return false; }
+                cursor = null; return true;
             }
             cursor.total++;
             if (!hit) return true;
@@ -78,6 +96,18 @@
         },
         finishScroll() {
             if (!scroll) return true;
+            if (!scroll.practice && transport.usesNative()) {
+                if (!scroll.pendingMessage) {
+                    const at=now();
+                    scroll.pendingMessage={id:transport.newObservationId(),activity_id:'touchpad_scrolling',metric_family:'scrolling',elapsed_ms:Math.max(0,at-scroll.started),details:{details_version:1},
+                        ...scroll.accumulator.finish(),stp_scrolling_stroke_count:-1,stp_scrolling_dial_in_stroke_count:-1,stp_scrolling_empty_stroke_count:-1,
+                        stp_scrolling_first_stroke_share:-1,stp_scrolling_time_ms:at-scroll.started,
+                        stp_scrolling_direction:scroll.band.value<scroll.band.lower?'down':'up',stp_scrolling_cursor_travel_without_scroll_px:-1};
+                }
+                if (!transport.canQueue(transport.getCapabilityState()==='legacy'?1:2)) {error('Native queue full. Scroll target retained; retry after ACK.');return false;}
+                try{transport.submitTouchpad(scroll.pendingMessage);}catch(failure){error(failure.message);return false;}
+                scroll=null;return true;
+            }
             if (!scroll.practice && !emit('touchpad_scrolling', 'scrolling', scroll.started,
                 Object.assign(scroll.accumulator.finish(), {
                     // DOM scroll events omit zero-output native packets. Shared burst

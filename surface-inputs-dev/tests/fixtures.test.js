@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const sdk = require('../transport.js');
-const original = require('../../surface-inputs/transport.js');
+const original = require('./fixtures/transport-v1.js');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');

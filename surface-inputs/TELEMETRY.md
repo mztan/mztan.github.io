@@ -1,8 +1,14 @@
 # Shared browser and APK telemetry
 
+## Production promotion
+
+Production now runs the owner-approved stable two-channel SDK and guided dogfood runtime from dev snapshot `6c3c459`. The fixed typed intent schema and separate opaque Arcade JSON channel are defined by the shared canonical [bridge contract](../surface-inputs-dev/BRIDGE_CONTRACT.md). This production path has no DEV pill or Skip task. Browser Form result/feedback mappings and immutable retries match the promoted runtime; native-bound traffic never falls back to Forms. A labeled Typing browser feedback row was verified through Google answer readback; no full-result/other-Forms/native E2E guarantee follows from that test.
+
+The v1 field definitions below document backward compatibility, not the current wire version selected on a v2-capable host. Guided feedback occurs after six complete Targeting/Scrolling sets and 20 punctuation Typing prompts. Next/Finish keep the feedback screen visible through navigation; successful short-lived status text is suppressed and errors remain actionable.
+
 ## Browser behavior
 
-The keyboard and touchpad pages keep their browser identity controls, test logic, geometry, timings and public corpora. The active production and dev Typing (UXR/UXR2/dogfooding), Targeting and Scrolling pages now point to the new task-specific Google Forms. This is a URL-only replacement: existing `entry.*` field names remain unchanged, field mappings and form access are unverified, and no Forms requests were made to validate it. Browser feedback remains local/export-only; the dormant collector is not enabled. Other legacy task/variant form URLs are unchanged. URL parameters do not select native mode. The launcher also loads the handshake transport so its links are usable after the APK's input gate is released; standalone browser links remain unchanged.
+The primary browser tasks now use the guided run's single initial unixname, task-specific Form mappings and bounded outbox. Result rows and feedback share a task-block ID; completed records are not re-posted by a stale queue-drain snapshot. A labeled Typing feedback response was verified by Google answer readback, while full-result/other-Forms parity remains unverified. Native binding still suppresses Forms immediately; URL parameters cannot select native mode. Other legacy variants retain their collection routes.
 
 ## Page navigation and results UI
 
@@ -61,13 +67,11 @@ Selection emits the actual prescribed target text and exact-selection completion
 - Optional `pain_points`: at most eight nonempty strings, each at most 64 UTF-8 bytes.
 - The complete serialized feedback message is at most 2048 UTF-8 bytes.
 
-Native feedback uses the private port. The post-task widget checks both the message and the receiver's final details object against 2048 UTF-8 encoded bytes; escape-heavy comments are rejected visibly, never truncated. Browser feedback through the transport API still requires an explicitly configured callback. There is no configured browser collector in this deployment, so the widget saves browser feedback locally and offers JSON export without calling a guessed form.
+Native feedback uses the private port; browser feedback uses the explicitly configured task-specific Form callback. Immutable IDs and UTF-8 bounds remain. Browser request-sent status and native sink acceptance do not prove server storage. Errors retain the response and expose retry; delivered-response continuation retries progress only, without sending feedback again.
 
 ### Post-task feedback UI
 
-The root development Targeting and Scrolling pages and keyboard main page load a shared feedback dialog. It opens after nine targeting hits, six scrolling targets, or the full selected typing/shortcut/arrow block. Practice completions also get feedback. Task calculations and timing finish before opening it; individual targets or prompts do not open it.
-
-The dialog is titled **Feedback** and its primary button is **Upload**. The ease question and five scale anchors remain unchanged; freeform text may be blank without an optional label. Branding, task-complete titles, number underlines, placeholder text, the byte counter, export/clear buttons and the Skip button are removed. Escape remains an accessibility exit without manufacturing a rating. Native sink acceptance closes the dialog; browser-local persistence does not, and its status explicitly says that no upload occurred.
+Guided feedback opens once after six Targeting sets (54 hits), once after six Scrolling sets (36 targets), then after 20 punctuation Typing prompts. The title is Feedback and primary action is Next or final Finish. The immutable dialog stays visible through navigation, with no fleeting sending/success text. Errors and Retry continuation remain available; no rating or completion is manufactured by Escape or Skip. Direct standalone/Practice completion boundaries remain supported.
 
 The widget assigns an ASCII feedback-block identifier. It identifies that local completed-task feedback context; it is not an objective observation attempt ID and does not prove a join to individual intent events. Keyboard observations remain independent and carry no added attempt/order metadata.
 

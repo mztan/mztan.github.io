@@ -10,8 +10,8 @@ test('fixed capture, metric formulas, corpora and browser Forms submitters remai
  assert.equal(section(keyboard,'    function calculatePromptResult()','    function calculateAverageResults()'),section(base,'    function calculatePromptResult()','    function calculateAverageResults()'));
  assert.equal(keyboard.slice(keyboard.indexOf('    function submitPromptResultToGoogleForm(')),base.slice(base.indexOf('    function submitPromptResultToGoogleForm(')));
  const fitts=read(root,'touchpad/fitts-law.js'),old=read(prod,'touchpad/fitts-law.js');
- assert.equal(fitts.slice(0,fitts.indexOf('var targetingTaskContext')),old.slice(0,old.indexOf('function startExperience()')));
- assert.equal(section(fitts,'\t// Compute IDe','    // Extra UXR'),section(old,'\t// Compute IDe','\tif (!isPractice)'));
+ assert.equal(fitts.slice(0,fitts.indexOf('var targetingTaskContext')),old.slice(0,old.indexOf(old.includes('var targetingTaskContext')?'var targetingTaskContext':'function startExperience()')));
+ assert.equal(section(fitts,'\t// Compute IDe','    // Extra UXR'),section(old,'\t// Compute IDe',old.includes('    // Extra UXR')?'    // Extra UXR':'\tif (!isPractice)'));
  assert.equal(fitts.slice(fitts.indexOf('function submitForm(')),old.slice(old.indexOf('function submitForm(')));
  const scroll=read(root,'touchpad/scripts_dc.js'),oldScroll=read(prod,'touchpad/scripts_dc.js');
  assert.equal(scroll.slice(scroll.indexOf('function startTimer()')),oldScroll.slice(oldScroll.indexOf('function startTimer()')));

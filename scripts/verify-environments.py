@@ -92,7 +92,7 @@ def main():
     assert section(keyboard, '    function calculatePromptResult()', '    function calculateAverageResults()') == section(old_keyboard, '    function calculatePromptResult()', '    function calculateAverageResults()')
     assert keyboard[keyboard.index('    function submitPromptResultToGoogleForm('):] == old_keyboard[old_keyboard.index('    function submitPromptResultToGoogleForm('):]
     fitts, old_fitts = clean((DEV / 'touchpad/fitts-law.js').read_text()), clean((PROD / 'touchpad/fitts-law.js').read_text())
-    assert fitts[:fitts.index('var targetingTaskContext')] == old_fitts[:old_fitts.index('function startExperience()')]
+    assert fitts[:fitts.index('var targetingTaskContext')] == old_fitts[:old_fitts.index('var targetingTaskContext' if 'var targetingTaskContext' in old_fitts else 'function startExperience()')]
     assert fitts[fitts.index('function submitForm('):] == old_fitts[old_fitts.index('function submitForm('):]
     scroll, old_scroll = clean((DEV / 'touchpad/scripts_dc.js').read_text()), clean((PROD / 'touchpad/scripts_dc.js').read_text())
     assert scroll[scroll.index('function startTimer()'):] == old_scroll[old_scroll.index('function startTimer()'):]

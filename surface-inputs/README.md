@@ -4,7 +4,7 @@ This folder consolidates the existing public keyboard and touchpad web test impl
 
 ## Run the tests
 
-The [start page](index.html) presents Targeting, Scrolling, and Typing with the Surface Inputs Arcade aesthetic: a navy background, cream/red condensed wordmark, flat dark activity tiles, mint icons, and 2px corners. The desktop row becomes a compact stacked layout on narrow screens. There is no source footer. All three actions navigate to the local copies in the same tab, so the launcher also works without JavaScript and can be used in a WebView. The shared `df_202611` session label is retained; Typing uses the existing `df` preset with `num_prompts=3` to match the requested short block. This launcher does not itself orchestrate multiple activities or enforce three touchpad runs.
+The [start page](index.html) asks browser users for a unixname once and starts the guided dogfood sequence: six Targeting sets (54 hits), six Scrolling sets (36 targets), then 20 natural-language-with-punctuation Typing prompts. Task icons are visible on setup screens; repeated identity fields are prepopulated and hidden. Feedback uses Next, Next and Finish, then reaches a thank-you page with Return to main page. Native-ready mode keeps account attribution host-owned and does not ask for a browser identity.
 
 - [Keyboard test](keyboard/?setting_preset=uxr): natural language, punctuation/capitalization, email, password, shortcuts, and arrows.
 - [Touchpad targeting](touchpad/index.html).
@@ -18,9 +18,9 @@ For local use, run a static HTTP server at the repository root, for example `pyt
 
 ## Promoted activity UI
 
-Production includes the dev snapshot's Arcade themes for Targeting, Scrolling and Typing, the full-viewport targeting layout fix, and the simplified post-task **Feedback** dialog with a five-point ease rating, optional freeform text and **Upload** action. The fixed targeting SVG remains 620×400 with unchanged target sizes and hit rules. Shared runtime files match the approved dev snapshot; no task timing or metric formulas were changed during promotion.
+Production matches the owner-approved dev runtime from `6c3c459`: guided task blocks, stable two-channel telemetry SDK, mapped Form results and feedback, task icons, and startup/between-set/final-navigation flicker fixes. The fixed Targeting SVG remains 620×400, with unchanged target sizes, hit rules, prompt corpus and shared calculations.
 
-The home page derives environment identity from its URL. The **DEV** pill is absent at `/surface-inputs/`. The original source notices and provenance below remain in place. Browser feedback is local/export-only; native sink acceptance is not a downstream upload receipt.
+Environment behavior is URL-derived. The DEV pill and Skip task control are absent at `/surface-inputs/`. Browser feedback uses the task-specific outbox; native traffic remains on the private SDK port. Opaque POST completion and native sink acceptance are not themselves downstream storage receipts.
 
 ## Page navigation
 
@@ -40,7 +40,7 @@ The upstream jQuery UI 1.8.6 stylesheet referenced theme images that were absent
 
 ## Collection boundary
 
-Active Typing, Targeting and Scrolling use the promoted URL-only Google Forms destinations. Browser identity and all `entry.*` fields remain unchanged, so field mapping and respondent access are unverified. No Google Forms access or submission was used to validate this promotion. The keyboard main page and root/UXR touchpad targeting, scrolling, selection and zoom pages support the private native MessagePort handshake and typed intent observations. The main three activities also show post-task feedback; native responses use the existing sink, while browser feedback remains local/export-only with no configured feedback collector. `exec_demo` and the UXR Fitts latency variant remain browser-only.
+Primary Typing, Targeting and Scrolling use the owner-supplied task-specific question mappings through `task-uploads.js`. Browser result rows and feedback share a task-block ID, with failures retained for immutable retry and queue draining that avoids already-completed requests. A labeled Typing browser test was read back from Google Forms and verified; complete field parity for every result row, the other two Forms and native/Scuba E2E were not established by that test. Never treat an opaque request as verified storage. Native-bound tasks stay on the stable private-port SDK and do not fall back to Forms. The separate dormant collector remains isolated.
 
 See [the telemetry contract](TELEMETRY.md) for handshake, bounds, ACK/retry behavior, populated metrics and unavailable measurements. Run the offline transport/producer checks with `node --test surface-inputs/tests/*.test.js` from the repository root. These checks use fake sinks and never submit Forms. Generate receiver fixtures with `node surface-inputs/tests/generate-fixtures.js`.
 

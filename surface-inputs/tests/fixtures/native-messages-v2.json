@@ -1,0 +1,799 @@
+[
+  {
+    "name": "keyboard_1",
+    "message": {
+      "prompt_text": "world⏎",
+      "input_event_stream": "world⏎",
+      "details": {
+        "details_version": 1,
+        "replay_eligible": true,
+        "final_text": "world"
+      },
+      "id": "web_00000000-0000-4000-8000-000000000001_3",
+      "prompt_id": "natural-language_1",
+      "elapsed_ms": 0,
+      "version": 2,
+      "type": "keyboard",
+      "task_id": "keyboard_natural_language"
+    },
+    "raw": "{\"prompt_text\":\"world⏎\",\"input_event_stream\":\"world⏎\",\"details\":{\"details_version\":1,\"replay_eligible\":true,\"final_text\":\"world\"},\"id\":\"web_00000000-0000-4000-8000-000000000001_3\",\"prompt_id\":\"natural-language_1\",\"elapsed_ms\":0,\"version\":2,\"type\":\"keyboard\",\"task_id\":\"keyboard_natural_language\"}"
+  },
+  {
+    "name": "keyboard_2",
+    "message": {
+      "id": "web_00000000-0000-4000-8000-000000000001_4",
+      "task_id": "keyboard_natural_language",
+      "event_name": "uxr_result",
+      "task_context_id": "web_00000000-0000-4000-8000-000000000001_2",
+      "elapsed_ms": 0,
+      "details": "{\"details_version\":1,\"result_schema\":\"keyboard_prompt_result_v1\",\"result\":{\"promptIndex\":0,\"originalPromptIndex\":1,\"promptText\":\"world\",\"typedText\":\"world\",\"wpm\":0,\"awpm\":0,\"accuracy\":100,\"editDistance\":0,\"totalChars\":5,\"timeSpentMs\":0,\"keyPresses\":0,\"correctedErrors\":0,\"uncorrectedErrors\":0,\"ter\":0,\"uer\":0,\"cer\":0}}",
+      "version": 2,
+      "type": "arcade"
+    },
+    "raw": "{\"id\":\"web_00000000-0000-4000-8000-000000000001_4\",\"task_id\":\"keyboard_natural_language\",\"event_name\":\"uxr_result\",\"task_context_id\":\"web_00000000-0000-4000-8000-000000000001_2\",\"elapsed_ms\":0,\"details\":\"{\\\"details_version\\\":1,\\\"result_schema\\\":\\\"keyboard_prompt_result_v1\\\",\\\"result\\\":{\\\"promptIndex\\\":0,\\\"originalPromptIndex\\\":1,\\\"promptText\\\":\\\"world\\\",\\\"typedText\\\":\\\"world\\\",\\\"wpm\\\":0,\\\"awpm\\\":0,\\\"accuracy\\\":100,\\\"editDistance\\\":0,\\\"totalChars\\\":5,\\\"timeSpentMs\\\":0,\\\"keyPresses\\\":0,\\\"correctedErrors\\\":0,\\\"uncorrectedErrors\\\":0,\\\"ter\\\":0,\\\"uer\\\":0,\\\"cer\\\":0}}\",\"version\":2,\"type\":\"arcade\"}",
+    "expected_details": "{\"details_version\":1,\"result_schema\":\"keyboard_prompt_result_v1\",\"result\":{\"promptIndex\":0,\"originalPromptIndex\":1,\"promptText\":\"world\",\"typedText\":\"world\",\"wpm\":0,\"awpm\":0,\"accuracy\":100,\"editDistance\":0,\"totalChars\":5,\"timeSpentMs\":0,\"keyPresses\":0,\"correctedErrors\":0,\"uncorrectedErrors\":0,\"ter\":0,\"uer\":0,\"cer\":0}}"
+  },
+  {
+    "name": "shortcuts_1",
+    "message": {
+      "prompt_text": "Ctrl+C Ctrl+V",
+      "input_event_stream": "Ctrl+C Ctrl+V",
+      "details": {
+        "details_version": 1,
+        "stream_format": "keychord_labels_v1",
+        "final_text": "Ctrl+C Ctrl+V"
+      },
+      "id": "web_00000000-0000-4000-8000-000000000002_4",
+      "prompt_id": "shortcuts_0",
+      "elapsed_ms": 100,
+      "version": 2,
+      "type": "keyboard",
+      "task_id": "keyboard_shortcuts"
+    },
+    "raw": "{\"prompt_text\":\"Ctrl+C Ctrl+V\",\"input_event_stream\":\"Ctrl+C Ctrl+V\",\"details\":{\"details_version\":1,\"stream_format\":\"keychord_labels_v1\",\"final_text\":\"Ctrl+C Ctrl+V\"},\"id\":\"web_00000000-0000-4000-8000-000000000002_4\",\"prompt_id\":\"shortcuts_0\",\"elapsed_ms\":100,\"version\":2,\"type\":\"keyboard\",\"task_id\":\"keyboard_shortcuts\"}"
+  },
+  {
+    "name": "shortcuts_2",
+    "message": {
+      "id": "web_00000000-0000-4000-8000-000000000002_5",
+      "task_id": "keyboard_shortcuts",
+      "event_name": "uxr_result",
+      "task_context_id": "web_00000000-0000-4000-8000-000000000002_3",
+      "elapsed_ms": 100,
+      "details": "{\"details_version\":1,\"result_schema\":\"keyboard_shortcut_result_v1\",\"result\":{\"promptText\":\"Ctrl+C Ctrl+V\",\"typedText\":\"Ctrl+C Ctrl+V\",\"wpm\":0,\"awpm\":0,\"uer\":0,\"cer\":0,\"ter\":0,\"accuracy\":100,\"timeSpentMs\":100,\"totalChars\":2,\"keyPresses\":2,\"correctedErrors\":0,\"uncorrectedErrors\":0,\"surfaceDifference\":-1,\"conditionId\":-1,\"conditionValue\":-1,\"qrHeight\":-1}}",
+      "version": 2,
+      "type": "arcade"
+    },
+    "raw": "{\"id\":\"web_00000000-0000-4000-8000-000000000002_5\",\"task_id\":\"keyboard_shortcuts\",\"event_name\":\"uxr_result\",\"task_context_id\":\"web_00000000-0000-4000-8000-000000000002_3\",\"elapsed_ms\":100,\"details\":\"{\\\"details_version\\\":1,\\\"result_schema\\\":\\\"keyboard_shortcut_result_v1\\\",\\\"result\\\":{\\\"promptText\\\":\\\"Ctrl+C Ctrl+V\\\",\\\"typedText\\\":\\\"Ctrl+C Ctrl+V\\\",\\\"wpm\\\":0,\\\"awpm\\\":0,\\\"uer\\\":0,\\\"cer\\\":0,\\\"ter\\\":0,\\\"accuracy\\\":100,\\\"timeSpentMs\\\":100,\\\"totalChars\\\":2,\\\"keyPresses\\\":2,\\\"correctedErrors\\\":0,\\\"uncorrectedErrors\\\":0,\\\"surfaceDifference\\\":-1,\\\"conditionId\\\":-1,\\\"conditionValue\\\":-1,\\\"qrHeight\\\":-1}}\",\"version\":2,\"type\":\"arcade\"}",
+    "expected_details": "{\"details_version\":1,\"result_schema\":\"keyboard_shortcut_result_v1\",\"result\":{\"promptText\":\"Ctrl+C Ctrl+V\",\"typedText\":\"Ctrl+C Ctrl+V\",\"wpm\":0,\"awpm\":0,\"uer\":0,\"cer\":0,\"ter\":0,\"accuracy\":100,\"timeSpentMs\":100,\"totalChars\":2,\"keyPresses\":2,\"correctedErrors\":0,\"uncorrectedErrors\":0,\"surfaceDifference\":-1,\"conditionId\":-1,\"conditionValue\":-1,\"qrHeight\":-1}}"
+  },
+  {
+    "name": "targeting_1",
+    "message": {
+      "elapsed_ms": 200,
+      "id": "web_00000000-0000-4000-8000-000000000003_3",
+      "metric_family": "cursor_movement",
+      "details": {
+        "details_version": 1,
+        "cursor_trace": "observed"
+      },
+      "stp_cursor_movement_target_radius_px": 19,
+      "stp_cursor_movement_start_distance_px": 482.5974481593781,
+      "stp_cursor_movement_time_ms": 200,
+      "stp_cursor_movement_stroke_count": 1,
+      "stp_cursor_movement_first_stroke_share": 1,
+      "stp_cursor_movement_small_strokes_far_from_target": 0,
+      "stp_cursor_movement_small_strokes_near_target": 0,
+      "stp_cursor_movement_target_entries": 1,
+      "stp_cursor_movement_total_cursor_distance_px": 501.5974481593781,
+      "stp_cursor_movement_index_of_difficulty_bits": 3.8278122019032432,
+      "stp_cursor_movement_overshoot_count": 0,
+      "stp_cursor_movement_endpoint_error_px": 0,
+      "version": 2,
+      "type": "touchpad",
+      "task_id": "touchpad_targeting"
+    },
+    "raw": "{\"elapsed_ms\":200,\"id\":\"web_00000000-0000-4000-8000-000000000003_3\",\"metric_family\":\"cursor_movement\",\"details\":{\"details_version\":1,\"cursor_trace\":\"observed\"},\"stp_cursor_movement_target_radius_px\":19,\"stp_cursor_movement_start_distance_px\":482.5974481593781,\"stp_cursor_movement_time_ms\":200,\"stp_cursor_movement_stroke_count\":1,\"stp_cursor_movement_first_stroke_share\":1,\"stp_cursor_movement_small_strokes_far_from_target\":0,\"stp_cursor_movement_small_strokes_near_target\":0,\"stp_cursor_movement_target_entries\":1,\"stp_cursor_movement_total_cursor_distance_px\":501.5974481593781,\"stp_cursor_movement_index_of_difficulty_bits\":3.8278122019032432,\"stp_cursor_movement_overshoot_count\":0,\"stp_cursor_movement_endpoint_error_px\":0,\"version\":2,\"type\":\"touchpad\",\"task_id\":\"touchpad_targeting\"}"
+  },
+  {
+    "name": "targeting_2",
+    "message": {
+      "elapsed_ms": 200,
+      "id": "web_00000000-0000-4000-8000-000000000003_4",
+      "metric_family": "clicks",
+      "details": {
+        "details_version": 1
+      },
+      "stp_clicks_target_count": 1,
+      "stp_clicks_completed_count": 1,
+      "stp_clicks_total": 1,
+      "stp_clicks_on_target": 1,
+      "stp_clicks_miss_count": 0,
+      "version": 2,
+      "type": "touchpad",
+      "task_id": "touchpad_targeting"
+    },
+    "raw": "{\"elapsed_ms\":200,\"id\":\"web_00000000-0000-4000-8000-000000000003_4\",\"metric_family\":\"clicks\",\"details\":{\"details_version\":1},\"stp_clicks_target_count\":1,\"stp_clicks_completed_count\":1,\"stp_clicks_total\":1,\"stp_clicks_on_target\":1,\"stp_clicks_miss_count\":0,\"version\":2,\"type\":\"touchpad\",\"task_id\":\"touchpad_targeting\"}"
+  },
+  {
+    "name": "targeting_3",
+    "message": {
+      "elapsed_ms": 100,
+      "id": "web_00000000-0000-4000-8000-000000000003_5",
+      "metric_family": "cursor_movement",
+      "details": {
+        "details_version": 1,
+        "cursor_trace": "observed"
+      },
+      "stp_cursor_movement_target_radius_px": 19,
+      "stp_cursor_movement_start_distance_px": 276.4423259036624,
+      "stp_cursor_movement_time_ms": 100,
+      "stp_cursor_movement_stroke_count": 1,
+      "stp_cursor_movement_first_stroke_share": 1,
+      "stp_cursor_movement_small_strokes_far_from_target": 0,
+      "stp_cursor_movement_small_strokes_near_target": 0,
+      "stp_cursor_movement_target_entries": 1,
+      "stp_cursor_movement_total_cursor_distance_px": 295.4423259036624,
+      "stp_cursor_movement_index_of_difficulty_bits": 3.133365922513821,
+      "stp_cursor_movement_overshoot_count": 0,
+      "stp_cursor_movement_endpoint_error_px": 0,
+      "version": 2,
+      "type": "touchpad",
+      "task_id": "touchpad_targeting"
+    },
+    "raw": "{\"elapsed_ms\":100,\"id\":\"web_00000000-0000-4000-8000-000000000003_5\",\"metric_family\":\"cursor_movement\",\"details\":{\"details_version\":1,\"cursor_trace\":\"observed\"},\"stp_cursor_movement_target_radius_px\":19,\"stp_cursor_movement_start_distance_px\":276.4423259036624,\"stp_cursor_movement_time_ms\":100,\"stp_cursor_movement_stroke_count\":1,\"stp_cursor_movement_first_stroke_share\":1,\"stp_cursor_movement_small_strokes_far_from_target\":0,\"stp_cursor_movement_small_strokes_near_target\":0,\"stp_cursor_movement_target_entries\":1,\"stp_cursor_movement_total_cursor_distance_px\":295.4423259036624,\"stp_cursor_movement_index_of_difficulty_bits\":3.133365922513821,\"stp_cursor_movement_overshoot_count\":0,\"stp_cursor_movement_endpoint_error_px\":0,\"version\":2,\"type\":\"touchpad\",\"task_id\":\"touchpad_targeting\"}"
+  },
+  {
+    "name": "targeting_4",
+    "message": {
+      "elapsed_ms": 100,
+      "id": "web_00000000-0000-4000-8000-000000000003_6",
+      "metric_family": "clicks",
+      "details": {
+        "details_version": 1
+      },
+      "stp_clicks_target_count": 1,
+      "stp_clicks_completed_count": 1,
+      "stp_clicks_total": 1,
+      "stp_clicks_on_target": 1,
+      "stp_clicks_miss_count": 0,
+      "version": 2,
+      "type": "touchpad",
+      "task_id": "touchpad_targeting"
+    },
+    "raw": "{\"elapsed_ms\":100,\"id\":\"web_00000000-0000-4000-8000-000000000003_6\",\"metric_family\":\"clicks\",\"details\":{\"details_version\":1},\"stp_clicks_target_count\":1,\"stp_clicks_completed_count\":1,\"stp_clicks_total\":1,\"stp_clicks_on_target\":1,\"stp_clicks_miss_count\":0,\"version\":2,\"type\":\"touchpad\",\"task_id\":\"touchpad_targeting\"}"
+  },
+  {
+    "name": "targeting_5",
+    "message": {
+      "elapsed_ms": 100,
+      "id": "web_00000000-0000-4000-8000-000000000003_7",
+      "metric_family": "cursor_movement",
+      "details": {
+        "details_version": 1,
+        "cursor_trace": "observed"
+      },
+      "stp_cursor_movement_target_radius_px": 19,
+      "stp_cursor_movement_start_distance_px": 276.44232590366244,
+      "stp_cursor_movement_time_ms": 100,
+      "stp_cursor_movement_stroke_count": 1,
+      "stp_cursor_movement_first_stroke_share": 1,
+      "stp_cursor_movement_small_strokes_far_from_target": 0,
+      "stp_cursor_movement_small_strokes_near_target": 0,
+      "stp_cursor_movement_target_entries": 1,
+      "stp_cursor_movement_total_cursor_distance_px": 295.44232590366244,
+      "stp_cursor_movement_index_of_difficulty_bits": 3.133365922513821,
+      "stp_cursor_movement_overshoot_count": 0,
+      "stp_cursor_movement_endpoint_error_px": 0,
+      "version": 2,
+      "type": "touchpad",
+      "task_id": "touchpad_targeting"
+    },
+    "raw": "{\"elapsed_ms\":100,\"id\":\"web_00000000-0000-4000-8000-000000000003_7\",\"metric_family\":\"cursor_movement\",\"details\":{\"details_version\":1,\"cursor_trace\":\"observed\"},\"stp_cursor_movement_target_radius_px\":19,\"stp_cursor_movement_start_distance_px\":276.44232590366244,\"stp_cursor_movement_time_ms\":100,\"stp_cursor_movement_stroke_count\":1,\"stp_cursor_movement_first_stroke_share\":1,\"stp_cursor_movement_small_strokes_far_from_target\":0,\"stp_cursor_movement_small_strokes_near_target\":0,\"stp_cursor_movement_target_entries\":1,\"stp_cursor_movement_total_cursor_distance_px\":295.44232590366244,\"stp_cursor_movement_index_of_difficulty_bits\":3.133365922513821,\"stp_cursor_movement_overshoot_count\":0,\"stp_cursor_movement_endpoint_error_px\":0,\"version\":2,\"type\":\"touchpad\",\"task_id\":\"touchpad_targeting\"}"
+  },
+  {
+    "name": "targeting_6",
+    "message": {
+      "elapsed_ms": 100,
+      "id": "web_00000000-0000-4000-8000-000000000003_8",
+      "metric_family": "clicks",
+      "details": {
+        "details_version": 1
+      },
+      "stp_clicks_target_count": 1,
+      "stp_clicks_completed_count": 1,
+      "stp_clicks_total": 1,
+      "stp_clicks_on_target": 1,
+      "stp_clicks_miss_count": 0,
+      "version": 2,
+      "type": "touchpad",
+      "task_id": "touchpad_targeting"
+    },
+    "raw": "{\"elapsed_ms\":100,\"id\":\"web_00000000-0000-4000-8000-000000000003_8\",\"metric_family\":\"clicks\",\"details\":{\"details_version\":1},\"stp_clicks_target_count\":1,\"stp_clicks_completed_count\":1,\"stp_clicks_total\":1,\"stp_clicks_on_target\":1,\"stp_clicks_miss_count\":0,\"version\":2,\"type\":\"touchpad\",\"task_id\":\"touchpad_targeting\"}"
+  },
+  {
+    "name": "targeting_7",
+    "message": {
+      "elapsed_ms": 100,
+      "id": "web_00000000-0000-4000-8000-000000000003_9",
+      "metric_family": "cursor_movement",
+      "details": {
+        "details_version": 1,
+        "cursor_trace": "observed"
+      },
+      "stp_cursor_movement_target_radius_px": 19,
+      "stp_cursor_movement_start_distance_px": 276.44232590366244,
+      "stp_cursor_movement_time_ms": 100,
+      "stp_cursor_movement_stroke_count": 1,
+      "stp_cursor_movement_first_stroke_share": 1,
+      "stp_cursor_movement_small_strokes_far_from_target": 0,
+      "stp_cursor_movement_small_strokes_near_target": 0,
+      "stp_cursor_movement_target_entries": 1,
+      "stp_cursor_movement_total_cursor_distance_px": 295.44232590366244,
+      "stp_cursor_movement_index_of_difficulty_bits": 3.133365922513821,
+      "stp_cursor_movement_overshoot_count": 0,
+      "stp_cursor_movement_endpoint_error_px": 0,
+      "version": 2,
+      "type": "touchpad",
+      "task_id": "touchpad_targeting"
+    },
+    "raw": "{\"elapsed_ms\":100,\"id\":\"web_00000000-0000-4000-8000-000000000003_9\",\"metric_family\":\"cursor_movement\",\"details\":{\"details_version\":1,\"cursor_trace\":\"observed\"},\"stp_cursor_movement_target_radius_px\":19,\"stp_cursor_movement_start_distance_px\":276.44232590366244,\"stp_cursor_movement_time_ms\":100,\"stp_cursor_movement_stroke_count\":1,\"stp_cursor_movement_first_stroke_share\":1,\"stp_cursor_movement_small_strokes_far_from_target\":0,\"stp_cursor_movement_small_strokes_near_target\":0,\"stp_cursor_movement_target_entries\":1,\"stp_cursor_movement_total_cursor_distance_px\":295.44232590366244,\"stp_cursor_movement_index_of_difficulty_bits\":3.133365922513821,\"stp_cursor_movement_overshoot_count\":0,\"stp_cursor_movement_endpoint_error_px\":0,\"version\":2,\"type\":\"touchpad\",\"task_id\":\"touchpad_targeting\"}"
+  },
+  {
+    "name": "targeting_8",
+    "message": {
+      "elapsed_ms": 100,
+      "id": "web_00000000-0000-4000-8000-000000000003_a",
+      "metric_family": "clicks",
+      "details": {
+        "details_version": 1
+      },
+      "stp_clicks_target_count": 1,
+      "stp_clicks_completed_count": 1,
+      "stp_clicks_total": 1,
+      "stp_clicks_on_target": 1,
+      "stp_clicks_miss_count": 0,
+      "version": 2,
+      "type": "touchpad",
+      "task_id": "touchpad_targeting"
+    },
+    "raw": "{\"elapsed_ms\":100,\"id\":\"web_00000000-0000-4000-8000-000000000003_a\",\"metric_family\":\"clicks\",\"details\":{\"details_version\":1},\"stp_clicks_target_count\":1,\"stp_clicks_completed_count\":1,\"stp_clicks_total\":1,\"stp_clicks_on_target\":1,\"stp_clicks_miss_count\":0,\"version\":2,\"type\":\"touchpad\",\"task_id\":\"touchpad_targeting\"}"
+  },
+  {
+    "name": "targeting_9",
+    "message": {
+      "elapsed_ms": 100,
+      "id": "web_00000000-0000-4000-8000-000000000003_b",
+      "metric_family": "cursor_movement",
+      "details": {
+        "details_version": 1,
+        "cursor_trace": "observed"
+      },
+      "stp_cursor_movement_target_radius_px": 19,
+      "stp_cursor_movement_start_distance_px": 276.44232590366244,
+      "stp_cursor_movement_time_ms": 100,
+      "stp_cursor_movement_stroke_count": 1,
+      "stp_cursor_movement_first_stroke_share": 1,
+      "stp_cursor_movement_small_strokes_far_from_target": 0,
+      "stp_cursor_movement_small_strokes_near_target": 0,
+      "stp_cursor_movement_target_entries": 1,
+      "stp_cursor_movement_total_cursor_distance_px": 295.44232590366244,
+      "stp_cursor_movement_index_of_difficulty_bits": 3.133365922513821,
+      "stp_cursor_movement_overshoot_count": 0,
+      "stp_cursor_movement_endpoint_error_px": 0,
+      "version": 2,
+      "type": "touchpad",
+      "task_id": "touchpad_targeting"
+    },
+    "raw": "{\"elapsed_ms\":100,\"id\":\"web_00000000-0000-4000-8000-000000000003_b\",\"metric_family\":\"cursor_movement\",\"details\":{\"details_version\":1,\"cursor_trace\":\"observed\"},\"stp_cursor_movement_target_radius_px\":19,\"stp_cursor_movement_start_distance_px\":276.44232590366244,\"stp_cursor_movement_time_ms\":100,\"stp_cursor_movement_stroke_count\":1,\"stp_cursor_movement_first_stroke_share\":1,\"stp_cursor_movement_small_strokes_far_from_target\":0,\"stp_cursor_movement_small_strokes_near_target\":0,\"stp_cursor_movement_target_entries\":1,\"stp_cursor_movement_total_cursor_distance_px\":295.44232590366244,\"stp_cursor_movement_index_of_difficulty_bits\":3.133365922513821,\"stp_cursor_movement_overshoot_count\":0,\"stp_cursor_movement_endpoint_error_px\":0,\"version\":2,\"type\":\"touchpad\",\"task_id\":\"touchpad_targeting\"}"
+  },
+  {
+    "name": "targeting_10",
+    "message": {
+      "elapsed_ms": 100,
+      "id": "web_00000000-0000-4000-8000-000000000003_c",
+      "metric_family": "clicks",
+      "details": {
+        "details_version": 1
+      },
+      "stp_clicks_target_count": 1,
+      "stp_clicks_completed_count": 1,
+      "stp_clicks_total": 1,
+      "stp_clicks_on_target": 1,
+      "stp_clicks_miss_count": 0,
+      "version": 2,
+      "type": "touchpad",
+      "task_id": "touchpad_targeting"
+    },
+    "raw": "{\"elapsed_ms\":100,\"id\":\"web_00000000-0000-4000-8000-000000000003_c\",\"metric_family\":\"clicks\",\"details\":{\"details_version\":1},\"stp_clicks_target_count\":1,\"stp_clicks_completed_count\":1,\"stp_clicks_total\":1,\"stp_clicks_on_target\":1,\"stp_clicks_miss_count\":0,\"version\":2,\"type\":\"touchpad\",\"task_id\":\"touchpad_targeting\"}"
+  },
+  {
+    "name": "targeting_11",
+    "message": {
+      "elapsed_ms": 100,
+      "id": "web_00000000-0000-4000-8000-000000000003_d",
+      "metric_family": "cursor_movement",
+      "details": {
+        "details_version": 1,
+        "cursor_trace": "observed"
+      },
+      "stp_cursor_movement_target_radius_px": 19,
+      "stp_cursor_movement_start_distance_px": 276.4423259036624,
+      "stp_cursor_movement_time_ms": 100,
+      "stp_cursor_movement_stroke_count": 1,
+      "stp_cursor_movement_first_stroke_share": 1,
+      "stp_cursor_movement_small_strokes_far_from_target": 0,
+      "stp_cursor_movement_small_strokes_near_target": 0,
+      "stp_cursor_movement_target_entries": 1,
+      "stp_cursor_movement_total_cursor_distance_px": 295.4423259036624,
+      "stp_cursor_movement_index_of_difficulty_bits": 3.133365922513821,
+      "stp_cursor_movement_overshoot_count": 0,
+      "stp_cursor_movement_endpoint_error_px": 0,
+      "version": 2,
+      "type": "touchpad",
+      "task_id": "touchpad_targeting"
+    },
+    "raw": "{\"elapsed_ms\":100,\"id\":\"web_00000000-0000-4000-8000-000000000003_d\",\"metric_family\":\"cursor_movement\",\"details\":{\"details_version\":1,\"cursor_trace\":\"observed\"},\"stp_cursor_movement_target_radius_px\":19,\"stp_cursor_movement_start_distance_px\":276.4423259036624,\"stp_cursor_movement_time_ms\":100,\"stp_cursor_movement_stroke_count\":1,\"stp_cursor_movement_first_stroke_share\":1,\"stp_cursor_movement_small_strokes_far_from_target\":0,\"stp_cursor_movement_small_strokes_near_target\":0,\"stp_cursor_movement_target_entries\":1,\"stp_cursor_movement_total_cursor_distance_px\":295.4423259036624,\"stp_cursor_movement_index_of_difficulty_bits\":3.133365922513821,\"stp_cursor_movement_overshoot_count\":0,\"stp_cursor_movement_endpoint_error_px\":0,\"version\":2,\"type\":\"touchpad\",\"task_id\":\"touchpad_targeting\"}"
+  },
+  {
+    "name": "targeting_12",
+    "message": {
+      "elapsed_ms": 100,
+      "id": "web_00000000-0000-4000-8000-000000000003_e",
+      "metric_family": "clicks",
+      "details": {
+        "details_version": 1
+      },
+      "stp_clicks_target_count": 1,
+      "stp_clicks_completed_count": 1,
+      "stp_clicks_total": 1,
+      "stp_clicks_on_target": 1,
+      "stp_clicks_miss_count": 0,
+      "version": 2,
+      "type": "touchpad",
+      "task_id": "touchpad_targeting"
+    },
+    "raw": "{\"elapsed_ms\":100,\"id\":\"web_00000000-0000-4000-8000-000000000003_e\",\"metric_family\":\"clicks\",\"details\":{\"details_version\":1},\"stp_clicks_target_count\":1,\"stp_clicks_completed_count\":1,\"stp_clicks_total\":1,\"stp_clicks_on_target\":1,\"stp_clicks_miss_count\":0,\"version\":2,\"type\":\"touchpad\",\"task_id\":\"touchpad_targeting\"}"
+  },
+  {
+    "name": "targeting_13",
+    "message": {
+      "elapsed_ms": 100,
+      "id": "web_00000000-0000-4000-8000-000000000003_f",
+      "metric_family": "cursor_movement",
+      "details": {
+        "details_version": 1,
+        "cursor_trace": "observed"
+      },
+      "stp_cursor_movement_target_radius_px": 19,
+      "stp_cursor_movement_start_distance_px": 276.4423259036624,
+      "stp_cursor_movement_time_ms": 100,
+      "stp_cursor_movement_stroke_count": 1,
+      "stp_cursor_movement_first_stroke_share": 1,
+      "stp_cursor_movement_small_strokes_far_from_target": 0,
+      "stp_cursor_movement_small_strokes_near_target": 0,
+      "stp_cursor_movement_target_entries": 1,
+      "stp_cursor_movement_total_cursor_distance_px": 295.4423259036624,
+      "stp_cursor_movement_index_of_difficulty_bits": 3.133365922513821,
+      "stp_cursor_movement_overshoot_count": 0,
+      "stp_cursor_movement_endpoint_error_px": 0,
+      "version": 2,
+      "type": "touchpad",
+      "task_id": "touchpad_targeting"
+    },
+    "raw": "{\"elapsed_ms\":100,\"id\":\"web_00000000-0000-4000-8000-000000000003_f\",\"metric_family\":\"cursor_movement\",\"details\":{\"details_version\":1,\"cursor_trace\":\"observed\"},\"stp_cursor_movement_target_radius_px\":19,\"stp_cursor_movement_start_distance_px\":276.4423259036624,\"stp_cursor_movement_time_ms\":100,\"stp_cursor_movement_stroke_count\":1,\"stp_cursor_movement_first_stroke_share\":1,\"stp_cursor_movement_small_strokes_far_from_target\":0,\"stp_cursor_movement_small_strokes_near_target\":0,\"stp_cursor_movement_target_entries\":1,\"stp_cursor_movement_total_cursor_distance_px\":295.4423259036624,\"stp_cursor_movement_index_of_difficulty_bits\":3.133365922513821,\"stp_cursor_movement_overshoot_count\":0,\"stp_cursor_movement_endpoint_error_px\":0,\"version\":2,\"type\":\"touchpad\",\"task_id\":\"touchpad_targeting\"}"
+  },
+  {
+    "name": "targeting_14",
+    "message": {
+      "elapsed_ms": 100,
+      "id": "web_00000000-0000-4000-8000-000000000003_g",
+      "metric_family": "clicks",
+      "details": {
+        "details_version": 1
+      },
+      "stp_clicks_target_count": 1,
+      "stp_clicks_completed_count": 1,
+      "stp_clicks_total": 1,
+      "stp_clicks_on_target": 1,
+      "stp_clicks_miss_count": 0,
+      "version": 2,
+      "type": "touchpad",
+      "task_id": "touchpad_targeting"
+    },
+    "raw": "{\"elapsed_ms\":100,\"id\":\"web_00000000-0000-4000-8000-000000000003_g\",\"metric_family\":\"clicks\",\"details\":{\"details_version\":1},\"stp_clicks_target_count\":1,\"stp_clicks_completed_count\":1,\"stp_clicks_total\":1,\"stp_clicks_on_target\":1,\"stp_clicks_miss_count\":0,\"version\":2,\"type\":\"touchpad\",\"task_id\":\"touchpad_targeting\"}"
+  },
+  {
+    "name": "targeting_15",
+    "message": {
+      "elapsed_ms": 100,
+      "id": "web_00000000-0000-4000-8000-000000000003_h",
+      "metric_family": "cursor_movement",
+      "details": {
+        "details_version": 1,
+        "cursor_trace": "observed"
+      },
+      "stp_cursor_movement_target_radius_px": 19,
+      "stp_cursor_movement_start_distance_px": 276.44232590366244,
+      "stp_cursor_movement_time_ms": 100,
+      "stp_cursor_movement_stroke_count": 1,
+      "stp_cursor_movement_first_stroke_share": 1,
+      "stp_cursor_movement_small_strokes_far_from_target": 0,
+      "stp_cursor_movement_small_strokes_near_target": 0,
+      "stp_cursor_movement_target_entries": 1,
+      "stp_cursor_movement_total_cursor_distance_px": 295.44232590366244,
+      "stp_cursor_movement_index_of_difficulty_bits": 3.133365922513821,
+      "stp_cursor_movement_overshoot_count": 0,
+      "stp_cursor_movement_endpoint_error_px": 0,
+      "version": 2,
+      "type": "touchpad",
+      "task_id": "touchpad_targeting"
+    },
+    "raw": "{\"elapsed_ms\":100,\"id\":\"web_00000000-0000-4000-8000-000000000003_h\",\"metric_family\":\"cursor_movement\",\"details\":{\"details_version\":1,\"cursor_trace\":\"observed\"},\"stp_cursor_movement_target_radius_px\":19,\"stp_cursor_movement_start_distance_px\":276.44232590366244,\"stp_cursor_movement_time_ms\":100,\"stp_cursor_movement_stroke_count\":1,\"stp_cursor_movement_first_stroke_share\":1,\"stp_cursor_movement_small_strokes_far_from_target\":0,\"stp_cursor_movement_small_strokes_near_target\":0,\"stp_cursor_movement_target_entries\":1,\"stp_cursor_movement_total_cursor_distance_px\":295.44232590366244,\"stp_cursor_movement_index_of_difficulty_bits\":3.133365922513821,\"stp_cursor_movement_overshoot_count\":0,\"stp_cursor_movement_endpoint_error_px\":0,\"version\":2,\"type\":\"touchpad\",\"task_id\":\"touchpad_targeting\"}"
+  },
+  {
+    "name": "targeting_16",
+    "message": {
+      "elapsed_ms": 100,
+      "id": "web_00000000-0000-4000-8000-000000000003_i",
+      "metric_family": "clicks",
+      "details": {
+        "details_version": 1
+      },
+      "stp_clicks_target_count": 1,
+      "stp_clicks_completed_count": 1,
+      "stp_clicks_total": 1,
+      "stp_clicks_on_target": 1,
+      "stp_clicks_miss_count": 0,
+      "version": 2,
+      "type": "touchpad",
+      "task_id": "touchpad_targeting"
+    },
+    "raw": "{\"elapsed_ms\":100,\"id\":\"web_00000000-0000-4000-8000-000000000003_i\",\"metric_family\":\"clicks\",\"details\":{\"details_version\":1},\"stp_clicks_target_count\":1,\"stp_clicks_completed_count\":1,\"stp_clicks_total\":1,\"stp_clicks_on_target\":1,\"stp_clicks_miss_count\":0,\"version\":2,\"type\":\"touchpad\",\"task_id\":\"touchpad_targeting\"}"
+  },
+  {
+    "name": "targeting_17",
+    "message": {
+      "elapsed_ms": 100,
+      "id": "web_00000000-0000-4000-8000-000000000003_j",
+      "metric_family": "cursor_movement",
+      "details": {
+        "details_version": 1,
+        "cursor_trace": "observed"
+      },
+      "stp_cursor_movement_target_radius_px": 19,
+      "stp_cursor_movement_start_distance_px": 276.4423259036624,
+      "stp_cursor_movement_time_ms": 100,
+      "stp_cursor_movement_stroke_count": 1,
+      "stp_cursor_movement_first_stroke_share": 1,
+      "stp_cursor_movement_small_strokes_far_from_target": 0,
+      "stp_cursor_movement_small_strokes_near_target": 0,
+      "stp_cursor_movement_target_entries": 1,
+      "stp_cursor_movement_total_cursor_distance_px": 295.4423259036624,
+      "stp_cursor_movement_index_of_difficulty_bits": 3.133365922513821,
+      "stp_cursor_movement_overshoot_count": 0,
+      "stp_cursor_movement_endpoint_error_px": 0,
+      "version": 2,
+      "type": "touchpad",
+      "task_id": "touchpad_targeting"
+    },
+    "raw": "{\"elapsed_ms\":100,\"id\":\"web_00000000-0000-4000-8000-000000000003_j\",\"metric_family\":\"cursor_movement\",\"details\":{\"details_version\":1,\"cursor_trace\":\"observed\"},\"stp_cursor_movement_target_radius_px\":19,\"stp_cursor_movement_start_distance_px\":276.4423259036624,\"stp_cursor_movement_time_ms\":100,\"stp_cursor_movement_stroke_count\":1,\"stp_cursor_movement_first_stroke_share\":1,\"stp_cursor_movement_small_strokes_far_from_target\":0,\"stp_cursor_movement_small_strokes_near_target\":0,\"stp_cursor_movement_target_entries\":1,\"stp_cursor_movement_total_cursor_distance_px\":295.4423259036624,\"stp_cursor_movement_index_of_difficulty_bits\":3.133365922513821,\"stp_cursor_movement_overshoot_count\":0,\"stp_cursor_movement_endpoint_error_px\":0,\"version\":2,\"type\":\"touchpad\",\"task_id\":\"touchpad_targeting\"}"
+  },
+  {
+    "name": "targeting_18",
+    "message": {
+      "elapsed_ms": 100,
+      "id": "web_00000000-0000-4000-8000-000000000003_k",
+      "metric_family": "clicks",
+      "details": {
+        "details_version": 1
+      },
+      "stp_clicks_target_count": 1,
+      "stp_clicks_completed_count": 1,
+      "stp_clicks_total": 1,
+      "stp_clicks_on_target": 1,
+      "stp_clicks_miss_count": 0,
+      "version": 2,
+      "type": "touchpad",
+      "task_id": "touchpad_targeting"
+    },
+    "raw": "{\"elapsed_ms\":100,\"id\":\"web_00000000-0000-4000-8000-000000000003_k\",\"metric_family\":\"clicks\",\"details\":{\"details_version\":1},\"stp_clicks_target_count\":1,\"stp_clicks_completed_count\":1,\"stp_clicks_total\":1,\"stp_clicks_on_target\":1,\"stp_clicks_miss_count\":0,\"version\":2,\"type\":\"touchpad\",\"task_id\":\"touchpad_targeting\"}"
+  },
+  {
+    "name": "targeting_19",
+    "message": {
+      "id": "web_00000000-0000-4000-8000-000000000003_l",
+      "task_id": "touchpad_targeting",
+      "event_name": "uxr_result",
+      "task_context_id": "web_00000000-0000-4000-8000-000000000003_2",
+      "elapsed_ms": 0,
+      "details": "{\"details_version\":1,\"result_schema\":\"targeting_round_result_v1\",\"result\":{\"trial_num\":1,\"condition_num\":\"2\",\"index_of_difficulty\":\"3.15\",\"effective_id\":\"Infinity\",\"throughput\":\"Infinity\",\"time_to_complete\":\"0.00\",\"clicks_total\":9,\"clicks_on_target\":9,\"target_entries\":2,\"drag_count\":0,\"total_cursor_distance\":\"2363.5\"}}",
+      "version": 2,
+      "type": "arcade"
+    },
+    "raw": "{\"id\":\"web_00000000-0000-4000-8000-000000000003_l\",\"task_id\":\"touchpad_targeting\",\"event_name\":\"uxr_result\",\"task_context_id\":\"web_00000000-0000-4000-8000-000000000003_2\",\"elapsed_ms\":0,\"details\":\"{\\\"details_version\\\":1,\\\"result_schema\\\":\\\"targeting_round_result_v1\\\",\\\"result\\\":{\\\"trial_num\\\":1,\\\"condition_num\\\":\\\"2\\\",\\\"index_of_difficulty\\\":\\\"3.15\\\",\\\"effective_id\\\":\\\"Infinity\\\",\\\"throughput\\\":\\\"Infinity\\\",\\\"time_to_complete\\\":\\\"0.00\\\",\\\"clicks_total\\\":9,\\\"clicks_on_target\\\":9,\\\"target_entries\\\":2,\\\"drag_count\\\":0,\\\"total_cursor_distance\\\":\\\"2363.5\\\"}}\",\"version\":2,\"type\":\"arcade\"}",
+    "expected_details": "{\"details_version\":1,\"result_schema\":\"targeting_round_result_v1\",\"result\":{\"trial_num\":1,\"condition_num\":\"2\",\"index_of_difficulty\":\"3.15\",\"effective_id\":\"Infinity\",\"throughput\":\"Infinity\",\"time_to_complete\":\"0.00\",\"clicks_total\":9,\"clicks_on_target\":9,\"target_entries\":2,\"drag_count\":0,\"total_cursor_distance\":\"2363.5\"}}"
+  },
+  {
+    "name": "scrolling_1",
+    "message": {
+      "id": "web_00000000-0000-4000-8000-000000000004_2",
+      "metric_family": "scrolling",
+      "elapsed_ms": 400,
+      "details": {
+        "details_version": 1
+      },
+      "stp_scrolling_start_distance_px": 80.25,
+      "stp_scrolling_stroke_count": -1,
+      "stp_scrolling_dial_in_stroke_count": -1,
+      "stp_scrolling_empty_stroke_count": -1,
+      "stp_scrolling_first_stroke_share": -1,
+      "stp_scrolling_overshoot_count": 0,
+      "stp_scrolling_overshoot_max_px": 0,
+      "stp_scrolling_time_ms": 400,
+      "stp_scrolling_direction": "down",
+      "stp_scrolling_cursor_travel_without_scroll_px": -1,
+      "version": 2,
+      "type": "touchpad",
+      "task_id": "touchpad_scrolling"
+    },
+    "raw": "{\"id\":\"web_00000000-0000-4000-8000-000000000004_2\",\"metric_family\":\"scrolling\",\"elapsed_ms\":400,\"details\":{\"details_version\":1},\"stp_scrolling_start_distance_px\":80.25,\"stp_scrolling_stroke_count\":-1,\"stp_scrolling_dial_in_stroke_count\":-1,\"stp_scrolling_empty_stroke_count\":-1,\"stp_scrolling_first_stroke_share\":-1,\"stp_scrolling_overshoot_count\":0,\"stp_scrolling_overshoot_max_px\":0,\"stp_scrolling_time_ms\":400,\"stp_scrolling_direction\":\"down\",\"stp_scrolling_cursor_travel_without_scroll_px\":-1,\"version\":2,\"type\":\"touchpad\",\"task_id\":\"touchpad_scrolling\"}"
+  },
+  {
+    "name": "scrolling_2",
+    "message": {
+      "id": "web_00000000-0000-4000-8000-000000000004_3",
+      "task_id": "touchpad_scrolling",
+      "event_name": "uxr_result",
+      "task_context_id": "scroll_fixture_block",
+      "elapsed_ms": 1400,
+      "details": "{\"details_version\":1,\"result_schema\":\"scrolling_task_result_v1\",\"result\":{\"trial_num\":1,\"time_to_complete\":\"1.40\",\"gesture_count\":3}}",
+      "version": 2,
+      "type": "arcade"
+    },
+    "raw": "{\"id\":\"web_00000000-0000-4000-8000-000000000004_3\",\"task_id\":\"touchpad_scrolling\",\"event_name\":\"uxr_result\",\"task_context_id\":\"scroll_fixture_block\",\"elapsed_ms\":1400,\"details\":\"{\\\"details_version\\\":1,\\\"result_schema\\\":\\\"scrolling_task_result_v1\\\",\\\"result\\\":{\\\"trial_num\\\":1,\\\"time_to_complete\\\":\\\"1.40\\\",\\\"gesture_count\\\":3}}\",\"version\":2,\"type\":\"arcade\"}",
+    "expected_details": "{\"details_version\":1,\"result_schema\":\"scrolling_task_result_v1\",\"result\":{\"trial_num\":1,\"time_to_complete\":\"1.40\",\"gesture_count\":3}}"
+  },
+  {
+    "name": "selection_1",
+    "message": {
+      "metric_family": "drag",
+      "elapsed_ms": 500,
+      "details": {
+        "details_version": 1,
+        "completion": "exact_selection"
+      },
+      "stp_drag_target_text": "prescribed phrase",
+      "version": 2,
+      "type": "touchpad",
+      "id": "web_00000000-0000-4000-8000-000000000005_2",
+      "task_id": "touchpad_selection"
+    },
+    "raw": "{\"metric_family\":\"drag\",\"elapsed_ms\":500,\"details\":{\"details_version\":1,\"completion\":\"exact_selection\"},\"stp_drag_target_text\":\"prescribed phrase\",\"version\":2,\"type\":\"touchpad\",\"id\":\"web_00000000-0000-4000-8000-000000000005_2\",\"task_id\":\"touchpad_selection\"}"
+  },
+  {
+    "name": "zoom_1",
+    "message": {
+      "metric_family": "zooming",
+      "elapsed_ms": 700,
+      "details": {
+        "details_version": 1,
+        "lower_scale": 1.4,
+        "upper_scale": 1.6
+      },
+      "stp_zooming_time_ms": 700,
+      "stp_zooming_direction": "in",
+      "stp_zooming_required_change_percent": 50,
+      "stp_zooming_pinch_count": -1,
+      "stp_zooming_dial_in_pinch_count": -1,
+      "stp_zooming_empty_pinch_count": -1,
+      "stp_zooming_first_pinch_share": -1,
+      "stp_zooming_overshoot_count": -1,
+      "stp_zooming_overshoot_max_percent": -1,
+      "stp_zooming_cursor_travel_while_zooming_px": -1,
+      "stp_zooming_cursor_travel_without_zoom_px": -1,
+      "version": 2,
+      "type": "touchpad",
+      "id": "web_00000000-0000-4000-8000-000000000006_2",
+      "task_id": "touchpad_zoom"
+    },
+    "raw": "{\"metric_family\":\"zooming\",\"elapsed_ms\":700,\"details\":{\"details_version\":1,\"lower_scale\":1.4,\"upper_scale\":1.6},\"stp_zooming_time_ms\":700,\"stp_zooming_direction\":\"in\",\"stp_zooming_required_change_percent\":50,\"stp_zooming_pinch_count\":-1,\"stp_zooming_dial_in_pinch_count\":-1,\"stp_zooming_empty_pinch_count\":-1,\"stp_zooming_first_pinch_share\":-1,\"stp_zooming_overshoot_count\":-1,\"stp_zooming_overshoot_max_percent\":-1,\"stp_zooming_cursor_travel_while_zooming_px\":-1,\"stp_zooming_cursor_travel_without_zoom_px\":-1,\"version\":2,\"type\":\"touchpad\",\"id\":\"web_00000000-0000-4000-8000-000000000006_2\",\"task_id\":\"touchpad_zoom\"}"
+  },
+  {
+    "name": "feedback_1",
+    "message": {
+      "version": 2,
+      "type": "arcade",
+      "id": "web_00000000-0000-4000-8000-000000000007_2",
+      "task_id": "touchpad_scrolling",
+      "event_name": "feedback_submitted",
+      "details": "{\"details_version\":1,\"scope\":\"task\",\"ratings\":{\"ease\":4,\"satisfaction\":4,\"frustration\":2,\"control\":4,\"fatigue\":2,\"accuracy\":5,\"lag\":3,\"likelihood\":4},\"comment\":\"The prescribed scroll target was easy to reach.\",\"pain_points\":[\"overshoot\",\"lag\"]}",
+      "task_context_id": "scroll_round_1"
+    },
+    "raw": "{\"version\":2,\"type\":\"arcade\",\"id\":\"web_00000000-0000-4000-8000-000000000007_2\",\"task_id\":\"touchpad_scrolling\",\"event_name\":\"feedback_submitted\",\"details\":\"{\\\"details_version\\\":1,\\\"scope\\\":\\\"task\\\",\\\"ratings\\\":{\\\"ease\\\":4,\\\"satisfaction\\\":4,\\\"frustration\\\":2,\\\"control\\\":4,\\\"fatigue\\\":2,\\\"accuracy\\\":5,\\\"lag\\\":3,\\\"likelihood\\\":4},\\\"comment\\\":\\\"The prescribed scroll target was easy to reach.\\\",\\\"pain_points\\\":[\\\"overshoot\\\",\\\"lag\\\"]}\",\"task_context_id\":\"scroll_round_1\"}",
+    "expected_details": "{\"details_version\":1,\"scope\":\"task\",\"ratings\":{\"ease\":4,\"satisfaction\":4,\"frustration\":2,\"control\":4,\"fatigue\":2,\"accuracy\":5,\"lag\":3,\"likelihood\":4},\"comment\":\"The prescribed scroll target was easy to reach.\",\"pain_points\":[\"overshoot\",\"lag\"]}"
+  },
+  {
+    "name": "feedback_2",
+    "message": {
+      "version": 2,
+      "type": "arcade",
+      "id": "web_00000000-0000-4000-8000-000000000007_3",
+      "task_id": "session",
+      "event_name": "feedback_submitted",
+      "details": "{\"details_version\":1,\"scope\":\"session\",\"ratings\":{},\"comment\":\"Freeform session feedback.\"}"
+    },
+    "raw": "{\"version\":2,\"type\":\"arcade\",\"id\":\"web_00000000-0000-4000-8000-000000000007_3\",\"task_id\":\"session\",\"event_name\":\"feedback_submitted\",\"details\":\"{\\\"details_version\\\":1,\\\"scope\\\":\\\"session\\\",\\\"ratings\\\":{},\\\"comment\\\":\\\"Freeform session feedback.\\\"}\"}",
+    "expected_details": "{\"details_version\":1,\"scope\":\"session\",\"ratings\":{},\"comment\":\"Freeform session feedback.\"}"
+  },
+  {
+    "name": "future-keyboard",
+    "message": {
+      "id": "future-keyboard",
+      "task_id": "study.future/text-entry",
+      "elapsed_ms": 2147483647,
+      "prompt_id": "prescribed_1",
+      "prompt_text": "Fix⏎",
+      "input_event_stream": "Fxi⌫⌫ix⏎",
+      "details": {
+        "details_version": 1,
+        "final_text": "Fix",
+        "replay_eligible": true
+      },
+      "version": 2,
+      "type": "keyboard"
+    },
+    "raw": "{\"id\":\"future-keyboard\",\"task_id\":\"study.future/text-entry\",\"elapsed_ms\":2147483647,\"prompt_id\":\"prescribed_1\",\"prompt_text\":\"Fix⏎\",\"input_event_stream\":\"Fxi⌫⌫ix⏎\",\"details\":{\"details_version\":1,\"final_text\":\"Fix\",\"replay_eligible\":true},\"version\":2,\"type\":\"keyboard\"}"
+  },
+  {
+    "name": "future-cursor_movement",
+    "message": {
+      "id": "future-cursor_movement",
+      "task_id": "study.future/cursor_movement",
+      "metric_family": "cursor_movement",
+      "elapsed_ms": 1234,
+      "details": {
+        "details_version": 1
+      },
+      "stp_cursor_movement_target_radius_px": 1.25,
+      "stp_cursor_movement_start_distance_px": 1.25,
+      "stp_cursor_movement_time_ms": 2147483647,
+      "stp_cursor_movement_stroke_count": 2147483647,
+      "stp_cursor_movement_first_stroke_share": 0.5,
+      "stp_cursor_movement_small_strokes_far_from_target": 2147483647,
+      "stp_cursor_movement_small_strokes_near_target": 2147483647,
+      "stp_cursor_movement_target_entries": 2147483647,
+      "stp_cursor_movement_total_cursor_distance_px": 1.25,
+      "stp_cursor_movement_index_of_difficulty_bits": 1.25,
+      "stp_cursor_movement_overshoot_count": 2147483647,
+      "stp_cursor_movement_endpoint_error_px": 1.25,
+      "version": 2,
+      "type": "touchpad"
+    },
+    "raw": "{\"id\":\"future-cursor_movement\",\"task_id\":\"study.future/cursor_movement\",\"metric_family\":\"cursor_movement\",\"elapsed_ms\":1234,\"details\":{\"details_version\":1},\"stp_cursor_movement_target_radius_px\":1.25,\"stp_cursor_movement_start_distance_px\":1.25,\"stp_cursor_movement_time_ms\":2147483647,\"stp_cursor_movement_stroke_count\":2147483647,\"stp_cursor_movement_first_stroke_share\":0.5,\"stp_cursor_movement_small_strokes_far_from_target\":2147483647,\"stp_cursor_movement_small_strokes_near_target\":2147483647,\"stp_cursor_movement_target_entries\":2147483647,\"stp_cursor_movement_total_cursor_distance_px\":1.25,\"stp_cursor_movement_index_of_difficulty_bits\":1.25,\"stp_cursor_movement_overshoot_count\":2147483647,\"stp_cursor_movement_endpoint_error_px\":1.25,\"version\":2,\"type\":\"touchpad\"}"
+  },
+  {
+    "name": "future-clicks",
+    "message": {
+      "id": "future-clicks",
+      "task_id": "study.future/clicks",
+      "metric_family": "clicks",
+      "elapsed_ms": 1234,
+      "details": {
+        "details_version": 1
+      },
+      "stp_clicks_target_count": 2147483647,
+      "stp_clicks_completed_count": 2147483647,
+      "stp_clicks_total": 2147483647,
+      "stp_clicks_on_target": 2147483647,
+      "stp_clicks_miss_count": 2147483647,
+      "version": 2,
+      "type": "touchpad"
+    },
+    "raw": "{\"id\":\"future-clicks\",\"task_id\":\"study.future/clicks\",\"metric_family\":\"clicks\",\"elapsed_ms\":1234,\"details\":{\"details_version\":1},\"stp_clicks_target_count\":2147483647,\"stp_clicks_completed_count\":2147483647,\"stp_clicks_total\":2147483647,\"stp_clicks_on_target\":2147483647,\"stp_clicks_miss_count\":2147483647,\"version\":2,\"type\":\"touchpad\"}"
+  },
+  {
+    "name": "future-drag",
+    "message": {
+      "id": "future-drag",
+      "task_id": "study.future/drag",
+      "metric_family": "drag",
+      "elapsed_ms": 1234,
+      "details": {
+        "details_version": 1
+      },
+      "stp_drag_target_text": "prescribed phrase",
+      "stp_drag_attempt_count": 2147483647,
+      "stp_drag_first_attempt_selected_target": 1,
+      "stp_drag_selection_start_failure_count": 2147483647,
+      "stp_drag_nothing_selected_count": 2147483647,
+      "stp_drag_selection_unchanged_count": 2147483647,
+      "stp_drag_wrong_selection_count": 2147483647,
+      "stp_drag_tap1_5_count": 2147483647,
+      "stp_drag_tap2_5_count": 2147483647,
+      "stp_drag_tap3_5_count": 2147483647,
+      "version": 2,
+      "type": "touchpad"
+    },
+    "raw": "{\"id\":\"future-drag\",\"task_id\":\"study.future/drag\",\"metric_family\":\"drag\",\"elapsed_ms\":1234,\"details\":{\"details_version\":1},\"stp_drag_target_text\":\"prescribed phrase\",\"stp_drag_attempt_count\":2147483647,\"stp_drag_first_attempt_selected_target\":1,\"stp_drag_selection_start_failure_count\":2147483647,\"stp_drag_nothing_selected_count\":2147483647,\"stp_drag_selection_unchanged_count\":2147483647,\"stp_drag_wrong_selection_count\":2147483647,\"stp_drag_tap1_5_count\":2147483647,\"stp_drag_tap2_5_count\":2147483647,\"stp_drag_tap3_5_count\":2147483647,\"version\":2,\"type\":\"touchpad\"}"
+  },
+  {
+    "name": "future-scrolling",
+    "message": {
+      "id": "future-scrolling",
+      "task_id": "study.future/scrolling",
+      "metric_family": "scrolling",
+      "elapsed_ms": 1234,
+      "details": {
+        "details_version": 1
+      },
+      "stp_scrolling_time_ms": 2147483647,
+      "stp_scrolling_start_distance_px": 1.25,
+      "stp_scrolling_direction": "down",
+      "stp_scrolling_stroke_count": 2147483647,
+      "stp_scrolling_dial_in_stroke_count": 2147483647,
+      "stp_scrolling_empty_stroke_count": 2147483647,
+      "stp_scrolling_first_stroke_share": 0.5,
+      "stp_scrolling_overshoot_count": 2147483647,
+      "stp_scrolling_overshoot_max_px": 1.25,
+      "stp_scrolling_cursor_travel_without_scroll_px": 1.25,
+      "version": 2,
+      "type": "touchpad"
+    },
+    "raw": "{\"id\":\"future-scrolling\",\"task_id\":\"study.future/scrolling\",\"metric_family\":\"scrolling\",\"elapsed_ms\":1234,\"details\":{\"details_version\":1},\"stp_scrolling_time_ms\":2147483647,\"stp_scrolling_start_distance_px\":1.25,\"stp_scrolling_direction\":\"down\",\"stp_scrolling_stroke_count\":2147483647,\"stp_scrolling_dial_in_stroke_count\":2147483647,\"stp_scrolling_empty_stroke_count\":2147483647,\"stp_scrolling_first_stroke_share\":0.5,\"stp_scrolling_overshoot_count\":2147483647,\"stp_scrolling_overshoot_max_px\":1.25,\"stp_scrolling_cursor_travel_without_scroll_px\":1.25,\"version\":2,\"type\":\"touchpad\"}"
+  },
+  {
+    "name": "future-zooming",
+    "message": {
+      "id": "future-zooming",
+      "task_id": "study.future/zooming",
+      "metric_family": "zooming",
+      "elapsed_ms": 1234,
+      "details": {
+        "details_version": 1
+      },
+      "stp_zooming_time_ms": 2147483647,
+      "stp_zooming_direction": "out",
+      "stp_zooming_required_change_percent": 1.25,
+      "stp_zooming_pinch_count": 2147483647,
+      "stp_zooming_dial_in_pinch_count": 2147483647,
+      "stp_zooming_empty_pinch_count": 2147483647,
+      "stp_zooming_first_pinch_share": 0.5,
+      "stp_zooming_overshoot_count": 2147483647,
+      "stp_zooming_overshoot_max_percent": 1.25,
+      "stp_zooming_cursor_travel_while_zooming_px": 1.25,
+      "stp_zooming_cursor_travel_without_zoom_px": 1.25,
+      "version": 2,
+      "type": "touchpad"
+    },
+    "raw": "{\"id\":\"future-zooming\",\"task_id\":\"study.future/zooming\",\"metric_family\":\"zooming\",\"elapsed_ms\":1234,\"details\":{\"details_version\":1},\"stp_zooming_time_ms\":2147483647,\"stp_zooming_direction\":\"out\",\"stp_zooming_required_change_percent\":1.25,\"stp_zooming_pinch_count\":2147483647,\"stp_zooming_dial_in_pinch_count\":2147483647,\"stp_zooming_empty_pinch_count\":2147483647,\"stp_zooming_first_pinch_share\":0.5,\"stp_zooming_overshoot_count\":2147483647,\"stp_zooming_overshoot_max_percent\":1.25,\"stp_zooming_cursor_travel_while_zooming_px\":1.25,\"stp_zooming_cursor_travel_without_zoom_px\":1.25,\"version\":2,\"type\":\"touchpad\"}"
+  },
+  {
+    "name": "future-uxr",
+    "message": {
+      "id": "future-uxr",
+      "task_id": "uxr.future/layout-experiment",
+      "event_name": "uxr_result_v3",
+      "task_context_id": "block-fixture",
+      "elapsed_ms": 2147483647,
+      "details": "{\"details_version\":3,\"unseen_score\":0.12345678912345678,\"surface\":\"opaque / path \\\\ with \\\"quotes\\\"\",\"unicode\":\"你好🙂\",\"nested\":{\"task_id\":\"not_native_envelope\",\"details_version\":777,\"arbitrary_null\":null},\"values\":[1,true,null]}",
+      "version": 2,
+      "type": "arcade"
+    },
+    "raw": "{\"id\":\"future-uxr\",\"task_id\":\"uxr.future/layout-experiment\",\"event_name\":\"uxr_result_v3\",\"task_context_id\":\"block-fixture\",\"elapsed_ms\":2147483647,\"details\":\"{\\\"details_version\\\":3,\\\"unseen_score\\\":0.12345678912345678,\\\"surface\\\":\\\"opaque / path \\\\\\\\ with \\\\\\\"quotes\\\\\\\"\\\",\\\"unicode\\\":\\\"你好🙂\\\",\\\"nested\\\":{\\\"task_id\\\":\\\"not_native_envelope\\\",\\\"details_version\\\":777,\\\"arbitrary_null\\\":null},\\\"values\\\":[1,true,null]}\",\"version\":2,\"type\":\"arcade\"}",
+    "expected_details": "{\"details_version\":3,\"unseen_score\":0.12345678912345678,\"surface\":\"opaque / path \\\\ with \\\"quotes\\\"\",\"unicode\":\"你好🙂\",\"nested\":{\"task_id\":\"not_native_envelope\",\"details_version\":777,\"arbitrary_null\":null},\"values\":[1,true,null]}"
+  },
+  {
+    "name": "future-likert",
+    "message": {
+      "id": "future-likert",
+      "task_id": "survey.future/seven-point",
+      "event_name": "feedback_submitted",
+      "details": "{\"details_version\":7,\"ratings\":{\"ease\":7,\"new_rating_key\":6},\"anchors\":[\"hard\",\"easy\"],\"feedback_text\":\"No native Likert range or comment-key allowlist.\"}",
+      "version": 2,
+      "type": "arcade"
+    },
+    "raw": "{\"id\":\"future-likert\",\"task_id\":\"survey.future/seven-point\",\"event_name\":\"feedback_submitted\",\"details\":\"{\\\"details_version\\\":7,\\\"ratings\\\":{\\\"ease\\\":7,\\\"new_rating_key\\\":6},\\\"anchors\\\":[\\\"hard\\\",\\\"easy\\\"],\\\"feedback_text\\\":\\\"No native Likert range or comment-key allowlist.\\\"}\",\"version\":2,\"type\":\"arcade\"}",
+    "expected_details": "{\"details_version\":7,\"ratings\":{\"ease\":7,\"new_rating_key\":6},\"anchors\":[\"hard\",\"easy\"],\"feedback_text\":\"No native Likert range or comment-key allowlist.\"}"
+  }
+]

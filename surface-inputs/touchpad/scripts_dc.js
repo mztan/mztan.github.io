@@ -274,7 +274,42 @@ function setExperienceTitle(title, explanation) {
     document.title = title;
 }
 
+function finishScrollTask() {
+    if (scrollTaskCompleted) return;
+    scrollTaskCompleted = true;
+    const betweenSets=window.SurfaceInputsDogfood&&window.SurfaceInputsDogfood.continuingSet('scrolling');
+    document.getElementById('start-screen').style.display = betweenSets ? 'none' : '';
+    document.getElementById('scroll-body').style.display = betweenSets ? '' : 'none';
+    removeHighlight();
+    document.getElementById('scroll-body').removeEventListener('scroll', onScrollCallback);
+    if (!isPractice) {
+        EventLogger.stopTrace('scrollPosition');
+        document.removeEventListener('mousemove', scrollMouseMoveHandler);
+        document.removeEventListener('touchmove', scrollTouchMoveHandler);
+        let startText = document.getElementById('start-text');
+        let elapsedStr = (elapsed / 1000).toFixed(2);
+        if (SurfaceInputsTransport.usesNative()) {
+            if (!scrollingTaskContext) scrollingTaskContext = SurfaceInputsTransport.newObservationId();
+            SurfaceInputsTransport.submitCurrentResult({id:SurfaceInputsTransport.newObservationId(),task_id:'touchpad_scrolling',
+                event_name:'uxr_result',task_context_id:scrollingTaskContext,elapsed_ms:Math.max(0,Math.round(elapsed)),
+                details:{details_version:1,result_schema:'scrolling_task_result_v1',result:{trial_num:trialNum,time_to_complete:elapsedStr,gesture_count:gestureCount}}});
+        }
+        startText.innerText = `#${trialNum}, TTC: ${elapsedStr}s, Gestures: ${gestureCount}\n` + startText.innerText;
+        if (submitForm(trialNum, elapsedStr, gestureCount) === false) {
+            scrollTaskCompleted = false;
+            if (window.SurfaceInputsDogfood) window.SurfaceInputsDogfood.pauseCompletion('scrolling', finishScrollTask);
+            return;
+        }
+        EventLogger.endTrial({trialNum:trialNum,timeToComplete:elapsedStr,gestureCount:gestureCount});
+        EventLogger.downloadLog(); EventLogger.clearLog();
+    }
+    trialNum += 1;
+    // BEGIN POST-TASK FEEDBACK HOOK
+    if (!(window.SurfaceInputsDogfood && window.SurfaceInputsDogfood.complete('scrolling', startScrollExperience, 'touchpad_scrolling')) && window.SurfaceInputsFeedback) window.SurfaceInputsFeedback.complete('touchpad_scrolling', scrollingTaskContext);
+    // END POST-TASK FEEDBACK HOOK
+}
 function highlightRandomPhraseScroll() {
+    if (successfulClicks >= MAX_SCROLL_TRIALS) { finishScrollTask(); return; }
     let paragraphs = document.querySelectorAll('.scroll-text');
     paragraphs = Array.from(paragraphs).slice(1, -1);  // remove first and last element so the text is always possible to scroll to
     const randomParagraph = paragraphs[Math.floor(rng.random() * paragraphs.length)];
@@ -300,33 +335,8 @@ function highlightRandomPhraseScroll() {
 
     showUpDownArrows();
 
-    if (successfulClicks >= MAX_SCROLL_TRIALS) {
-        document.getElementById('start-screen').style.display = "";
-        document.getElementById('scroll-body').style.display = "none";
-        removeHighlight();
-
-        document.getElementById('scroll-body').removeEventListener('scroll', onScrollCallback);
-
-        if (!isPractice) {
-            EventLogger.stopTrace('scrollPosition');
-            document.removeEventListener('mousemove', scrollMouseMoveHandler);
-            document.removeEventListener('touchmove', scrollTouchMoveHandler);
-            let startText = document.getElementById('start-text');
-            let elapsedStr = (elapsed / 1000).toFixed(2)
-            startText.innerText = `#${trialNum}, TTC: ${elapsedStr}s, Gestures: ${gestureCount}\n` + startText.innerText;
-            submitForm(trialNum, elapsedStr, gestureCount);
-            EventLogger.endTrial({ trialNum: trialNum, timeToComplete: elapsedStr, gestureCount: gestureCount });
-            EventLogger.downloadLog();
-            EventLogger.clearLog();
-        }
-        trialNum += 1;
-        // BEGIN POST-TASK FEEDBACK HOOK
-        if (window.SurfaceInputsFeedback) window.SurfaceInputsFeedback.complete('touchpad_scrolling');
-        // END POST-TASK FEEDBACK HOOK
-    } else {
-        SurfaceInputsTouchpad.beginScroll(isPractice);
-        EventLogger.setIsInTarget(false);
-    }
+    SurfaceInputsTouchpad.beginScroll(isPractice);
+    EventLogger.setIsInTarget(false);
 }
 
 
@@ -427,6 +437,7 @@ function _getScrollPositionData() {
 }
 
 function onScrollCallback() {
+    if (dogfoodScrollAborted) return;
     SurfaceInputsTouchpad.scrollMove();
     trackGesture(100, 'scroll', _getScrollPositionData);
     var scrollData = _getScrollPositionData();
@@ -464,7 +475,14 @@ function onScrollCallback() {
     }
 }
 
+var scrollingTaskContext = null, scrollTaskCompleted = false, dogfoodScrollAborted = false;
+window.addEventListener('dogfood-task-abort', () => {dogfoodScrollAborted=true;clearTimeout(highlightTimeout);clearTimeout(gestureStopTimeout);SurfaceInputsTouchpad.abort();});
 function startScrollExperience() {
+    dogfoodScrollAborted = false;
+    scrollTaskCompleted = false;
+    const dogfood = window.SurfaceInputsDogfood;
+    if (dogfood && dogfood.active('scrolling')) { if (!dogfood.begin('scrolling')) return; trialNum=dogfood.getState().tasks[1].sets+1; }
+    scrollingTaskContext = dogfood && dogfood.active('scrolling') ? dogfood.context('scrolling') : (SurfaceInputsTransport.usesNative() ? SurfaceInputsTransport.newObservationId() : null);
     rng = new RandomGenerator();
     successfulClicks = 0;
     gestureCount = 0;
@@ -737,6 +755,7 @@ function startTimer() {
 	console.log('start timer');
 
 	function loop(timestamp) {
+        if (dogfoodScrollAborted) return;
 		if (!startTime)
 			startTime = timestamp;
 
@@ -788,6 +807,7 @@ function submitForm(trial, ttc, gestures) {
     if (sessionInput) sessionInput.value = sessionId;
 
     // Dispatch a synthetic submit event
+    if (window.SurfaceInputsTaskUploads) return window.SurfaceInputsTaskUploads.result('scrolling', form);
     form.dispatchEvent(new Event('submit', { cancelable: true }));
 }
 
