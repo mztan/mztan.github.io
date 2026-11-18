@@ -1,6 +1,7 @@
 /* Task-specific question mappings supplied through the owner's prefilled links.
- * Owner confirmed all three Forms published on 2026-11-17. Accepting-responses/sign-in
- * settings and actual stored responses are not independently verified. Failures stay queued. */
+ * Owner confirmed publication and changed respondent access on 2026-11-17.
+ * Typing anonymous access and one labeled stored feedback response were verified end-to-end.
+ * The other Forms and complete result-field parity are not independently verified. */
 (function(root){const config={version:1,forms:{
  typing:{endpoint:'https://docs.google.com/forms/d/e/1FAIpQLSfEcRfQeisYOj7K3Z1rWrbPji4rV4_9EqDlMEL4SyJi45FtRA/formResponse',enabled:true,fieldsVerified:true,fields:{
  user_id:'entry.2085948314',corpus:'entry.1522902550',input_type:'entry.468596347',auto_correct:'entry.860685891',expected_prompt:'entry.1327375361',typed_prompt:'entry.106254210',wpm:'entry.903275036',awpm:'entry.59793202',accuracy:'entry.26131442',time_spent_ms:'entry.1803376015',uer:'entry.630522422',cer:'entry.2025976659',ter:'entry.253871763',total_chars:'entry.1857089400',total_key_presses:'entry.1787337794',total_corrected_errors:'entry.1432397596',total_uncorrected_errors:'entry.136679355',surface_difference_mm:'entry.726247806',platform:'entry.1352443783',condition_id:'entry.85639717',condition_value:'entry.1341612084',qr_height:'entry.1718108960',session_id:'entry.791721314',task_block_id:'entry.590770536',feedback_id:'entry.720857595',submission_type:'entry.1731925345',ease:'entry.905404800',comment:'entry.1244680575'

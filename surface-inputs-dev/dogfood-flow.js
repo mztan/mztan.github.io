@@ -39,6 +39,17 @@ function create(win){
  }
  function pauseCompletion(task,retry){if(!active(task))return;doc.body.classList.remove('dogfood-transition');doc.body.classList.remove('dogfood-started');const stage=doc.getElementById(task==='targeting'?'experience-screen':'scroll-body');if(stage)stage.style.display='none';const setup=doc.getElementById('start-screen');if(setup)setup.style.display='';state.tasks[state.stage].phase='retention_wait';retentionRetry=retry;persist();show('Completed result is not saved. Press Start to retry saving it; do not reload.');}
  function feedbackDone(expectedContext){if(failed())return false;if(!run||!state||run!==state.id||expectedContext!==context())return false;const entry=state.tasks[state.stage];if(entry.phase!=='feedback'&&entry.phase!=='sent')return false;entry.phase=native()&&sdk().pendingCount()?'sent_wait_ack':'sent';persist();readyAction(advance);return true;}
+ function retryContinuation(expectedContext){
+  if(failed()||!state||!run||run!==state.id)return false;
+  const index=TASKS.findIndex(task=>state.id+'_'+task===expectedContext);if(index<0)return false;
+  const phase=state.tasks[index].phase;
+  if(state.stage===index&&['feedback','sent','sent_wait_ack'].includes(phase)){
+   if(phase==='sent_wait_ack'){persist();readyAction(advance);return true;}
+   return feedbackDone(expectedContext);
+  }
+  if(state.stage===index+1&&['sent','sent_wait_ack'].includes(phase)){persist();readyAction(()=>win.location.assign(destination()));return true;}
+  return false;
+ }
  function skip(){if(failed())return;if(!dev||!run||!state||run!==state.id)return;win.dispatchEvent(new win.CustomEvent('dogfood-task-abort'));state.tasks[state.stage].phase=native()&&sdk().pendingCount()?'skipped_wait_ack':'skipped';persist();readyAction(()=>{state.tasks[state.stage].phase='skipped';persist();advance();});}
  function mount(){
   if(failed())return;
@@ -69,7 +80,7 @@ function create(win){
   if(state.tasks[state.stage].phase==='feedback'){const activity=task==='typing'?'keyboard_punctuation':'touchpad_'+task;win.setTimeout(()=>win.SurfaceInputsFeedback.complete(activity,context(task)),0);}
  }
  if(doc.readyState==='loading')doc.addEventListener('DOMContentLoaded',mount,{once:true});else mount();
- return{active,begin,complete,pauseCompletion,continuingSet:task=>active(task)&&state.tasks[state.stage].phase==='running'&&state.tasks[state.stage].sets<SETS[task]-1,context,feedbackDone,isGuided:()=>!!(run&&state&&run===state.id),isFinal:()=>!!(run&&state&&state.stage===2),skip,isDevelopment:dev,
+ return{active,begin,complete,pauseCompletion,continuingSet:task=>active(task)&&state.tasks[state.stage].phase==='running'&&state.tasks[state.stage].sets<SETS[task]-1,context,feedbackDone,retryContinuation,isGuided:()=>!!(run&&state&&run===state.id),isFinal:()=>!!(run&&state&&state.stage===2),skip,isDevelopment:dev,
    getState:()=>state?JSON.parse(JSON.stringify(state)):null,participant:()=>state?state.participant:'',show,sets:SETS};
 }
 return{create,valid,tasks:TASKS,sets:SETS};});

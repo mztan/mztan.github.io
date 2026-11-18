@@ -104,6 +104,7 @@
             find('feedback-save').addEventListener('click', save);
             find('feedback-retry').addEventListener('click', () => {
                 if (!current || !current.message) return;
+                if(current.continuationFailed){finishDelivery(current.message);return;}
                 if(current.deliveryNative&&!win.SurfaceInputsTransport.usesNative()){status('This response was recorded in the APK. Wait for native readiness before retrying.');return;}
                 if(!current.deliveryNative&&win.SurfaceInputsTransport.usesNative()){status('This browser response cannot be redirected to native telemetry. Return to the same browser to retry.');return;}
                 if(!win.SurfaceInputsTransport.usesNative()){browserUpload(current.message);return;}
@@ -111,7 +112,7 @@
                     const transport = win.SurfaceInputsTransport;
                     try { transport.submitFeedback(current.message); }
                     finally { transport.retryPending(); }
-                    status('Queued for native delivery; waiting for a sink ACK.');
+                    status('');
                 } catch (error) { status(error.message + ' Your response is retained locally.'); }
             });
             find('feedback-retry-saved').addEventListener('click', () => {
@@ -119,7 +120,7 @@
                     const transport = win.SurfaceInputsTransport;
                     if (!transport.usesNative()) throw new Error('Native feedback transport is not connected.');
                     const result = retrySaved(local(), transport);
-                    status(result.count + ' saved responses queued for native delivery; waiting for sink ACKs.' + (result.reason ? ' ' + result.reason + ' Remaining responses are retained for a later retry.' : ''));
+                    status(result.reason ? result.reason + ' Remaining responses are retained for a later retry.' : '');
                 } catch (error) { status(error.message + ' Unacknowledged responses remain saved locally.'); }
             });
             container.addEventListener('keydown', event => {
@@ -135,15 +136,34 @@
                 }
             });
         }
+        function finishDelivery(message) {
+            if(!current||!current.message||current.message.id!==message.id||current.navigating)return;
+            const flow=win.SurfaceInputsDogfood;
+            if(flow&&flow.isGuided()){
+                try{
+                    if((current.continuationFailed?flow.retryContinuation(message.round_id):flow.feedbackDone(message.round_id))){
+                        current.continuationFailed=false;
+                        current.navigating=true;
+                        status('');
+                        const pending=win.SurfaceInputsTransport.usesNative()&&win.SurfaceInputsTransport.pendingCount();
+                        find('feedback-retry').hidden=!pending;
+                        if(pending)find('feedback-retry').textContent='Retry pending telemetry';
+                        return;
+                    }
+                    if(current.continuationFailed)throw new Error('The saved task continuation is no longer available. Return to the main page.');
+                }catch(error){current.continuationFailed=true;find('feedback-retry').hidden=false;find('feedback-retry').textContent='Retry continuation';status('Feedback delivery completed, but navigation could not continue: '+error.message);return;}
+            }
+            dismiss();
+        }
         function browserUpload(message) {
-            find('feedback-retry').hidden = false;find('feedback-retry').textContent = 'Retry upload';
-            status('Sending feedback…');
-            let result;try{result=win.SurfaceInputsTransport.submitFeedback(message);}catch(error){status(error.message);return;}
+            find('feedback-retry').hidden = true;find('feedback-retry').textContent = 'Retry upload';
+            status('');
+            let result;try{result=win.SurfaceInputsTransport.submitFeedback(message);}catch(error){find('feedback-retry').hidden=false;status(error.message);return;}
             Promise.resolve(result).then(outcome=>{
                 if(!outcome||outcome.status!=='request_sent')throw new Error('No collector request was sent. Your feedback is retained.');
-                local().put(message,'browser_request_sent');status('Request sent. This does not confirm server storage.');
-                dismiss();if(win.SurfaceInputsDogfood)win.SurfaceInputsDogfood.feedbackDone(message.round_id);
-            }).catch(error=>{local().put(message,'browser_failed');status(error.message+' Your feedback is retained; retry when configured.');});
+                local().put(message,'browser_request_sent');status('');
+                finishDelivery(message);
+            }).catch(error=>{local().put(message,'browser_failed');find('feedback-retry').hidden=false;status(error.message+' Your feedback is retained; retry when configured.');});
         }
         function save() {
             if (!current || current.message) return;
@@ -167,7 +187,7 @@
                 }
                 find('feedback-retry').hidden = false;
                 find('feedback-retry').focus();
-                status('Saved locally and queued for native delivery; waiting for a sink ACK.');
+                status('');
                 try { transport.submitFeedback(message); }
                 catch (error) { status(error.message + ' Your response is retained locally; retry or export it.'); }
             } catch (error) { status(error.message); }
@@ -180,10 +200,10 @@
             try { local().put(message, accepted ? 'native_sink_accepted' : 'native_rejected'); } catch (error) { status(error.message); return; }
             if (!current || !current.message || current.message.id !== message.id) return;
             if (accepted) {
+                if(current.navigating)return;
                 find('feedback-retry').hidden = true;
-                status('Accepted by the native feedback sink. This is not confirmation of a server upload.');
-                dismiss();
-                if (win.SurfaceInputsDogfood) win.SurfaceInputsDogfood.feedbackDone(message.round_id);
+                status('');
+                finishDelivery(message);
             } else status('Native feedback was rejected. Your response is retained locally; retry it.');
         });
         win.addEventListener('surface-inputs-mode', () => {
@@ -211,9 +231,6 @@
                 let restored;try{restored=local().list().filter(entry=>entry.message&&entry.message.round_id===(taskContextId||token)&&entry.message.activity_id===activity).at(-1);}catch(_){}
                 current = {activity, round:taskContextId || token, id:restored?restored.message.id:token, message:restored?restored.message:null, restoredStatus:restored?restored.status:null};
                 win.setTimeout(() => {
-                    if(current.message&&['native_sink_accepted','browser_request_sent'].includes(current.restoredStatus)&&win.SurfaceInputsDogfood&&win.SurfaceInputsDogfood.isGuided()){
-                        const round=current.message.round_id;current=null;win.SurfaceInputsDogfood.feedbackDone(round);return;
-                    }
                     render();
                     returnFocus = doc.activeElement;
                     background = [...doc.body.children].filter(element => element !== container).map(element => [element, element.inert]);
@@ -232,10 +249,11 @@
                     if(current.message){
                         find('feedback-comment').value=current.message.comment||'';find('feedback-comment').disabled=true;find('feedback-save').disabled=true;
                         container.querySelectorAll('input[name="feedback-ease"]').forEach(input=>{input.checked=Number(input.value)===current.message.ratings.ease;input.disabled=true;});
-                        current.deliveryNative=['pending_native','native_rejected'].includes(current.restoredStatus);
+                        current.deliveryNative=['pending_native','native_rejected','native_sink_accepted'].includes(current.restoredStatus);
                         find('feedback-retry').hidden=false;find('feedback-retry').textContent=current.deliveryNative?'Retry native delivery':'Retry upload';
                         status('Your saved response is restored. Retry the same response to continue.');find('feedback-retry').focus();
                     }else container.querySelector('input[name="feedback-ease"]').focus();
+                    if(current.message&&['native_sink_accepted','browser_request_sent'].includes(current.restoredStatus)&&win.SurfaceInputsDogfood&&win.SurfaceInputsDogfood.isGuided())finishDelivery(current.message);
                 }, 0);
             }
         };

@@ -36,6 +36,23 @@ test('guided task icons remain visible while practice and branding stay hidden',
  assert(css.includes('.guided-dogfood #practice-button,.guided-dogfood .arcade-brand{display:none}'));
  assert(!css.includes('.guided-dogfood .arcade-task-icon{display:none}'));
 });
+test('feedback drain does not resend a result completed while an earlier row is awaited',async()=>{
+ const h=setup(),resolve=[];h.win.fetch=(url,opts)=>{h.requests.push({url,body:opts.body});if(opts.body.get(h.mock.forms.scrolling.fields.submission_type)==='result')return new Promise(r=>resolve.push(r));return Promise.resolve({type:'opaque',ok:false,status:0});};
+ h.api.result('scrolling',fakeForm({trial_num:'1',gesture_count:'1'}));h.api.result('scrolling',fakeForm({trial_num:'2',gesture_count:'2'}));await new Promise(r=>setImmediate(r));
+ const feedback=h.api.feedback({id:'drain-feedback',activity_id:'touchpad_scrolling',round_id:'block-fixture',ratings:{ease:4},comment:'drain test'});
+ resolve[1]({type:'opaque',ok:false,status:0});resolve[0]({type:'opaque',ok:false,status:0});await feedback;
+ assert.equal(h.requests.length,3);assert.equal(h.requests.filter(r=>r.body.get(h.mock.forms.scrolling.fields.submission_type)==='result').length,2);assert.equal(h.api.getPending().length,0);
+});
+test('delivered feedback continuation retries storage or navigation without resubmission or double advance',()=>{
+ const {environment}=require('./harness.js');
+ for(const failure of ['storage','navigation']){
+  const e=environment('?dogfood=df_fixture'),saved={version:1,id:'df_fixture',stage:2,session:'fixture',participant:'fixture-user',tasks:[{sets:6,phase:'sent'},{sets:6,phase:'sent'},{sets:1,phase:'feedback'}]};let fail=true,navigations=0;
+  e.win.location={href:'https://mztan.github.io/surface-inputs-dev/keyboard/index.html?dogfood=df_fixture',pathname:'/surface-inputs-dev/keyboard/index.html',search:'?dogfood=df_fixture',assign(){if(fail&&failure==='navigation')throw Error('nav failed');navigations++;}};
+  e.win.sessionStorage={getItem:()=>JSON.stringify(saved),setItem(){if(fail&&failure==='storage')throw Error('quota');}};
+  e.doc.currentScript={src:'https://mztan.github.io/surface-inputs-dev/dogfood-flow.js'};e.doc.readyState='loading';e.doc.documentElement.classList.contains=()=>false;e.win.SurfaceInputsTransport={usesNative:()=>false,pendingCount:()=>0};
+  const api=flow.create(e.win);assert.throws(()=>api.feedbackDone('df_fixture_typing'));fail=false;assert(api.retryContinuation('df_fixture_typing'));assert.equal(api.getState().stage,3);assert.equal(navigations,1);
+ }
+});
 test('guided task sequence requires six nine-hit sets and six six-target scroll sets',()=>{assert.deepEqual(flow.tasks,['targeting','scrolling','typing']);assert.deepEqual(flow.sets,{targeting:6,scrolling:6,typing:1});});
 test('saved session shape bounds task stages and completed set counts',()=>{const s={version:1,id:'df_fixture',stage:0,tasks:[{sets:0,phase:'idle'},{sets:0,phase:'idle'},{sets:0,phase:'idle'}]};assert(flow.valid(s));assert(!flow.valid({...s,stage:4}));assert(!flow.valid({...s,tasks:[{sets:7,phase:'idle'},...s.tasks.slice(1)]}));});
 test('manual prefilled question mappings are enabled after owner-confirmed publication',()=>{const counts={typing:28,targeting:22,scrolling:12};for(const[task,form]of Object.entries(config.forms)){assert.equal(form.enabled,true);assert.equal(form.fieldsVerified,true);assert.equal(Object.keys(form.fields).length,counts[task]);assert.equal(new Set(Object.values(form.fields)).size,counts[task]);assert.match(form.endpoint,/formResponse$/);}});

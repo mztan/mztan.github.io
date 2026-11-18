@@ -28,7 +28,7 @@ function create(win,config){
  pendingResults.delete(task);const context={};for(const key of contexts[task])if(entry.values[key]!==undefined)context[key]=entry.values[key];const captured={sequence:entry.sequence,values:context};latestContexts.set(entry.block,captured);
  try{store.setItem(contextPrefix+entry.block,JSON.stringify(captured));}catch(_){/* result row is retained and carries its full context */}
  send(entry).catch(error=>{if(flow())flow().show(error.message+' Result retained.');});return true;}
- async function retryBlock(block){for(const entry of rows().filter(r=>r.block===block))await send(entry);}
+ async function retryBlock(block){for(const entry of rows().filter(r=>r.block===block)){if(store.getItem(prefix+entry.id)!==null)await send(entry);}}
  async function feedback(message){const task=message.activity_id.startsWith('keyboard_')?'typing':message.activity_id==='touchpad_targeting'?'targeting':'scrolling';const block=message.round_id;
   const existing=rows().find(row=>row.id===message.id);
   if(existing){if(existing.block!==block||existing.values.comment!==(message.comment||'')||existing.values.ease!==String(message.ratings.ease))throw new Error('Cannot change a retained feedback response.');await retryBlock(block);store.removeItem(contextPrefix+block);return{status:'request_sent',storageConfirmed:false};}

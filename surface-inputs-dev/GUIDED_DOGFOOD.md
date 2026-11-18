@@ -38,6 +38,12 @@ A bounded local outbox retains failed requests and preserves immutable payloads 
 
 The owner confirmed **all three Forms are published** on 2026-11-17. Browser submissions are enabled using the supplied mappings. Accepting-responses, sign-in settings and actual server storage have not been independently verified. A resolved opaque POST only establishes that a request was sent; failures remain retained for retry. Tests intercept every submission, so they never write test rows to the real Forms.
 
+## Typing end-to-end verification
+
+On November 17 the owner changed respondent access. Anonymous Typing access returned HTTP 200, and a labeled browser test submitted 20 result requests plus one feedback request. Google Forms response metadata returned 21 response objects in that test's exact time window. The feedback answers were read back through the Forms API and matched the rating, comment, user/session, corpus, task-block ID and feedback ID. This is actual Google storage verification for the labeled Typing feedback, not an opaque fetch or native ACK. Complete answer-level parity for all 20 result rows and the other two Forms was not verified; shared API quotas limited bulk readback.
+
+Feedback draining now rechecks whether each snapshot row is still pending, preventing duplicate POSTs when other requests finish during the drain. Guided Next/Finish retains the feedback modal until navigation, with no fleeting sending/success text. Errors remain visible; delivered-response continuation retries navigation only, without resubmitting feedback or double-advancing.
+
 ## Release scope
 
 Development first. Production and `jvision/` stay unchanged until explicit promotion. Read `DEPLOYMENT.md` before publishing. The unrelated dormant collector branch remains isolated and is not loaded by this flow.
