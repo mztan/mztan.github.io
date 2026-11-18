@@ -4,7 +4,7 @@ This folder consolidates the existing public keyboard and touchpad web test impl
 
 ## Run the tests
 
-The [start page](index.html) asks browser users for a unixname once and starts the guided dogfood sequence: six Targeting sets (54 hits), six Scrolling sets (36 targets), then 20 natural-language-with-punctuation Typing prompts. Task icons are visible on setup screens; repeated identity fields are prepopulated and hidden. Feedback uses Next, Next and Finish, then reaches a thank-you page with Return to main page. Native-ready mode keeps account attribution host-owned and does not ask for a browser identity.
+The [start page](index.html) asks browser users for a unixname once and starts the guided dogfood sequence: six Targeting sets (54 hits), six Scrolling sets (36 targets), then 20 natural-language-with-punctuation Typing prompts. Task icons are visible on setup screens; repeated identity fields are prepopulated and hidden. Feedback uses Next, Next and Finish, then reaches a thank-you page with Return to main page. Both browser and APK mode ask for one explicit web unixname for Form records; native attribution remains host-owned and is never passed to Forms.
 
 - [Keyboard test](keyboard/?setting_preset=uxr): natural language, punctuation/capitalization, email, password, shortcuts, and arrows.
 - [Touchpad targeting](touchpad/index.html).
@@ -40,7 +40,7 @@ The upstream jQuery UI 1.8.6 stylesheet referenced theme images that were absent
 
 ## Collection boundary
 
-Primary Typing, Targeting and Scrolling use the owner-supplied task-specific question mappings through `task-uploads.js`. Browser result rows and feedback share a task-block ID, with failures retained for immutable retry and queue draining that avoids already-completed requests. A labeled Typing browser test was read back from Google Forms and verified; complete field parity for every result row, the other two Forms and native/Scuba E2E were not established by that test. Never treat an opaque request as verified storage. Native-bound tasks stay on the stable private-port SDK and do not fall back to Forms. The separate dormant collector remains isolated.
+Primary tasks send complete result rows and feedback to Forms in both browser and APK mode. APK additionally emits the unchanged native typed/opaque observations, with independent queues, receipt flags and retries. Explicit web labels and web block/session IDs are never inserted into native measurement packets. Retained request-sent records are not auto-retried or backfilled. Direct tasks durably associate their own Forms result/feedback block separately from native SDK context. Export/confirmed cleanup protects pending rows and unfinished destination receipts. No-cors completion remains request sent only; physical APK/network or server receipt is not established by offline tests. The separate dormant collector remains isolated.
 
 See [the telemetry contract](TELEMETRY.md) for handshake, bounds, ACK/retry behavior, populated metrics and unavailable measurements. Run the offline transport/producer checks with `node --test surface-inputs/tests/*.test.js` from the repository root. These checks use fake sinks and never submit Forms. Generate receiver fixtures with `node surface-inputs/tests/generate-fixtures.js`.
 

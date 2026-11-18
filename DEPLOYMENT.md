@@ -8,7 +8,7 @@
 - Development URL: https://mztan.github.io/surface-inputs-dev/
 - Branch: `main`; GitHub Pages publishes the committed repository content.
 
-These are separate static paths in one repository, not separate backends. On 2026-11-17 the owner authorized promotion of the complete current dev runtime `6c3c459` into production. Runtime code/assets match; the production URL shows neither the DEV pill nor Skip task. Guided setup, one-time unixname, six touchpad sets per task, 20 punctuation Typing prompts, mapped browser result/feedback requests and stable SDK behavior are included. A labeled Typing feedback test was read back from Google, but do not generalize that to all result fields, other Forms or native/Scuba E2E. Neither an opaque POST nor a native ACK proves server storage. `jvision/` is unchanged. Tests must mock uploads unless real collection is explicitly authorized.
+The owner authorized the November18 dual-destination update for dev and production: primary Typing, Targeting and Scrolling result rows and feedback submit to Google Forms in both browsers and APK mode, with APK native telemetry retained. Both modes use one explicitly entered web participant label; native attribution and identifiers remain private to the host. Retries and receipts are independent, and opaque Forms responses are not stored receipts. No historical backfill, APK release/install or jvision changes are included. Tests use intercepted HTTP only.
 
 ## Development changes
 
@@ -36,7 +36,7 @@ Use a normal Git revert to roll back a published change. Do not force-push share
 ## Browser and APK behavior
 
 - Standalone browser tests ask for the upstream identity where required and use their existing Google Forms flow.
-- The APK emits native telemetry with host-owned attribution. The development primary tasks additionally send complete UXR results and feedback to their configured Forms. Both browser and APK flows ask for one explicit web participant label; that label is not derived from native identifiers. The production baseline remains unchanged until the reviewed dual-destination change is promoted.
+- The APK emits native telemetry with host-owned attribution. Primary tasks also send complete UXR results and feedback to their configured Forms in both environments. Both browser and APK flows ask once for an explicit web participant label, never a value derived from native identifiers. Native and Forms retries update only their own destination.
 - The APK defaults to production. In a compatible **debuggable** APK, launch with `--ez arcade_dev true` to open dev. Release APKs ignore that extra. Website navigation and native telemetry ports remain restricted to the selected environment for the Activity lifetime; use a fresh launch to switch. Dev continues emitting telemetry through the same sinks.
 - `arcade_debugger=true` is an independent APK boolean launch extra on a debuggable build, not a web query parameter or deployment environment. In the preflight implementation it previews the calibration screen and lets Calibrate skip it, without sending a calibration request. It does not disable telemetry. A connected Java debugger at Activity creation also enables that preview. The website cannot create that native opt-in.
 - Adding dev does not authorize APK deployment, release-channel publication, source landing or changing production defaults.
@@ -64,9 +64,9 @@ Run `node surface-inputs-dev/tests/generate-contract.js --check`, the dev confor
 
 ## Guided dogfood staging
 
-The development main page uses one Start Dogfooding action and the ordered Targeting → Scrolling → Typing flow. Each touchpad task runs six sets before feedback; Typing uses twenty natural-language-with-punctuation prompts. Browser users enter their unixname once on the start page; existing identity fields are prepopulated and hidden on subsequent tasks, while native-ready mode asks for no identity. Next/Finish deliver feedback before navigation, and only the exact dev path enables Skip task. See `surface-inputs-dev/GUIDED_DOGFOOD.md` for recovery and Form mapping provenance.
+Both environments guide participants through six Targeting sets, six Scrolling sets and 20 punctuation Typing prompts. Enter the web unixname once in either browser or APK mode; it fills the existing task fields and never supplies native attribution. Next/Finish respect independent Forms/native completion. DEV and Skip appear only under the exact dev path. [GUIDED_DOGFOOD.md](surface-inputs-dev/GUIDED_DOGFOOD.md) defines the collector and recovery behavior.
 
-The new task-specific upload adapter uses 62 question IDs supplied through the owner’s blank prefilled links. The owner confirmed all three Forms published on 2026-11-17, enabling browser requests; respondent restrictions and stored responses are not independently verified. Use mocked requests for tests, not real participant submissions, and retain failed uploads. Native-bound traffic remains on the shared SDK. This guided runtime was promoted to production with the owner's explicit authorization on 2026-11-17; it does not install or land an APK.
+The adapter keeps the owner's 62 supplied question mappings. Request-sent Form records remain locally retained and never automatically reposted; explicit export/confirmed cleanup protects pending rows and unfinished widget destinations. The November17 real browser Typing feedback check remains limited evidence; this November18 release is verified with offline mocks, not physical APK networking or Google/Scuba storage. The native SDK contract and raw-Form navigation protection remain unchanged.
 
 ## Credentials
 

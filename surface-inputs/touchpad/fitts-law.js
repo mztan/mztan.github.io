@@ -480,6 +480,7 @@ function startTimer() {
 	window.requestAnimationFrame(loop);
 }
 
+var targetingCompletion = null;
 var targetingTaskContext = null;
 function startExperience() {
     const dogfood = window.SurfaceInputsDogfood;
@@ -590,26 +591,30 @@ function endExperience() {
 	let te = fittsTest.targetEntries;
 	let tcd = fittsTest.totalCursorDistance.toFixed(1);
 
-    // Extra UXR result channel is opaque and only emitted by a v2-capable host.
-    if (!isPractice && SurfaceInputsTransport.usesNative()) {
-        if (!targetingTaskContext) targetingTaskContext = SurfaceInputsTransport.newObservationId();
-        SurfaceInputsTransport.submitCurrentResult({
-        id:SurfaceInputsTransport.newObservationId(),task_id:'touchpad_targeting',event_name:'uxr_result',
-        task_context_id:targetingTaskContext,elapsed_ms:Math.max(0,Math.round(elapsed)),
-        details:{details_version:1,result_schema:'targeting_round_result_v1',result:{trial_num:trialNum,condition_num:currentCondition,
-            index_of_difficulty:idStr,effective_id:ideStr,throughput:tpStr,time_to_complete:elapsedStr,
-            clicks_total:ct,clicks_on_target:cot,target_entries:te,drag_count:dragCount,total_cursor_distance:tcd,
-            ...(conditionId !== undefined ? {condition_id:conditionId} : {}),
-            ...(conditionValue !== undefined ? {condition_value:conditionValue} : {})}}
-        });
+    // Extra UXR and Forms result destinations share the original measured snapshot.
+    if (!isPractice) {
+        if(!targetingCompletion){
+            if(!targetingTaskContext)targetingTaskContext=SurfaceInputsTransport.newObservationId();
+            targetingCompletion={formsRetained:false,nativeQueued:false,args:[trialNum,currentCondition,idStr,ideStr,tpStr,elapsedStr,ct,cot,te,tcd],
+                native:{id:SurfaceInputsTransport.newObservationId(),task_id:'touchpad_targeting',event_name:'uxr_result',
+                    task_context_id:targetingTaskContext,elapsed_ms:Math.max(0,Math.round(elapsed)),
+                    details:{details_version:1,result_schema:'targeting_round_result_v1',result:{trial_num:trialNum,condition_num:currentCondition,
+                        index_of_difficulty:idStr,effective_id:ideStr,throughput:tpStr,time_to_complete:elapsedStr,
+                        clicks_total:ct,clicks_on_target:cot,target_entries:te,drag_count:dragCount,total_cursor_distance:tcd,
+                        ...(conditionId!==undefined?{condition_id:conditionId}:{}),...(conditionValue!==undefined?{condition_value:conditionValue}:{})}}}};
+        }
+        if(!targetingCompletion.formsRetained){
+            if(submitForm(...targetingCompletion.args)===false){if(window.SurfaceInputsDogfood)window.SurfaceInputsDogfood.pauseCompletion('targeting',endExperience);return;}
+            targetingCompletion.formsRetained=true;if(window.SurfaceInputsTaskUploads)window.SurfaceInputsTaskUploads.commitResult('targeting');
+        }
+        if(SurfaceInputsTransport.usesNative()&&!targetingCompletion.nativeQueued){
+            try{SurfaceInputsTransport.submitCurrentResult(targetingCompletion.native);targetingCompletion.nativeQueued=true;}
+            catch(error){if(window.SurfaceInputsDogfood)window.SurfaceInputsDogfood.pauseCompletion('targeting',endExperience);window.dispatchEvent(new CustomEvent('surface-inputs-transport-error',{detail:{reason:error.message}}));return;}
+        }
     }
 
 	if (!isPractice) {
 		startText.innerText = `#${trialNum} C:${currentCondition} TTC:${elapsedStr}s ID:${idStr} IDe:${ideStr} TP:${tpStr} CT:${ct} TE:${te} TCD:${tcd}px\n` + startText.innerText;
-		if (submitForm(trialNum, currentCondition, idStr, ideStr, tpStr, elapsedStr, ct, cot, te, tcd) === false) {
-            if (window.SurfaceInputsDogfood) window.SurfaceInputsDogfood.pauseCompletion('targeting', endExperience);
-            return;
-        }
 		EventLogger.endTrial({ trialNum: trialNum, condition: currentCondition, timeToComplete: elapsedStr, indexOfDifficulty: idStr, effectiveId: ideStr, throughput: tpStr, clicksTotal: ct, clicksOnTarget: cot, targetEntries: te, dragCount: dragCount, totalCursorDistance: tcd });
 		EventLogger.stopCursorTrace();
 		EventLogger.downloadLog();
@@ -623,6 +628,7 @@ function endExperience() {
 
 	// init code
 	fittsTest.currentPosition = 0,
+    targetingCompletion = null;
 	fittsTest.currentCount = 0,
 	fittsTest.miss = 0,
 	fittsTest.active = false;
@@ -639,7 +645,7 @@ function endExperience() {
 }
 
 function submitForm(trial, condition, id, ide, tp, ttc, ct, cot, te, tcd) {
-    if (SurfaceInputsTransport.usesNative()) return;
+    if(SurfaceInputsTransport.usesNative()&&!window.SurfaceInputsTaskUploads)return;
     const form = document.getElementById('bootstrapForm');
     if (!form.dataset.submitHandlerAdded) {
         form.addEventListener('submit', (e) => {
@@ -692,7 +698,7 @@ function submitForm(trial, condition, id, ide, tp, ttc, ct, cot, te, tcd) {
 	document.getElementById('session_id').value = sessionId;
 
     // Dispatch a synthetic submit event
-    if (window.SurfaceInputsTaskUploads) return window.SurfaceInputsTaskUploads.result('targeting', form);
+    if (window.SurfaceInputsTaskUploads) return window.SurfaceInputsTaskUploads.stageResult('targeting', form);
     form.dispatchEvent(new Event('submit', { cancelable: true }));
 }
 

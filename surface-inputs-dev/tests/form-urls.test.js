@@ -32,7 +32,8 @@ test('typing UXR2 URL and browser submitters remain unchanged under the SDK faca
 
 test('browser feedback behavior stays unchanged and the dormant collector remains unloaded', () => {
     const template = source => source.match(/container\.innerHTML = `([\s\S]*?)`;/)[1];
-    assert.equal(template(read(root, 'post-task-feedback.js')).replace('<button id="feedback-retry-native" type="button" hidden>Retry native telemetry</button>',''), template(read(prod, 'post-task-feedback.js')).replace('>Upload<','>Next<'));
+    const neutral=source=>template(source).replace('<button id="feedback-retry-native" type="button" hidden>Retry native telemetry</button>','').replace('>Upload<','>Next<');
+    assert.equal(neutral(read(root,'post-task-feedback.js')),neutral(read(prod,'post-task-feedback.js')));
     for (const file of ['keyboard/index.html', 'touchpad/index.html', 'touchpad/scroll.html']) {
         assert.ok(!read(root, file).includes('form-collector.js'));
     }

@@ -3,6 +3,7 @@
     'use strict';
     function nativeIdentity() {
         if (!win.SurfaceInputsTransport.isNative()) return;
+        if(win.document.documentElement&&typeof win.document.documentElement.hasAttribute==='function'&&win.document.documentElement.hasAttribute('data-task-forms'))return;
         if (!win.document.getElementById('si-native-style')) {
             const style = win.document.createElement('style');
             style.id = 'si-native-style';

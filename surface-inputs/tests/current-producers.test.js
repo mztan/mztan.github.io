@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const root=path.join(__dirname,'..'),prod=path.join(root,'../surface-inputs');
-const clean=source=>source.replace(/^[ \t]*if\s*\(window\.SurfaceInputsTaskUploads[^\n]*\n/gm,'').replace(/^[ \t]*if \(dogfoodScrollAborted\) return;\n/gm,'').replace(/^[ \t]*browserResultRetained = true;\n/gm,'');
+const clean=source=>source.replace(/^[ \t]*if\s*\(window\.SurfaceInputsTaskUploads[^\n]*\n/gm,'').replace(/^[ \t]*if \(dogfoodScrollAborted\) return;\n/gm,'').replace(/^[ \t]*browserResultRetained = true;\n/gm,'').replace('function calculatePromptResult(publish = true)','function calculatePromptResult()').replace('if(publish)document.dispatchEvent(promptFinishedEvent);','document.dispatchEvent(promptFinishedEvent);').replace(/^[ \t]*if\(?[^\n]*nativeBound\(\)[^\n]*return;\n/gm,'').replace(/^[ \t]*if\(?[^\n]*SurfaceInputsTransport\.usesNative\(\)[^\n]*return;\n/gm,'').replace(/^var targetingCompletion = null;\n/gm,'').replace(/document.getElementById\('result_user_id'\)\.value = [^\n]*;/g,"document.getElementById('result_user_id').value = FORM_LABEL;");
 const read=(dir,file)=>clean(fs.readFileSync(path.join(dir,file),'utf8'));
 function section(source,start,end){const first=source.indexOf(start),last=source.indexOf(end,first);assert(first>=0&&last>first);return source.slice(first,last);}
 test('fixed capture, metric formulas, corpora and browser Forms submitters remain unchanged',()=>{
@@ -15,6 +15,15 @@ test('fixed capture, metric formulas, corpora and browser Forms submitters remai
  assert.equal(fitts.slice(fitts.indexOf('function submitForm(')),old.slice(old.indexOf('function submitForm(')));
  const scroll=read(root,'touchpad/scripts_dc.js'),oldScroll=read(prod,'touchpad/scripts_dc.js');
  assert.equal(scroll.slice(scroll.indexOf('function startTimer()')),oldScroll.slice(oldScroll.indexOf('function startTimer()')));
+});
+test('no-preset native keyboard must actually stage a Forms row before either native observation',async()=>{
+ const {environment}=require('./harness.js'),e=environment();e.port.capabilityBehavior='v2';e.load('transport.js');e.load('keyboard-capture.js');e.load('keyboard/keyboard-layout.js');e.ready();let retain=false,staged=0,committed=0;
+ e.win.SurfaceInputsTaskUploads={stageResult(){staged++;return retain;},commitResult(){committed++;}};
+ e.load('keyboard/script.js');for(const listener of e.doc.listeners.get('DOMContentLoaded')||[])await listener();
+ const input=e.doc.getElementById('input-area'),prompt=e.doc.getElementById('sample-text').innerText;e.doc.getElementById('unix-name').value='FORM_ONLY_FIXTURE_LABEL';
+ input.value=prompt;input.dispatchEvent({type:'input',data:prompt,inputType:'insertText'});input.dispatchEvent({type:'keydown',key:'Enter',code:'Enter',keyCode:13});
+ assert.equal(e.port.sent.filter(m=>m.type==='keyboard').length,0);assert.equal(input.readOnly,true);assert.equal(committed,0);retain=true;input.dispatchEvent({type:'keydown',key:'Enter',code:'Enter',keyCode:13});
+ const typed=e.port.sent.find(m=>m.type==='keyboard'),opaque=e.port.sent.find(m=>m.event_name==='uxr_result');assert(typed&&opaque);assert.equal(staged,2);assert.equal(committed,1);assert.equal(typed.input_event_stream,prompt+'⏎');assert(!JSON.stringify([typed,opaque]).includes('FORM_ONLY_FIXTURE_LABEL'));assert.equal(e.doc.getElementById('result_user_id').value,'FORM_ONLY_FIXTURE_LABEL');
 });
 test('typed plus UXR keyboard completion is atomic and preserves first completion timing on backpressure',async()=>{
  const {environment}=require('./harness.js');const e=environment('?setting_preset=df');e.port.capabilityBehavior='v2';

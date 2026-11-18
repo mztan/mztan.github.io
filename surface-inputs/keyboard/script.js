@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         window.dispatchEvent(new CustomEvent('surface-inputs-transport-error', { detail: { reason } }));
     }, () => transport.usesNative());
     const nativeBound = () => transport.usesNative();
+    const winForms=()=>window.SurfaceInputsTaskUploads;
     function nativePromptId(index) {
         const dataset = (document.querySelector('input[name="dataset"]:checked') || {}).value || 'practice';
         return dataset + '_' + index;
@@ -15,7 +16,12 @@ document.addEventListener('DOMContentLoaded', async function () {
             'passwords': 'keyboard_password', 'metal-keys': 'keyboard_punctuation',
             'shortcuts': 'keyboard_shortcuts', 'arrows': 'keyboard_arrows' }[dataset];
     }
-    let pendingNativeCompletion = null, keyboardTaskContext = null, pendingBrowserCompletion = null, browserResultRetained = true;
+    let pendingNativeCompletion = null, keyboardTaskContext = null, pendingBrowserCompletion = null, browserResultRetained = true, stageForms = false;
+    function nativeResultCopy(result){
+        const identityKeys=new Set(['user_id','userId','participant_id','participantId','unixname','unix_name','session_id','sessionId','account_id','accountId','model_id','modelId']);
+        const copy=value=>Array.isArray(value)?value.map(copy):(value&&typeof value==='object'?Object.fromEntries(Object.entries(value).filter(([key])=>!identityKeys.has(key)).map(([key,v])=>[key,copy(v)])):value);
+        return copy(result);
+    }
     function emitNativePrompt(prompt, finalText, elapsedMs, promptId, format, resultFactory) {
         if (!nativeBound()) return true;
         try {
@@ -27,7 +33,16 @@ document.addEventListener('DOMContentLoaded', async function () {
                     id:transport.newObservationId(), activity_id:nativeActivity(), prompt_id:promptId,
                     elapsed_ms:Math.max(0, Math.round(elapsedMs))
                 }), arcade:{id:transport.newObservationId(),task_id:nativeActivity(),event_name:'uxr_result',task_context_id:keyboardTaskContext,
-                    elapsed_ms:Math.max(0,Math.round(elapsedMs)),details:{details_version:1,result_schema:format?'keyboard_shortcut_result_v1':'keyboard_prompt_result_v1',result}}};
+                    elapsed_ms:Math.max(0,Math.round(elapsedMs)),details:{details_version:1,result_schema:format?'keyboard_shortcut_result_v1':'keyboard_prompt_result_v1',result:nativeResultCopy(result)}}};
+            }
+            if(!pendingNativeCompletion.formsRetained&&winForms()){
+                stageForms=true;browserResultRetained=false;
+                try{
+                    if(!uxrModeEnabled&&!dfModeEnabled)submitPromptResultToGoogleForm(pendingNativeCompletion.result);
+                    else document.dispatchEvent(new CustomEvent('promptFinishedEvent',{detail:{message:pendingNativeCompletion.result}}));
+                }finally{stageForms=false;}
+                if(!browserResultRetained){inputArea.readOnly=true;return false;}
+                pendingNativeCompletion.formsRetained=true;winForms().commitResult('typing');
             }
             transport.submitKeyboardWithResult(pendingNativeCompletion.keyboard,pendingNativeCompletion.arcade);
             inputArea.readOnly = false;
@@ -566,15 +581,18 @@ document.addEventListener('DOMContentLoaded', async function () {
         // In DF/UXR mode, require the identifier before starting so form
         // submissions are attributable (keychord mode bypasses the textarea
         // gate that normally enforces this).
-        if (!nativeBound() && uxrModeEnabled && !document.getElementById('user-id').value.trim()) {
+        if ((!nativeBound() || winForms()) && uxrModeEnabled && !document.getElementById('user-id').value.trim()) {
             alert('Please enter a User ID first.');
             return;
         }
-        if (!nativeBound() && dfModeEnabled && !document.getElementById('unix-name').value.trim()) {
+        if ((!nativeBound() || winForms()) && dfModeEnabled && !document.getElementById('unix-name').value.trim()) {
             alert('Please enter your unix name first.');
             return;
         }
 
+        if(nativeBound()&&winForms()&&!uxrModeEnabled&&!dfModeEnabled&&!document.getElementById('unix-name').value.trim()){
+            alert('Please enter a web participant unixname first.');return;
+        }
         // Fresh run: build new random sequences + reset counters.
         pendingNativeCompletion = null;
         pendingBrowserCompletion = null;
@@ -661,6 +679,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         // mode dispatches, so the DF/UXR preset listeners submit each prompt.
         // Shortcut data is mapped onto the existing form fields (text-only
         // metrics like WPM/UER/CER/TER are N/A here and sent as 0).
+        if(snapshot&&winForms()&&pendingNativeCompletion&&pendingNativeCompletion.formsRetained)return;
         document.dispatchEvent(new CustomEvent('promptFinishedEvent', {
             detail: {
                 message: {
@@ -1425,9 +1444,15 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     // Function to check if input area should be disabled based on UXR/DF mode and user ID/unix name
     function checkAndUpdateInputAreaState() {
-        if (nativeBound()) {
+        if (nativeBound() && (!transport.isNative() || !winForms())) {
             inputArea.disabled = !transport.isNative();
             inputArea.placeholder = transport.isNative() ? 'Start typing here...' : 'Waiting for native telemetry ready reply...';
+            return;
+        }
+        if(nativeBound()&&winForms()&&!uxrModeEnabled&&!dfModeEnabled){
+            document.getElementById('unix-name-group').style.display='block';
+            inputArea.disabled=!document.getElementById('unix-name').value.trim();
+            inputArea.placeholder=inputArea.disabled?'Enter a web participant label before typing.':'Start typing here...';
             return;
         }
         if (uxrModeEnabled) {
@@ -1539,7 +1564,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     const unixNameInput = document.getElementById('unix-name');
     unixNameInput.addEventListener('input', function() {
         // Strip non-alphanumeric characters
-        this.value = this.value.replace(/[^a-zA-Z0-9]/g, '');
+        this.value = this.value.replace(/[^a-zA-Z0-9_-]/g, '');
         checkAndUpdateInputAreaState();
     });
 
@@ -1767,7 +1792,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
             // Enqueue the complete observation before any scoring/form event or advance.
             if (!emitNativePrompt(promptText, typedText, endTime - startTime,
-                nativePromptId(getCurrentPromptOriginalIndex()), undefined, calculatePromptResult)) return;
+                nativePromptId(getCurrentPromptOriginalIndex()), undefined, ()=>calculatePromptResult(false))) return;
 
             // Native retry uses the once-measured immutable result; browser scoring is unchanged.
             const promptResult = nativeBound() ? pendingNativeCompletion.result : (pendingBrowserCompletion || calculatePromptResult());
@@ -1960,7 +1985,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
     // Calculate results for the current prompt
-    function calculatePromptResult() {
+    function calculatePromptResult(publish = true) {
         const typedText = inputArea.value;
         const promptText = getCurrentPromptText();
         const typedLength = typedText.length;
@@ -2016,7 +2041,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         const promptFinishedEvent = new CustomEvent('promptFinishedEvent', {
             detail: { message: promptResult },
         });
-        document.dispatchEvent(promptFinishedEvent);
+        if(publish)document.dispatchEvent(promptFinishedEvent);
 
         return promptResult;
     }
@@ -2072,7 +2097,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
 
     function submitPromptResultToGoogleForm(data) {
-        if (nativeBound()) return;
+        if(nativeBound()&&!winForms())return;
         const form = document.getElementById('resultForm');
         if (!form.dataset.submitHandlerAdded) {
             form.addEventListener('submit', (e) => {
@@ -2094,7 +2119,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         }
 
         // Populate the form fields
-        document.getElementById('result_user_id').value = document.getElementById('user-id').value;
+        document.getElementById('result_user_id').value = nativeBound()&&winForms()&&!uxrModeEnabled&&!dfModeEnabled?document.getElementById('unix-name').value:document.getElementById('user-id').value;
         document.getElementById('result_corpus').value = document.querySelector('input[name="dataset"]:checked').value;
         document.getElementById('result_input_type').value = inputType;
         document.getElementById('result_auto_correct').value = getAutocorrectMode();
@@ -2121,12 +2146,12 @@ document.addEventListener('DOMContentLoaded', async function () {
         console.log("Submitting prompt result to Google Form: " + JSON.stringify(data));
 
         // Dispatch a synthetic submit event
-        if(window.SurfaceInputsTaskUploads){browserResultRetained=false;try{browserResultRetained=window.SurfaceInputsTaskUploads.result('typing',form);}catch(error){if(window.SurfaceInputsDogfood)window.SurfaceInputsDogfood.show(error.message);}return browserResultRetained;}
+        if(window.SurfaceInputsTaskUploads){browserResultRetained=false;try{browserResultRetained=(stageForms?window.SurfaceInputsTaskUploads.stageResult:window.SurfaceInputsTaskUploads.result)('typing',form);}catch(error){if(window.SurfaceInputsDogfood)window.SurfaceInputsDogfood.show(error.message);}return browserResultRetained;}
         form.dispatchEvent(new Event('submit', { cancelable: true }));
     }
 
     function submitPromptResultToDFGoogleForm(data) {
-        if (nativeBound()) return;
+        if(nativeBound()&&!winForms())return;
         const form = document.getElementById('dfResultForm');
         if (!form.dataset.submitHandlerAdded) {
             form.addEventListener('submit', (e) => {
@@ -2173,7 +2198,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
         console.log("Submitting prompt result to DF Google Form: " + JSON.stringify(data));
 
-        if(window.SurfaceInputsTaskUploads){browserResultRetained=false;try{browserResultRetained=window.SurfaceInputsTaskUploads.result('typing',form);}catch(error){if(window.SurfaceInputsDogfood)window.SurfaceInputsDogfood.show(error.message);}return browserResultRetained;}
+        if(window.SurfaceInputsTaskUploads){browserResultRetained=false;try{browserResultRetained=(stageForms?window.SurfaceInputsTaskUploads.stageResult:window.SurfaceInputsTaskUploads.result)('typing',form);}catch(error){if(window.SurfaceInputsDogfood)window.SurfaceInputsDogfood.show(error.message);}return browserResultRetained;}
         form.dispatchEvent(new Event('submit', { cancelable: true }));
     }
 });

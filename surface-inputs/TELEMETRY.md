@@ -2,13 +2,13 @@
 
 ## Production promotion
 
-Production now runs the owner-approved stable two-channel SDK and guided dogfood runtime from dev snapshot `6c3c459`. The fixed typed intent schema and separate opaque Arcade JSON channel are defined by the shared canonical [bridge contract](../surface-inputs-dev/BRIDGE_CONTRACT.md). This production path has no DEV pill or Skip task. Browser Form result/feedback mappings and immutable retries match the promoted runtime; native-bound traffic never falls back to Forms. A labeled Typing browser feedback row was verified through Google answer readback; no full-result/other-Forms/native E2E guarantee follows from that test.
+Production promotes the November18 reviewed dual-destination runtime from dev candidate `0c313c37`. Native wire contracts, fixed typed schema and metrics remain unchanged. Primary completed UXR rows and feedback submit to configured Forms regardless of browser/APK; APK also emits native telemetry, with separate destination receipt flags and retries. Opaque request completion is not HTTP/storage confirmation. No new live Forms or physical-device tests were performed for this promotion.
 
 The v1 field definitions below document backward compatibility, not the current wire version selected on a v2-capable host. Guided feedback occurs after six complete Targeting/Scrolling sets and 20 punctuation Typing prompts. Next/Finish keep the feedback screen visible through navigation; successful short-lived status text is suppressed and errors remain actionable.
 
 ## Browser behavior
 
-The primary browser tasks now use the guided run's single initial unixname, task-specific Form mappings and bounded outbox. Result rows and feedback share a task-block ID; completed records are not re-posted by a stale queue-drain snapshot. A labeled Typing feedback response was verified by Google answer readback, while full-result/other-Forms parity remains unverified. Native binding still suppresses Forms immediately; URL parameters cannot select native mode. Other legacy variants retain their collection routes.
+Primary task result rows and feedback now go to Forms in both browser and APK mode; APK also retains the native SDK observations. Forms use a single explicit web participant label and their own web block/session metadata, never host account/session/model IDs. Native packets keep their measurement-only values and original task context. Direct Form feedback/result linkage is durably reserved before retention, with no context guessing on reload. Destination-specific retries and cleanup preserve independent pending/receipt state.
 
 ## Page navigation and results UI
 
@@ -19,8 +19,8 @@ All HTML subpages have an environment-local Home/back link. Targeting's return-s
 - Host origin: `https://mztan.github.io`, top frame only.
 - The native host transfers one `WebMessagePort` with JSON `{ "type": "surface_inputs_host", "version": 1 }`.
 - Web accepts only a trusted `MessageEvent` whose source is the current Window or `null`, with exactly one port and exactly the marker fields. Android may dispatch without a Window proxy. Both shapes have unit coverage; neither has been verified on a physical WebView in this change.
-- Web sends `{ "version": 1, "type": "ready" }` on the port. Native replies with the same message. Only that reply activates native mode and hides identity controls.
-- After a valid port transfer, Forms are suppressed immediately, including while waiting for ready. Complete observations can queue during that interval.
+- Web sends `{ "version": 1, "type": "ready" }` and waits for the matching native reply. Forms-enabled primary pages preserve the explicitly entered web identity controls until the guided session prepopulates and hides them. This label is never native account attribution.
+- The SDK still suppresses raw form-submit navigation after native binding. Primary tasks explicitly submit the configured background HTTPS Form collector in either mode; this does not navigate the WebView or replace native telemetry. Native account attribution stays host-owned.
 - The native host must gate task interaction before transferring the port. Before any port transfer the page cannot distinguish APK from browser and retains its browser path.
 - This is a capability handshake, not proof of account authentication. Web never supplies native account, session or model attribution.
 
@@ -67,7 +67,7 @@ Selection emits the actual prescribed target text and exact-selection completion
 - Optional `pain_points`: at most eight nonempty strings, each at most 64 UTF-8 bytes.
 - The complete serialized feedback message is at most 2048 UTF-8 bytes.
 
-Native feedback uses the private port; browser feedback uses the explicitly configured task-specific Form callback. Immutable IDs and UTF-8 bounds remain. Browser request-sent status and native sink acceptance do not prove server storage. Errors retain the response and expose retry; delivered-response continuation retries progress only, without sending feedback again.
+Both destinations are retained before required progress advances. Forms `request_sent` records remain immutable in the 256-record/1MiB bounded outbox; they are never automatically retried or backfilled. `exportRecords()` plus confirmed `clearExportedRecords()` removes only exported completed records not needed by pending/active/inflight work or unfinished feedback destinations. The feedback widget persists native and Forms flags independently; either destination's retry cannot resubmit the other. Native ACK is only sink handoff; opaque Forms completion is only request sent. Storage receipt failures keep a retry-saving-state path instead of network resubmission. Native document queue and navigation guards are unchanged.
 
 ### Post-task feedback UI
 

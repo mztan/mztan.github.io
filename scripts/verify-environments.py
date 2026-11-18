@@ -70,9 +70,9 @@ def main():
     for name in ('touchpad/event-logger.js',):
         assert (DEV / name).read_bytes() == (PROD / name).read_bytes(), (name, 'Collection code changed')
     # The only transport UI difference keeps explicit Forms identity controls in marked pages.
-    ui=(DEV/'transport-ui.js').read_text()
-    ui=re.sub(r'^\s*if\(win.document.documentElement.*data-task-forms.*return;\n','\n',ui,flags=re.MULTILINE)
-    assert re.sub(r'\s+','',ui)==re.sub(r'\s+','',(PROD/'transport-ui.js').read_text()), 'Unexpected transport UI change'
+    def identity_ui(source):
+        return re.sub(r'\s+','',re.sub(r'^\s*if\(win.document.documentElement.*data-task-forms.*return;\n','\n',source,flags=re.MULTILINE))
+    assert identity_ui((DEV/'transport-ui.js').read_text())==identity_ui((PROD/'transport-ui.js').read_text()), 'Unexpected transport UI change'
     subprocess.run(['node', 'surface-inputs-dev/tests/generate-contract.js', '--check'], cwd=ROOT, check=True)
     # SDK is intentionally dev-only; standard fields stay equal to the installed v1 producer contract.
     subprocess.run(['node', '-e', "require('node:assert/strict').deepEqual(require('./surface-inputs-dev/transport.js').metrics, require('./surface-inputs/transport.js').metrics)"], cwd=ROOT, check=True)
