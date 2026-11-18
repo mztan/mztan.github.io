@@ -31,6 +31,11 @@ test('guided startup hides uninitialized task UI but has a visible load-failure 
  for(const file of ['touchpad/index.html','touchpad/scroll.html','keyboard/index.html']){const html=fs.readFileSync(path.join(root,file),'utf8');assert(html.includes('html.dogfood-loading body{visibility:hidden}'));assert(html.includes("new URLSearchParams(location.search).has('dogfood')"));assert(html.includes('10000'));assert(html.includes("home.href = '../index.html'"));assert(html.indexOf("classList.add('dogfood-loading')")<html.indexOf('dogfood-flow.js'));}
  const code=fs.readFileSync(path.join(root,'dogfood-flow.js'),'utf8');assert(code.includes("doc.documentElement.classList.remove('dogfood-loading')"));
 });
+test('guided task icons remain visible while practice and branding stay hidden',()=>{
+ const fs=require('node:fs'),path=require('node:path'),css=fs.readFileSync(path.join(__dirname,'../dogfood-flow.css'),'utf8');
+ assert(css.includes('.guided-dogfood #practice-button,.guided-dogfood .arcade-brand{display:none}'));
+ assert(!css.includes('.guided-dogfood .arcade-task-icon{display:none}'));
+});
 test('guided task sequence requires six nine-hit sets and six six-target scroll sets',()=>{assert.deepEqual(flow.tasks,['targeting','scrolling','typing']);assert.deepEqual(flow.sets,{targeting:6,scrolling:6,typing:1});});
 test('saved session shape bounds task stages and completed set counts',()=>{const s={version:1,id:'df_fixture',stage:0,tasks:[{sets:0,phase:'idle'},{sets:0,phase:'idle'},{sets:0,phase:'idle'}]};assert(flow.valid(s));assert(!flow.valid({...s,stage:4}));assert(!flow.valid({...s,tasks:[{sets:7,phase:'idle'},...s.tasks.slice(1)]}));});
 test('manual prefilled question mappings are enabled after owner-confirmed publication',()=>{const counts={typing:28,targeting:22,scrolling:12};for(const[task,form]of Object.entries(config.forms)){assert.equal(form.enabled,true);assert.equal(form.fieldsVerified,true);assert.equal(Object.keys(form.fields).length,counts[task]);assert.equal(new Set(Object.values(form.fields)).size,counts[task]);assert.match(form.endpoint,/formResponse$/);}});

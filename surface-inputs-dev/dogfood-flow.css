@@ -1,7 +1,7 @@
 /* Directions: Bauhaus single-action cabinet; editorial itinerary; technical control desk.
  * Selected: single-action Arcade cabinet. Navy/cream/coral follows the existing app,
  * condensed headings and system body type provide roles; flat 2px edges, no gradients,
- * card grids, icons or motion. Task geometry is untouched; utility controls stay above the field. */
+ * card grids or motion. Existing task icons remain visible; task geometry is untouched. */
 :root{color-scheme:dark}
 .dogfood-home{margin:0;background:#0d1b2a;color:#f2e8d0;font:16px/1.5 system-ui,sans-serif}
 .dogfood-home main{min-height:100svh;display:grid;place-content:center;padding:24px;text-align:center}
@@ -19,7 +19,7 @@
 #dogfood-status:empty{display:none}
 .guided-dogfood.dogfood-transition #experience-screen,.guided-dogfood.dogfood-transition #scroll-body,.guided-dogfood.dogfood-transition #experience-screen *,.guided-dogfood.dogfood-transition #scroll-body *{pointer-events:none!important}
 .guided-dogfood.dogfood-started .start-screen{display:none!important}
-.guided-dogfood #practice-button,.guided-dogfood .arcade-brand,.guided-dogfood .arcade-task-icon{display:none}
+.guided-dogfood #practice-button,.guided-dogfood .arcade-brand{display:none}
 .guided-dogfood .start-screen .arcade-setup h1{margin-bottom:16px}
 .dogfood-home .dogfood-identity{margin-bottom:20px;text-align:left}
 .dogfood-home .dogfood-identity label{display:block;margin-bottom:8px;color:#9aafc0;font-size:14px}
