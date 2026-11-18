@@ -87,6 +87,23 @@ test('cleanup preserves a sent receipt while widget Forms state is pending even 
  h.api.exportRecords();assert.equal(h.api.clearExportedRecords().removed,0);
  await h.api.feedback({id:'receipt-pending-widget',activity_id:'touchpad_scrolling',round_id:'block-fixture',ratings:{ease:4},comment:'retained'});assert.equal(h.requests.length,1);
 });
+test('direct native feedback uses the Forms result block, not the separate SDK context',async()=>{
+ const h=setup();h.win.SurfaceInputsDogfood.active=()=>false;h.win.SurfaceInputsDogfood.isGuided=()=>false;h.win.SurfaceInputsTransport.usesNative=()=>true;
+ h.api.result('targeting',fakeForm({participant_id:'fixture-user',trial_num:'1',condition_num:'2',session_id:'explicit-web-session'}));await new Promise(r=>setImmediate(r));
+ const block=h.requests[0].body.get(h.mock.forms.targeting.fields.task_block_id);assert.notEqual(block,'native-sdk-context');
+ await h.api.feedback({id:'direct-feedback',activity_id:'touchpad_targeting',round_id:'native-sdk-context',ratings:{ease:4},comment:'direct'});
+ const body=h.requests.at(-1).body,f=h.mock.forms.targeting.fields;assert.equal(body.get(f.task_block_id),block);assert.equal(body.get(f.participant_id),'fixture-user');assert.equal(body.get(f.condition_num),'2');assert.equal(body.get(f.session_id),'explicit-web-session');
+});
+test('a sent feedback receipt can drain a pending result without reposting feedback',async()=>{
+ const h=setup();const message={id:'drain-sent-feedback',activity_id:'touchpad_scrolling',round_id:'block-fixture',ratings:{ease:4},comment:'sent'};await h.api.feedback(message);
+ h.saved.setItem('arcade-task-post-v1:surface-inputs-dev:late-result',JSON.stringify({id:'late-result',task:'scrolling',block:'block-fixture',values:{trial_num:'1',task_block_id:'block-fixture',submission_type:'result'},status:'failed'}));
+ await h.api.feedback(message);assert.equal(h.requests.length,2);assert.equal(h.requests.filter(p=>p.body.get(h.mock.forms.scrolling.fields.submission_type)==='feedback').length,1);assert.equal(h.api.getPending().length,0);
+});
+test('cleanup protects the actual Forms block when native feedback context differs',async()=>{
+ const h=setup();h.win.SurfaceInputsDogfood.active=()=>false;h.win.SurfaceInputsDogfood.isGuided=()=>false;h.api.result('scrolling',fakeForm({participant_id:'fixture-user',trial_num:'1'}));await new Promise(r=>setImmediate(r));
+ const message={id:'separate-feedback-context',activity_id:'touchpad_scrolling',round_id:'native-sdk-context',ratings:{ease:4},comment:'separate'};await h.api.feedback(message);
+ h.saved.setItem('surface-inputs-dev-feedback-v1',JSON.stringify([{message,deliveries:{forms:'request_sent',native:'pending'}}]));h.api.exportRecords();h.win.confirm=()=>true;assert.equal(h.api.clearExportedRecords().removed,0);assert.equal(h.api.getRecords().length,2);
+});
 test('guided task sequence requires six nine-hit sets and six six-target scroll sets',()=>{assert.deepEqual(flow.tasks,['targeting','scrolling','typing']);assert.deepEqual(flow.sets,{targeting:6,scrolling:6,typing:1});});
 test('saved session shape bounds task stages and completed set counts',()=>{const s={version:1,id:'df_fixture',stage:0,tasks:[{sets:0,phase:'idle'},{sets:0,phase:'idle'},{sets:0,phase:'idle'}]};assert(flow.valid(s));assert(!flow.valid({...s,stage:4}));assert(!flow.valid({...s,tasks:[{sets:7,phase:'idle'},...s.tasks.slice(1)]}));});
 test('manual prefilled question mappings are enabled after owner-confirmed publication',()=>{const counts={typing:28,targeting:22,scrolling:12};for(const[task,form]of Object.entries(config.forms)){assert.equal(form.enabled,true);assert.equal(form.fieldsVerified,true);assert.equal(Object.keys(form.fields).length,counts[task]);assert.equal(new Set(Object.values(form.fields)).size,counts[task]);assert.match(form.endpoint,/formResponse$/);}});

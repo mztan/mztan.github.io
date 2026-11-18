@@ -8,7 +8,7 @@ function create(win,config){
  const inflight=new Map(),completedRequests=new Set(),directBlocks=new Map(),pendingResults=new Map(),latestContexts=new Map();let counter=0,exportedRecords=[];
  const id=()=> 'post_'+win.crypto.randomUUID()+'_'+(++counter),flow=()=>win.SurfaceInputsDogfood;
  function rows(){const out=[];for(let i=0;i<store.length;i++){const key=store.key(i);if(key&&key.startsWith(prefix))out.push(JSON.parse(store.getItem(key)));}return out;}
- const immutable=entry=>JSON.stringify({id:entry.id,task:entry.task,block:entry.block,sequence:entry.sequence,values:entry.values});
+ const immutable=entry=>JSON.stringify({id:entry.id,task:entry.task,block:entry.block,sequence:entry.sequence,feedback_context:entry.feedback_context,values:entry.values});
  function retain(entry){const saved=rows(),old=saved.find(row=>row.id===entry.id);if(old){if(immutable(old)!==immutable(entry))throw new Error('Cannot change a retained submission.');return old;}const text=JSON.stringify(entry);if(saved.length>=MAX||saved.reduce((n,r)=>n+bytes(JSON.stringify(r)),0)+bytes(text)>MAX_BYTES)throw new Error('Saved Forms records are full. Export/review them before continuing.');store.setItem(prefix+entry.id,text);return entry;}
  function form(task){const f=config&&config.forms[task];if(!f||!f.enabled||!f.fieldsVerified)throw new Error('The '+task+' Form upload is not configured. Your response remains saved locally; no upload was attempted.');if(!/^https:\/\/docs\.google\.com\/forms\/d\/e\/1FAIpQL[^/]+\/formResponse$/.test(f.endpoint))throw new Error('Invalid task collector.');return f;}
  const sentOutcome=()=>({status:'request_sent',storageConfirmed:false});
@@ -34,7 +34,7 @@ function create(win,config){
   try{
    if(!entry){const values=snapshot(element);let block=flow()&&flow().active(task)?flow().context(task):directBlocks.get(task);if(!block){block='block_'+win.crypto.randomUUID();directBlocks.set(task,block);}
     const old=JSON.parse(store.getItem(contextPrefix+block)||'null');const sequence=Math.max(old?.sequence||0,...rows().filter(r=>r.block===block).map(r=>r.sequence||0))+1;
-    values.task_block_id=block;values.submission_type='result';entry={id:id(),task,block,sequence,values,status:'pending'};pendingResults.set(task,entry);}
+    values.session_id=values.session_id||block;values.task_block_id=block;values.submission_type='result';entry={id:id(),task,block,sequence,values,status:'pending'};pendingResults.set(task,entry);}
    retain(entry);
    const context={};for(const key of contexts[task])if(entry.values[key]!==undefined)context[key]=entry.values[key];const captured={sequence:entry.sequence,values:context};latestContexts.set(entry.block,captured);
    try{store.setItem(contextPrefix+entry.block,JSON.stringify(captured));}catch(_){/* retained result contains its complete context */}
@@ -45,9 +45,12 @@ function create(win,config){
  function result(task,element){if(!stageResult(task,element))return false;commitResult(task);return true;}
  async function retryBlock(block){for(const entry of rows().filter(r=>r.block===block&&r.status!=='request_sent')){const current=rows().find(r=>r.id===entry.id);if(current&&current.status!=='request_sent')await send(current);}}
  function retainFeedback(message){
-  const task=message.activity_id.startsWith('keyboard_')?'typing':message.activity_id==='touchpad_targeting'?'targeting':'scrolling',block=message.round_id;
+  const task=message.activity_id.startsWith('keyboard_')?'typing':message.activity_id==='touchpad_targeting'?'targeting':'scrolling';
   const existing=rows().find(row=>row.id===message.id);
-  if(existing){if(existing.block!==block||existing.values.comment!==(message.comment||'')||existing.values.ease!==String(message.ratings.ease))throw new Error('Cannot change a retained feedback response.');return existing;}
+  if(existing){if((existing.feedback_context||existing.block)!==message.round_id||existing.values.comment!==(message.comment||'')||existing.values.ease!==String(message.ratings.ease))throw new Error('Cannot change a retained feedback response.');return existing;}
+  // Native feedback keeps its SDK context; Forms have their own result-block identifier.
+  let block=flow()&&flow().active(task)?message.round_id:directBlocks.get(task);
+  if(!block){block='block_'+win.crypto.randomUUID();directBlocks.set(task,block);}
   const candidates=[latestContexts.get(block),JSON.parse(store.getItem(contextPrefix+block)||'null'),...rows().filter(r=>r.block===block&&r.values.submission_type==='result')].filter(Boolean);
   const latest=candidates.sort((a,b)=>(b.sequence||0)-(a.sequence||0))[0]?.values,values={};
   for(const key of contexts[task])if(latest&&latest[key]!==undefined)values[key]=latest[key];
@@ -56,9 +59,9 @@ function create(win,config){
   const explicit=identityIds.map(id=>win.document&&win.document.getElementById(id)?.value?.trim()).find(Boolean)||'';
   if(task==='typing')values.user_id=values.user_id||(s&&s.participant)||explicit;else values.participant_id=values.participant_id||(s&&s.participant)||explicit;
   values.session_id=values.session_id||(s&&s.session)||'';Object.assign(values,{task_block_id:block,feedback_id:message.id,submission_type:'feedback',ease:String(message.ratings.ease),comment:message.comment||''});
-  return retain({id:message.id,task,block,values,status:'pending'});
+  return retain({id:message.id,task,block,feedback_context:message.round_id,values,status:'pending'});
  }
- async function feedback(message){const entry=retainFeedback(message);if(entry.status==='request_sent')return sentOutcome();await retryBlock(entry.block);return sentOutcome();}
+ async function feedback(message){const entry=retainFeedback(message);await retryBlock(entry.block);if(directBlocks.get(entry.task)===entry.block)directBlocks.delete(entry.task);return sentOutcome();}
  function canBegin(expected){const records=rows();if(records.length+expected+1>MAX||records.reduce((n,r)=>n+bytes(JSON.stringify(r)),0)+expected*4096>MAX_BYTES)return false;const key=contextPrefix+'storage-probe';store.setItem(key,'1');store.removeItem(key);return true;}
  function exportRecords(){const records=rows();exportedRecords=records.filter(r=>r.status==='request_sent').map(r=>({id:r.id,body:immutable(r)}));return JSON.stringify({version:1,records},null,2);}
  function clearExportedRecords(){
@@ -66,9 +69,10 @@ function create(win,config){
   if(!win.confirm||!win.confirm('Remove only exported, completed Forms records that are no longer needed for retries? Pending and active-task records will remain.'))return{removed:0};
   const protectedBlocks=new Set(rows().filter(r=>r.status!=='request_sent').map(r=>r.block));
   for(const row of pendingResults.values())protectedBlocks.add(row.block);
+  for(const block of directBlocks.values())protectedBlocks.add(block);
   const current=flow();if(current&&current.isGuided&&current.isGuided()&&current.getState().stage<3)protectedBlocks.add(current.context());
   const feedback=JSON.parse(store.getItem('surface-inputs-dev-feedback-v1')||'[]');
-  for(const entry of feedback){if(entry.deliveries&&(entry.deliveries.forms!=='request_sent'||!['accepted','not_required'].includes(entry.deliveries.native)))protectedBlocks.add(entry.message.round_id);}
+  for(const entry of feedback){if(entry.deliveries&&(entry.deliveries.forms!=='request_sent'||!['accepted','not_required'].includes(entry.deliveries.native))){protectedBlocks.add(entry.message.round_id);const receipt=rows().find(row=>row.id===entry.message.id);if(receipt)protectedBlocks.add(receipt.block);}}
   let removed=0;for(const item of exportedRecords){const raw=store.getItem(prefix+item.id);if(!raw)continue;const row=JSON.parse(raw);if(row.status==='request_sent'&&immutable(row)===item.body&&!protectedBlocks.has(row.block)&&!inflight.has(row.id)){store.removeItem(prefix+row.id);completedRequests.delete(row.id);removed++;}}
   exportedRecords=[];return{removed};
  }
