@@ -7,6 +7,20 @@ function valid(s){return s&&s.version===1&&typeof s.id==='string'&&/^df_[a-zA-Z0
 function create(win){
  const doc=win.document, script=doc.currentScript, base=new URL('.',script?script.src:new URL('dogfood-flow.js',win.location.href));
  const env=win.location.pathname.split('/')[1],dev=env==='surface-inputs-dev',key='arcade-dogfood-v1:'+env;
+ const participantKey='arcade-participant-v1:'+env;
+ const validParticipant=value=>typeof value==='string'&&/^[a-zA-Z0-9_-]{1,64}$/.test(value);
+ function rememberParticipant(value){
+  try{const label=value.trim();if(validParticipant(label))win.localStorage.setItem(participantKey,label);else win.localStorage.removeItem(participantKey);}catch(_){/* Remembering is optional; task collection remains available. */}
+ }
+ function mountParticipantCache(){
+  if(run)return;
+  let remembered='';try{const value=win.localStorage.getItem(participantKey);if(validParticipant(value))remembered=value;}catch(_){}
+  for(const id of ['unix-name','button-pad-id']){
+   const input=doc.getElementById(id);if(!input)continue;
+   if(!input.value.trim()&&remembered){input.value=remembered;input.dispatchEvent(new win.Event('input',{bubbles:true}));}
+   const save=()=>rememberParticipant(input.value);input.addEventListener('input',save);input.addEventListener('change',save);
+  }
+ }
  let state=null,nextSet=null,waiting=null,status=null,progress=null,retentionRetry=null;
  const sdk=()=>win.SurfaceInputsTransport;
  const native=()=>sdk()&&sdk().usesNative();
@@ -54,12 +68,13 @@ function create(win){
  function skip(){if(failed())return;if(!dev||!run||!state||run!==state.id)return;win.dispatchEvent(new win.CustomEvent('dogfood-task-abort'));state.tasks[state.stage].phase=native()&&sdk().pendingCount()?'skipped_wait_ack':'skipped';persist();readyAction(()=>{state.tasks[state.stage].phase='skipped';persist();advance();});}
  function mount(){
   if(failed())return;
+  mountParticipantCache();
   const start=doc.getElementById('start-dogfooding');if(start)start.addEventListener('click',()=>{
    try{
     const initial=doc.getElementById('unix-name');
     const participant=initial?initial.value.trim():'';
     if(!/^[a-zA-Z0-9_-]{1,64}$/.test(participant)){doc.getElementById('landing-status').textContent='Enter your unixname to start dogfooding.';if(initial)initial.focus();return;}
-    state={version:1,id:'df_'+win.crypto.randomUUID(),stage:0,session:query.get('session_id')||'dogfood_'+new Date().toISOString().slice(0,10),participant,tasks:TASKS.map(()=>({sets:0,phase:'idle'}))};persist();readyAction(()=>win.location.assign(destination()));
+    state={version:1,id:'df_'+win.crypto.randomUUID(),stage:0,session:query.get('session_id')||'dogfood_'+new Date().toISOString().slice(0,10),participant,tasks:TASKS.map(()=>({sets:0,phase:'idle'}))};persist();rememberParticipant(participant);readyAction(()=>win.location.assign(destination()));
    }catch(error){doc.getElementById('landing-status').textContent=error.message;}
   });
   if(!run)return;

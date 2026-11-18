@@ -4,6 +4,8 @@
 
 Enter a web participant unixname once, then Start Dogfooding. The same explicit label is required in browsers and APK WebViews; it prepopulates the existing task fields, which stay hidden/read-only in the guided flow. It is not native account attribution and is not put into task URLs.
 
+Dev remembers the entered unixname in an environment-scoped `localStorage` entry on that browser or APK WebView. New visits prefill the editable landing/primary-task field; replacing or clearing the field updates or removes the remembered value. Active guided runs retain their own participant snapshot. Clearing browser/app data removes the cache, and unavailable storage falls back to manual entry. No native identifiers, numeric UXR participant IDs, feedback or pending delivery records are used as cache sources.
+
 1. Targeting: six complete sets, nine hits each (54 hits), then Next feedback.
 2. Scrolling: six complete sets, six highlighted targets each (36 targets), then Next feedback.
 3. Typing: twenty prompts from the existing natural-language-with-punctuation corpus, then Finish feedback.
