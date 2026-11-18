@@ -2,10 +2,38 @@
 <html lang="en">
 
 <head>
+  <!-- Keep the guided page off-screen until its saved state and identity are applied. -->
+  <style>html{background:#0d1b2a;color-scheme:dark}html.dogfood-loading body{visibility:hidden}</style>
+  <script>
+    if (new URLSearchParams(location.search).has('dogfood')) {
+      document.documentElement.classList.add('dogfood-loading');
+      setTimeout(() => {
+        if (!document.documentElement.classList.contains('dogfood-loading')) return;
+        document.documentElement.classList.add('dogfood-startup-failed');
+        const showFailure = () => {
+          if (!document.body) return;
+          document.body.replaceChildren();
+          const message = document.createElement('p');
+          message.textContent = 'Dogfooding could not finish loading. Return to the main page and try again.';
+          message.setAttribute('role', 'alert');
+          const home = document.createElement('a'); home.href = '../index.html'; home.textContent = 'Return to main page';
+          document.body.append(message, home);
+          document.documentElement.classList.remove('dogfood-loading');
+        };
+        if (document.body) showFailure();
+        else {
+          const waitForBody = new MutationObserver(() => {
+            if (document.body) { waitForBody.disconnect(); showFailure(); }
+          });
+          waitForBody.observe(document.documentElement, {childList: true, subtree: true});
+        }
+      }, 10000);
+    }
+  </script>
   <script src="../task-navigation.js?v=home-1" defer></script>
 	<meta http-equiv="Content-Type" content="text/html;charset=utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<script src="../dogfood-flow.js?v=guided-identity-2" defer></script>
+	<script src="../dogfood-flow.js?v=guided-startup-3" defer></script>
 	<script src="../forms-config.js?v=guided-1" defer></script><script src="../task-uploads.js?v=guided-1" defer></script>
 	<link rel="stylesheet" href="../dogfood-flow.css?v=guided-identity-2">
 	<title>Targeting · Surface Inputs Arcade</title>

@@ -8,7 +8,7 @@ test('initial unixname is required for browser Start and omitted for native attr
  for(const native of [false,true]){
   const e=environment();const state=memory(),destinations=[];
   e.win.sessionStorage=state;e.win.location={href:'https://mztan.github.io/surface-inputs-dev/index.html',pathname:'/surface-inputs-dev/index.html',search:'',assign:u=>destinations.push(u)};
-  e.doc.currentScript={src:'https://mztan.github.io/surface-inputs-dev/dogfood-flow.js'};e.doc.readyState='loading';e.win.SurfaceInputsTransport={usesNative:()=>native,pendingCount:()=>0};
+  e.doc.currentScript={src:'https://mztan.github.io/surface-inputs-dev/dogfood-flow.js'};e.doc.readyState='loading';e.doc.documentElement.classList.contains=()=>false;e.win.SurfaceInputsTransport={usesNative:()=>native,pendingCount:()=>0};
   flow.create(e.win);e.doc.dispatchEvent({type:'DOMContentLoaded'});
   const start=e.doc.getElementById('start-dogfooding');start.click();
   if(!native){assert.equal(destinations.length,0);e.doc.getElementById('unix-name').value='  fixture-user  ';start.click();}
@@ -25,6 +25,11 @@ test('between-set guided setup is hidden while standalone Practice and recovery 
  assert(css.includes('.guided-dogfood.dogfood-started .start-screen{display:none!important}'));
  assert(css.includes('.guided-dogfood.dogfood-transition #experience-screen *,.guided-dogfood.dogfood-transition #scroll-body *{pointer-events:none!important}'));
  const code=fs.readFileSync(path.join(root,'dogfood-flow.js'),'utf8');assert(code.includes("doc.body.classList.remove('dogfood-started')"));assert(code.includes("state.tasks[state.stage].sets<SETS[task]-1"));
+});
+test('guided startup hides uninitialized task UI but has a visible load-failure escape',()=>{
+ const fs=require('node:fs'),path=require('node:path'),root=path.join(__dirname,'..');
+ for(const file of ['touchpad/index.html','touchpad/scroll.html','keyboard/index.html']){const html=fs.readFileSync(path.join(root,file),'utf8');assert(html.includes('html.dogfood-loading body{visibility:hidden}'));assert(html.includes("new URLSearchParams(location.search).has('dogfood')"));assert(html.includes('10000'));assert(html.includes("home.href = '../index.html'"));assert(html.indexOf("classList.add('dogfood-loading')")<html.indexOf('dogfood-flow.js'));}
+ const code=fs.readFileSync(path.join(root,'dogfood-flow.js'),'utf8');assert(code.includes("doc.documentElement.classList.remove('dogfood-loading')"));
 });
 test('guided task sequence requires six nine-hit sets and six six-target scroll sets',()=>{assert.deepEqual(flow.tasks,['targeting','scrolling','typing']);assert.deepEqual(flow.sets,{targeting:6,scrolling:6,typing:1});});
 test('saved session shape bounds task stages and completed set counts',()=>{const s={version:1,id:'df_fixture',stage:0,tasks:[{sets:0,phase:'idle'},{sets:0,phase:'idle'},{sets:0,phase:'idle'}]};assert(flow.valid(s));assert(!flow.valid({...s,stage:4}));assert(!flow.valid({...s,tasks:[{sets:7,phase:'idle'},...s.tasks.slice(1)]}));});

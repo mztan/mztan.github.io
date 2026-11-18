@@ -14,12 +14,13 @@ function create(win){
  try{const raw=win.sessionStorage.getItem(key);if(raw){const parsed=JSON.parse(raw);if(valid(parsed))state=parsed;}}catch(_){/* diagnosed on Start */}
  function persist(){if(!valid(state))throw new Error('Invalid dogfood session. Return to the main page.');win.sessionStorage.setItem(key,JSON.stringify(state));}
  function current(){return state&&TASKS[state.stage];}
- function active(task){return !!(run&&state&&run===state.id&&current()===task);}
+ const failed=()=>doc.documentElement&&doc.documentElement.classList.contains('dogfood-startup-failed');
+ function active(task){return !!(!failed()&&run&&state&&run===state.id&&current()===task);}
  function context(task=current()){return state?state.id+'_'+task:null;}
  function show(text){if(status)status.textContent=text;}
  function update(){if(!progress||!state)return;const task=current();progress.textContent=task?task.charAt(0).toUpperCase()+task.slice(1)+(task==='typing'?'':' · Set '+Math.min(state.tasks[state.stage].sets+1,SETS[task])+' of '+SETS[task]):'';}
  function destination(){if(state.stage===3)return new URL('thanks.html?dogfood='+encodeURIComponent(state.id),base).href;const u=new URL(PATHS[current()],base);u.searchParams.set('dogfood',state.id);u.searchParams.set('session_id',state.session);if(current()==='typing'){u.searchParams.set('setting_preset','df');u.searchParams.set('num_prompts','20');u.searchParams.set('dataset','natural-language-punct');}return u.href;}
- function readyAction(action){if(native()&&sdk().pendingCount()){waiting=action;show('Waiting for pending telemetry to be accepted. Retry pending telemetry if needed.');return;}waiting=null;action();}
+ function readyAction(action){if(failed()){waiting=null;return;}if(native()&&sdk().pendingCount()){waiting=action;show('Waiting for pending telemetry to be accepted. Retry pending telemetry if needed.');return;}waiting=null;action();}
  win.addEventListener('surface-inputs-ack',()=>{if(waiting&&!sdk().pendingCount()){const action=waiting;waiting=null;show('');action();}});
  function advance(){state.stage++;persist();win.location.assign(destination());}
  function begin(task){if(!active(task))return null;
@@ -37,9 +38,10 @@ function create(win){
   return true;
  }
  function pauseCompletion(task,retry){if(!active(task))return;doc.body.classList.remove('dogfood-transition');doc.body.classList.remove('dogfood-started');const stage=doc.getElementById(task==='targeting'?'experience-screen':'scroll-body');if(stage)stage.style.display='none';const setup=doc.getElementById('start-screen');if(setup)setup.style.display='';state.tasks[state.stage].phase='retention_wait';retentionRetry=retry;persist();show('Completed result is not saved. Press Start to retry saving it; do not reload.');}
- function feedbackDone(expectedContext){if(!run||!state||run!==state.id||expectedContext!==context())return false;const entry=state.tasks[state.stage];if(entry.phase!=='feedback'&&entry.phase!=='sent')return false;entry.phase=native()&&sdk().pendingCount()?'sent_wait_ack':'sent';persist();readyAction(advance);return true;}
- function skip(){if(!dev||!run||!state||run!==state.id)return;win.dispatchEvent(new win.CustomEvent('dogfood-task-abort'));state.tasks[state.stage].phase=native()&&sdk().pendingCount()?'skipped_wait_ack':'skipped';persist();readyAction(()=>{state.tasks[state.stage].phase='skipped';persist();advance();});}
+ function feedbackDone(expectedContext){if(failed())return false;if(!run||!state||run!==state.id||expectedContext!==context())return false;const entry=state.tasks[state.stage];if(entry.phase!=='feedback'&&entry.phase!=='sent')return false;entry.phase=native()&&sdk().pendingCount()?'sent_wait_ack':'sent';persist();readyAction(advance);return true;}
+ function skip(){if(failed())return;if(!dev||!run||!state||run!==state.id)return;win.dispatchEvent(new win.CustomEvent('dogfood-task-abort'));state.tasks[state.stage].phase=native()&&sdk().pendingCount()?'skipped_wait_ack':'skipped';persist();readyAction(()=>{state.tasks[state.stage].phase='skipped';persist();advance();});}
  function mount(){
+  if(failed())return;
   const start=doc.getElementById('start-dogfooding');if(start)start.addEventListener('click',()=>{
    try{
     const initial=doc.getElementById('unix-name');
@@ -60,6 +62,7 @@ function create(win){
   for(const id of ['button-pad-id','unix-name','user-id']){
    const input=doc.getElementById(id);if(input){input.value=native()?'':state.participant||'';input.readOnly=true;input.dispatchEvent(new win.Event('input',{bubbles:true}));}
   }
+  if(doc.documentElement)doc.documentElement.classList.remove('dogfood-loading');
   if(['waiting_ack','sent_wait_ack','skipped_wait_ack'].includes(state.tasks[state.stage].phase)){const start=doc.getElementById('start-button');if(start)start.disabled=true;const typing=doc.getElementById('input-area');if(typing)typing.disabled=true;show('This page was reloaded before telemetry acceptance was confirmed. Return to the main page to restart; do not assume the previous set uploaded.');return;}
   if(state.tasks[state.stage].phase==='retention_wait'){state.tasks[state.stage].phase='idle';persist();show('The previous completion was not saved before reload. Repeat this set.');}
   if(state.tasks[state.stage].phase==='sent'||state.tasks[state.stage].phase==='skipped'){readyAction(advance);return;}

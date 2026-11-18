@@ -14,6 +14,10 @@ Feedback uses **Next** after Targeting/Scrolling and **Finish** after Typing. Fi
 
 The browser start page asks for a unixname once before Start Dogfooding. The entered value is scoped to that tab's guided run, prepopulates the existing Targeting/Scrolling participant fields and Typing unixname/user fields, and stays hidden/read-only on task pages. It is not placed in task URLs. Native-ready APK mode hides the initial field and asks for no browser identity; native account attribution remains host-owned.
 
+## Initial page paint
+
+Guided task pages keep a stable navy background and hide the raw setup until saved state and identity prepopulation are applied. This prevents the old setup/user-ID form flashing during the Start Dogfooding navigation. A ten-second initialization failure reveals an actionable error and return-to-main link rather than leaving the page hidden. Direct standalone/Practice pages keep their normal startup visibility.
+
 ## Between-set transitions
 
 After the first Start, the guided block keeps its task setup screen hidden between sets, including while awaiting native ACKs. The existing playfield remains visible until the next set starts. The initial setup and legitimate storage-retry/reload recovery screens remain available. Direct standalone and Practice behavior are unchanged.
