@@ -274,6 +274,7 @@ function setExperienceTitle(title, explanation) {
     document.title = title;
 }
 
+var scrollingCompletion = null;
 function finishScrollTask() {
     if (scrollTaskCompleted) return;
     scrollTaskCompleted = true;
@@ -288,21 +289,25 @@ function finishScrollTask() {
         document.removeEventListener('touchmove', scrollTouchMoveHandler);
         let startText = document.getElementById('start-text');
         let elapsedStr = (elapsed / 1000).toFixed(2);
-        if (SurfaceInputsTransport.usesNative()) {
-            if (!scrollingTaskContext) scrollingTaskContext = SurfaceInputsTransport.newObservationId();
-            SurfaceInputsTransport.submitCurrentResult({id:SurfaceInputsTransport.newObservationId(),task_id:'touchpad_scrolling',
-                event_name:'uxr_result',task_context_id:scrollingTaskContext,elapsed_ms:Math.max(0,Math.round(elapsed)),
-                details:{details_version:1,result_schema:'scrolling_task_result_v1',result:{trial_num:trialNum,time_to_complete:elapsedStr,gesture_count:gestureCount}}});
+        if(!scrollingCompletion){
+            if(!scrollingTaskContext)scrollingTaskContext=SurfaceInputsTransport.newObservationId();
+            scrollingCompletion={formsRetained:false,nativeQueued:false,args:[trialNum,elapsedStr,gestureCount],
+                native:{id:SurfaceInputsTransport.newObservationId(),task_id:'touchpad_scrolling',event_name:'uxr_result',task_context_id:scrollingTaskContext,
+                    elapsed_ms:Math.max(0,Math.round(elapsed)),details:{details_version:1,result_schema:'scrolling_task_result_v1',result:{trial_num:trialNum,time_to_complete:elapsedStr,gesture_count:gestureCount}}}};
+        }
+        if(!scrollingCompletion.formsRetained){
+            if(submitForm(...scrollingCompletion.args)===false){scrollTaskCompleted=false;if(window.SurfaceInputsDogfood)window.SurfaceInputsDogfood.pauseCompletion('scrolling',finishScrollTask);return;}
+            scrollingCompletion.formsRetained=true;if(window.SurfaceInputsTaskUploads)window.SurfaceInputsTaskUploads.commitResult('scrolling');
+        }
+        if(SurfaceInputsTransport.usesNative()&&!scrollingCompletion.nativeQueued){
+            try{SurfaceInputsTransport.submitCurrentResult(scrollingCompletion.native);scrollingCompletion.nativeQueued=true;}
+            catch(error){scrollTaskCompleted=false;if(window.SurfaceInputsDogfood)window.SurfaceInputsDogfood.pauseCompletion('scrolling',finishScrollTask);window.dispatchEvent(new CustomEvent('surface-inputs-transport-error',{detail:{reason:error.message}}));return;}
         }
         startText.innerText = `#${trialNum}, TTC: ${elapsedStr}s, Gestures: ${gestureCount}\n` + startText.innerText;
-        if (submitForm(trialNum, elapsedStr, gestureCount) === false) {
-            scrollTaskCompleted = false;
-            if (window.SurfaceInputsDogfood) window.SurfaceInputsDogfood.pauseCompletion('scrolling', finishScrollTask);
-            return;
-        }
         EventLogger.endTrial({trialNum:trialNum,timeToComplete:elapsedStr,gestureCount:gestureCount});
         EventLogger.downloadLog(); EventLogger.clearLog();
     }
+    scrollingCompletion=null;
     trialNum += 1;
     // BEGIN POST-TASK FEEDBACK HOOK
     if (!(window.SurfaceInputsDogfood && window.SurfaceInputsDogfood.complete('scrolling', startScrollExperience, 'touchpad_scrolling')) && window.SurfaceInputsFeedback) window.SurfaceInputsFeedback.complete('touchpad_scrolling', scrollingTaskContext);
@@ -771,7 +776,7 @@ function startTimer() {
 }
 
 function submitForm(trial, ttc, gestures) {
-    if (SurfaceInputsTransport.usesNative()) return;
+    if(SurfaceInputsTransport.usesNative()&&!window.SurfaceInputsTaskUploads)return;
     const form = document.getElementById('bootstrapForm');
 
     if (!form.dataset.submitHandlerAdded) {
@@ -807,7 +812,7 @@ function submitForm(trial, ttc, gestures) {
     if (sessionInput) sessionInput.value = sessionId;
 
     // Dispatch a synthetic submit event
-    if (window.SurfaceInputsTaskUploads) return window.SurfaceInputsTaskUploads.result('scrolling', form);
+    if (window.SurfaceInputsTaskUploads) return window.SurfaceInputsTaskUploads.stageResult('scrolling', form);
     form.dispatchEvent(new Event('submit', { cancelable: true }));
 }
 

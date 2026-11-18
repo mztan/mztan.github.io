@@ -2,48 +2,32 @@
 
 ## Task sequence
 
-The main page has one **Start Dogfooding** action. It creates a browser-tab dogfood session and guides the participant through:
+Enter a web participant unixname once, then Start Dogfooding. The same explicit label is required in browsers and APK WebViews; it prepopulates the existing task fields, which stay hidden/read-only in the guided flow. It is not native account attribution and is not put into task URLs.
 
-1. Targeting: six complete sets, nine hits per set (54 hits total), then feedback.
-2. Scrolling: six complete sets, six highlighted targets per set (36 targets total), then feedback.
-3. Typing: twenty prompts from the existing natural-language-with-punctuation corpus, then final feedback.
+1. Targeting: six complete sets, nine hits each (54 hits), then Next feedback.
+2. Scrolling: six complete sets, six highlighted targets each (36 targets), then Next feedback.
+3. Typing: twenty prompts from the existing natural-language-with-punctuation corpus, then Finish feedback.
 
-Feedback uses **Next** after Targeting/Scrolling and **Finish** after Typing. Finish reaches a thank-you page with a return-to-main action. Blank freeform text is allowed; the ease rating is still required. The existing exact metric definitions, prompt corpus and fixed Targeting geometry are retained.
+Finish reaches a thank-you page with Return to main page. The development path alone has Skip task. Skips do not fabricate completed sets, ratings or metrics. Existing geometry, prompt corpus, calculations and timing remain unchanged. Startup and between-set setup flashes are suppressed; feedback stays visible through navigation, with errors instead of transient success text.
 
-## One-time browser identity
+## Independent collection destinations
 
-The browser start page asks for a unixname once before Start Dogfooding. The entered value is scoped to that tab's guided run, prepopulates the existing Targeting/Scrolling participant fields and Typing unixname/user fields, and stays hidden/read-only on task pages. It is not placed in task URLs. Native-ready APK mode hides the initial field and asks for no browser identity; native account attribution remains host-owned.
+The primary tasks send their complete UXR result rows and post-task feedback to their configured Google Forms in both browsers and APK mode. The 62 question IDs come from the owner's prefilled links (28 Typing, 22 Targeting, 12 Scrolling). Every set and Typing prompt remains a separate result row; feedback shares its web-owned task block. Unknown measurements are omitted, never replaced with measured zero.
 
-## Initial page paint
+APK mode additionally emits the existing typed intent and opaque Arcade observations on the trusted private-port SDK. Its wire contracts, limits and metric definitions are unchanged. No native account/session/model identifiers are read into the webapp or sent to Forms. Explicit web labels and web session/block IDs are independent of native attribution. The SDK still blocks raw Form navigation in native mode; the configured background HTTPS collector does not navigate the WebView.
 
-Guided task pages keep a stable navy background and hide the raw setup until saved state and identity prepopulation are applied. This prevents the old setup/user-ID form flashing during the Start Dogfooding navigation. A ten-second initialization failure reveals an actionable error and return-to-main link rather than leaving the page hidden. Direct standalone/Practice pages keep their normal startup visibility.
+## Persistence and retries
 
-## Between-set transitions
+A result snapshot is retained before the native result summary and before task/prompt advancement. A failed storage write preserves the completion snapshot and leaves it retryable. The Forms outbox is bounded to 256 immutable records / 1MiB. `SurfaceInputsTaskUploads.exportRecords()` returns a private snapshot; `clearExportedRecords()` requires confirmation and removes only exported request-sent records no longer needed by pending rows, active tasks, staged/in-flight sends or incomplete widget destinations. Pending and unexported records are protected, with no silent eviction. Native observations keep the existing 32-entry document queue. Storage/capacity checks happen before guided tasks start.
 
-After the first Start, the guided block keeps its task setup screen hidden between sets, including while awaiting native ACKs. The existing playfield remains visible until the next set starts. The initial setup and legitimate storage-retry/reload recovery screens remain available. Direct standalone and Practice behavior are unchanged.
+Forms and native feedback delivery flags are persisted separately. A native ACK changes only native state, never Forms state. A Forms retry cannot resend ACKed native observations; native retry cannot send another Form row. Next/Finish waits for the required Forms request completion and native feedback ACK (when native was bound), then also respects pending native navigation guards. Reload restores the same response, IDs, label and independent destination states. Native document-queue destruction still follows the existing recovery warning, not an assumption of delivery.
 
-## Development and recovery
+An opaque `no-cors` response establishes **request sent**, not HTTP acceptance or stored response. The immutable sent record remains locally retained and is never automatically retried. A network error/timeout remains pending/failed; an explicit retry may duplicate a row if delivery was ambiguous. There is no automatic historical backfill, no Forms fallback triggered by native failure, and no permission/authentication bypass. Old saved responses without dual-destination state keep their original delivery contract.
 
-Only the URL’s exact development path enables **Skip task**. Skipped tasks do not fabricate completed sets, ratings or zero metrics. Native pending observations must be acknowledged before task navigation or another set starts. Reloading an unconfirmed native transition does not assume delivery; the user can return to main and restart. No APK or device changes are part of this web update.
+## Verification boundary
 
-Completed set counts and the current task are stored in sessionStorage. Partial sets restart after reload without counting as complete. Saved feedback is restored by task context with its original response ID, text and delivery channel. A failed storage write must succeed before the set/prompt can advance; retry preserves the completed measurement snapshot.
-
-## Browser Forms
-
-`forms-config.js` holds task-specific endpoints and the 62 question IDs supplied by the owner’s blank prefilled links: 28 Typing, 22 Targeting, 12 Scrolling. These IDs identify form questions, not participant data. No participant values are checked into the repository. The shared API quota blocked blank-schema checks; no ongoing Form watches or retry loops remain.
-
-`task-uploads.js` snapshots each completed result row using the original field values and maps it to those task-specific question IDs. All six sets and all three typing prompts remain separate rows. Task result and feedback rows share `task_block_id`. Feedback-only rows contain identity/session/context, response ID, ease and comment; time/speed/error measurements are not invented.
-
-A bounded local outbox retains failed requests and preserves immutable payloads on retry. A resolved opaque Google Forms POST means **request sent**, not confirmed server storage. Native-bound observations and feedback stay on the shared native SDK, never fall back to Forms.
-
-The owner confirmed **all three Forms are published** on 2026-11-17. Browser submissions are enabled using the supplied mappings. Accepting-responses, sign-in settings and actual server storage have not been independently verified. A resolved opaque POST only establishes that a request was sent; failures remain retained for retry. Tests intercept every submission, so they never write test rows to the real Forms.
-
-## Typing end-to-end verification
-
-On November 17 the owner changed respondent access. Anonymous Typing access returned HTTP 200, and a labeled browser test submitted 20 result requests plus one feedback request. Google Forms response metadata returned 21 response objects in that test's exact time window. The feedback answers were read back through the Forms API and matched the rating, comment, user/session, corpus, task-block ID and feedback ID. This is actual Google storage verification for the labeled Typing feedback, not an opaque fetch or native ACK. Complete answer-level parity for all 20 result rows and the other two Forms was not verified; shared API quotas limited bulk readback.
-
-Feedback draining now rechecks whether each snapshot row is still pending, preventing duplicate POSTs when other requests finish during the drain. Guided Next/Finish retains the feedback modal until navigation, with no fleeting sending/success text. Errors remain visible; delivered-response continuation retries navigation only, without resubmitting feedback or double-advancing.
+Tests intercept all HTTP and use fake private ports. They do not prove current Google permissions, real APK networking or Scuba receipt. No real Form responses or permission changes are part of this change. The previous labeled browser Typing feedback was verified through Google API readback on November17; that earlier result does not prove the new APK dual path or the other two Forms.
 
 ## Release scope
 
-Development first. Production and `jvision/` stay unchanged until explicit promotion. Read `DEPLOYMENT.md` before publishing. The unrelated dormant collector branch remains isolated and is not loaded by this flow.
+Develop in `surface-inputs-dev/` first. Publication and production promotion require the owner-authorized review workflow; do not assume these edits are live. `surface-inputs/`, `jvision/`, the APK, device state and the unrelated dormant collector are unchanged during development.

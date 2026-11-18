@@ -30,12 +30,13 @@
             if (!Array.isArray(entries) || entries.length > LIMIT) throw new Error('Saved feedback is invalid; do not overwrite it.');
             return entries;
         }
-        function put(message, status) {
+        function put(message, status, deliveries) {
             const entries = list();
             const index = entries.findIndex(entry => entry.message.id === message.id);
             if (index >= 0 && JSON.stringify(entries[index].message) !== JSON.stringify(message)) throw new Error('Saved feedback is immutable.');
             if (index < 0 && entries.length >= LIMIT) throw new Error('50 responses are saved. Export and clear them before saving another.');
-            const entry = {message: JSON.parse(JSON.stringify(message)), status};
+            const destinationState=deliveries || (index>=0?entries[index].deliveries:undefined);
+            const entry = {message: JSON.parse(JSON.stringify(message)), status, ...(destinationState?{deliveries:JSON.parse(JSON.stringify(destinationState))}:{})};
             if (index < 0) entries.push(entry); else entries[index] = entry;
             storage.setItem(KEY, JSON.stringify(entries));
             return entry;
@@ -96,7 +97,7 @@
                 <label class="feedback-comment-label" for="feedback-comment">What worked well, or what could be improved?</label>
                 <textarea id="feedback-comment" rows="4"></textarea>
                 <p id="feedback-status" role="status" aria-live="polite"></p>
-                <div class="feedback-actions"><button id="feedback-save" type="button">Next</button><button id="feedback-retry" type="button" hidden>Retry native delivery</button><button id="feedback-retry-saved" type="button" hidden>Retry saved native feedback</button></div>
+                <div class="feedback-actions"><button id="feedback-save" type="button">Next</button><button id="feedback-retry" type="button" hidden>Retry native delivery</button><button id="feedback-retry-native" type="button" hidden>Retry native telemetry</button><button id="feedback-retry-saved" type="button" hidden>Retry saved native feedback</button></div>
               </form>
             </div>`;
             doc.body.appendChild(container);
@@ -104,7 +105,13 @@
             find('feedback-save').addEventListener('click', save);
             find('feedback-retry').addEventListener('click', () => {
                 if (!current || !current.message) return;
+                if(current.deliverySaveFailed){
+                    try{local().put(current.message,'dual_delivery',current.deliveries);current.deliverySaveFailed=false;status('');find('feedback-retry').hidden=true;completeDualDelivery();}
+                    catch(error){status(error.message+' Delivery state is not saved; keep this page open.');}
+                    return;
+                }
                 if(current.continuationFailed){finishDelivery(current.message);return;}
+                if(current.deliveries){submitFormsFeedback();return;}
                 if(current.deliveryNative&&!win.SurfaceInputsTransport.usesNative()){status('This response was recorded in the APK. Wait for native readiness before retrying.');return;}
                 if(!current.deliveryNative&&win.SurfaceInputsTransport.usesNative()){status('This browser response cannot be redirected to native telemetry. Return to the same browser to retry.');return;}
                 if(!win.SurfaceInputsTransport.usesNative()){browserUpload(current.message);return;}
@@ -115,6 +122,7 @@
                     status('');
                 } catch (error) { status(error.message + ' Your response is retained locally.'); }
             });
+            find('feedback-retry-native').addEventListener('click',()=>{if(!current||!current.deliveries)return;if(current.navigating){win.SurfaceInputsTransport.retryPending();return;}submitNativeFeedback(true);});
             find('feedback-retry-saved').addEventListener('click', () => {
                 try {
                     const transport = win.SurfaceInputsTransport;
@@ -136,6 +144,48 @@
                 }
             });
         }
+        function markDestination(message,destination,value){
+            const entry=local().list().find(row=>row.message.id===message.id);if(!entry||!entry.deliveries)return;
+            const matches=current&&current.message&&current.message.id===message.id;
+            const state={...(matches?current.deliveries:entry.deliveries),[destination]:value};
+            if(matches)current.deliveries=state;
+            try{local().put(message,'dual_delivery',state);}catch(error){
+                if(matches){current.deliverySaveFailed=true;find('feedback-retry').hidden=false;find('feedback-retry').textContent='Retry saving delivery state';status(error.message+' Delivery state is not saved; keep this page open.');}
+            }
+        }
+        function completeDualDelivery(){
+            if(!current||!current.deliveries||current.navigating||current.continuationFailed||current.deliverySaveFailed)return;
+            if(current.deliveries.forms==='request_sent'&&['not_required','accepted'].includes(current.deliveries.native)){
+                find('feedback-retry-native').hidden=true;finishDelivery(current.message);
+            }
+        }
+        function submitNativeFeedback(retry=false){
+            if(!current||!current.deliveries||['not_required','accepted'].includes(current.deliveries.native))return;
+            const transport=win.SurfaceInputsTransport;
+            if(!transport.usesNative()){find('feedback-retry-native').hidden=false;status('Wait for native readiness, then retry native telemetry. Forms delivery is independent.');return;}
+            try{
+                // Forms must be persisted before either destination is allowed to emit.
+                win.SurfaceInputsTaskUploads.retainFeedback(current.message);
+                if(retry&&current.nativeQueued)transport.retryPending();else transport.submitFeedback(current.message);
+                current.nativeQueued=true;find('feedback-retry-native').hidden=true;
+            }catch(error){find('feedback-retry-native').hidden=false;status(error.message+' Native feedback remains retained.');}
+        }
+        function submitFormsFeedback(initial=false){
+            if(!current||!current.deliveries)return;
+            if(current.deliveries.forms==='request_sent'){completeDualDelivery();return;}
+            const message=current.message;
+            try{win.SurfaceInputsTaskUploads.retainFeedback(message);}catch(error){find('feedback-retry').hidden=false;find('feedback-retry').textContent='Retry Forms';find('feedback-retry-native').hidden=current.deliveries.native==='not_required';status(error.message);return;}
+            // A native enqueue failure never blocks the independent Forms request.
+            if(initial&&!current.nativeQueued&&!['not_required','accepted'].includes(current.deliveries.native))submitNativeFeedback();
+            find('feedback-retry').hidden=true;find('feedback-retry').textContent='Retry Forms';
+            Promise.resolve(win.SurfaceInputsTaskUploads.feedback(message)).then(outcome=>{
+                if(!outcome||outcome.status!=='request_sent')throw new Error('No Forms request was sent.');
+                markDestination(message,'forms','request_sent');completeDualDelivery();
+            }).catch(error=>{
+                try{markDestination(message,'forms','failed');}catch(_){}
+                find('feedback-retry').hidden=false;status(error.message+' Forms feedback is retained; retry Forms without resending native telemetry.');
+            });
+        }
         function finishDelivery(message) {
             if(!current||!current.message||current.message.id!==message.id||current.navigating)return;
             const flow=win.SurfaceInputsDogfood;
@@ -146,8 +196,10 @@
                         current.navigating=true;
                         status('');
                         const pending=win.SurfaceInputsTransport.usesNative()&&win.SurfaceInputsTransport.pendingCount();
-                        find('feedback-retry').hidden=!pending;
-                        if(pending)find('feedback-retry').textContent='Retry pending telemetry';
+                        if(current.deliveries){
+                            find('feedback-retry').hidden=true;find('feedback-retry-native').hidden=!pending;
+                            if(pending)find('feedback-retry-native').textContent='Retry pending telemetry';
+                        }else{find('feedback-retry').hidden=!pending;if(pending)find('feedback-retry').textContent='Retry pending telemetry';}
                         return;
                     }
                     if(current.continuationFailed)throw new Error('The saved task continuation is no longer available. Return to the main page.');
@@ -173,12 +225,15 @@
                 const transport = win.SurfaceInputsTransport;
                 transport.validate(message);
                 // Persist immutable data before enqueue; reload/export never pretends it was delivered.
-                local().put(message, transport.usesNative() ? 'pending_native' : (win.SurfaceInputsDogfood && win.SurfaceInputsDogfood.isGuided()?'pending_browser':'saved_local'));
+                const deliveries=win.SurfaceInputsTaskUploads?{forms:'pending',native:transport.usesNative()?'pending':'not_required'}:undefined;
+                local().put(message, deliveries?'dual_delivery':(transport.usesNative()?'pending_native':'saved_local'),deliveries);
+                current.deliveries=deliveries;
                 current.message = message;
                 current.deliveryNative = transport.usesNative();
                 find('feedback-save').disabled = true;
                 find('feedback-comment').disabled = true;
                 container.querySelectorAll('input[name="feedback-ease"]').forEach(input => { input.disabled = true; });
+                if(current.deliveries){submitFormsFeedback(true);return;}
                 if (!transport.usesNative()) {
                     if (win.SurfaceInputsTaskUploads) {browserUpload(message);return;}
                     status('Saved on this browser only. No feedback collector is configured; this has not been uploaded.');
@@ -196,6 +251,16 @@
             let message;
             try { message = local().list().find(entry => entry.message.id === event.detail.id)?.message; } catch (_) { return; }
             if (!message) return;
+            const stored=local().list().find(entry=>entry.message.id===message.id);
+            if(stored&&stored.deliveries){
+                if(stored.deliveries.native==='not_required')return;
+                try{markDestination(message,'native',event.detail.status==='accepted'?'accepted':'rejected');}catch(error){status(error.message);return;}
+                if(current&&current.message&&current.message.id===message.id){
+                    if(event.detail.status==='accepted'){if(current.navigating)return;find('feedback-retry-native').hidden=true;completeDualDelivery();}
+                    else{find('feedback-retry-native').hidden=false;status('Native feedback was rejected. Retry native telemetry; Forms delivery is independent.');}
+                }
+                return;
+            }
             const accepted = event.detail.status === 'accepted';
             try { local().put(message, accepted ? 'native_sink_accepted' : 'native_rejected'); } catch (error) { status(error.message); return; }
             if (!current || !current.message || current.message.id !== message.id) return;
@@ -212,7 +277,10 @@
             catch (_) { find('feedback-retry-saved').hidden = true; }
         });
         win.addEventListener('surface-inputs-transport-error', event => {
-            if (current && current.message && event.detail.id === current.message.id) status(event.detail.reason + ' Your response is retained locally.');
+            if (current && current.message && event.detail.id === current.message.id) {
+                if(current.deliveries)find('feedback-retry-native').hidden=false;
+                status(event.detail.reason + ' Your response is retained locally.');
+            }
         });
         return {
             getSavedFeedback: () => local().list(),
@@ -229,7 +297,7 @@
                 if (taskContextId && !/^[\x21-\x7e]{1,64}$/.test(taskContextId)) throw new Error('Invalid feedback task context');
                 if (!win.SurfaceInputsTransport.usesNative() && win.SurfaceInputsTaskUploads) taskContextId=win.SurfaceInputsDogfood&&win.SurfaceInputsDogfood.isGuided()?taskContextId:win.SurfaceInputsTaskUploads.blockForActivity(activity)||taskContextId;
                 let restored;try{restored=local().list().filter(entry=>entry.message&&entry.message.round_id===(taskContextId||token)&&entry.message.activity_id===activity).at(-1);}catch(_){}
-                current = {activity, round:taskContextId || token, id:restored?restored.message.id:token, message:restored?restored.message:null, restoredStatus:restored?restored.status:null};
+                current = {activity, round:taskContextId || token, id:restored?restored.message.id:token, message:restored?restored.message:null, restoredStatus:restored?restored.status:null, deliveries:restored?restored.deliveries:undefined};
                 win.setTimeout(() => {
                     render();
                     returnFocus = doc.activeElement;
@@ -242,6 +310,7 @@
                     find('feedback-save').disabled = false;
                     find('feedback-comment').disabled = false;
                     container.querySelectorAll('input[name="feedback-ease"]').forEach(input => { input.disabled = false; });
+                    find('feedback-retry-native').hidden=true;
                     find('feedback-retry').hidden = true;find('feedback-retry').textContent = 'Retry native delivery';
                     try { find('feedback-retry-saved').hidden = !win.SurfaceInputsTransport.usesNative() || !local().list().some(entry => ['pending_native','native_rejected'].includes(entry.status)); }
                     catch (_) { find('feedback-retry-saved').hidden = true; }
@@ -253,7 +322,12 @@
                         find('feedback-retry').hidden=false;find('feedback-retry').textContent=current.deliveryNative?'Retry native delivery':'Retry upload';
                         status('Your saved response is restored. Retry the same response to continue.');find('feedback-retry').focus();
                     }else container.querySelector('input[name="feedback-ease"]').focus();
-                    if(current.message&&['native_sink_accepted','browser_request_sent'].includes(current.restoredStatus)&&win.SurfaceInputsDogfood&&win.SurfaceInputsDogfood.isGuided())finishDelivery(current.message);
+                    if(current.deliveries){
+                        find('feedback-retry').textContent='Retry Forms';find('feedback-retry').hidden=current.deliveries.forms==='request_sent';
+                        find('feedback-retry-native').hidden=['accepted','not_required'].includes(current.deliveries.native);
+                        status(current.deliveries.forms==='request_sent'?'Saved delivery state restored. Retry only pending native telemetry.':'Saved response restored. Retry only the pending destination; a sent Forms request is not a stored receipt.');
+                        completeDualDelivery();
+                    }else if(current.message&&['native_sink_accepted','browser_request_sent'].includes(current.restoredStatus)&&win.SurfaceInputsDogfood&&win.SurfaceInputsDogfood.isGuided())finishDelivery(current.message);
                 }, 0);
             }
         };

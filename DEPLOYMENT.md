@@ -36,7 +36,7 @@ Use a normal Git revert to roll back a published change. Do not force-push share
 ## Browser and APK behavior
 
 - Standalone browser tests ask for the upstream identity where required and use their existing Google Forms flow.
-- A compatible APK negotiates the native MessagePort transport and emits observations through its telemetry sinks without asking for identity already provided by native telemetry.
+- The APK emits native telemetry with host-owned attribution. The development primary tasks additionally send complete UXR results and feedback to their configured Forms. Both browser and APK flows ask for one explicit web participant label; that label is not derived from native identifiers. The production baseline remains unchanged until the reviewed dual-destination change is promoted.
 - The APK defaults to production. In a compatible **debuggable** APK, launch with `--ez arcade_dev true` to open dev. Release APKs ignore that extra. Website navigation and native telemetry ports remain restricted to the selected environment for the Activity lifetime; use a fresh launch to switch. Dev continues emitting telemetry through the same sinks.
 - `arcade_debugger=true` is an independent APK boolean launch extra on a debuggable build, not a web query parameter or deployment environment. In the preflight implementation it previews the calibration screen and lets Calibrate skip it, without sending a calibration request. It does not disable telemetry. A connected Java debugger at Activity creation also enables that preview. The website cannot create that native opt-in.
 - Adding dev does not authorize APK deployment, release-channel publication, source landing or changing production defaults.

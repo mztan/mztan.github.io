@@ -67,8 +67,12 @@ def main():
             if target.is_dir():
                 target /= 'index.html'
             assert target.is_file(), (entry, ref)
-    for name in ('transport-ui.js', 'touchpad/event-logger.js'):
+    for name in ('touchpad/event-logger.js',):
         assert (DEV / name).read_bytes() == (PROD / name).read_bytes(), (name, 'Collection code changed')
+    # The only transport UI difference keeps explicit Forms identity controls in marked pages.
+    ui=(DEV/'transport-ui.js').read_text()
+    ui=re.sub(r'^\s*if\(win.document.documentElement.*data-task-forms.*return;\n','\n',ui,flags=re.MULTILINE)
+    assert re.sub(r'\s+','',ui)==re.sub(r'\s+','',(PROD/'transport-ui.js').read_text()), 'Unexpected transport UI change'
     subprocess.run(['node', 'surface-inputs-dev/tests/generate-contract.js', '--check'], cwd=ROOT, check=True)
     # SDK is intentionally dev-only; standard fields stay equal to the installed v1 producer contract.
     subprocess.run(['node', '-e', "require('node:assert/strict').deepEqual(require('./surface-inputs-dev/transport.js').metrics, require('./surface-inputs/transport.js').metrics)"], cwd=ROOT, check=True)
@@ -85,6 +89,11 @@ def main():
         first = text.index(start)
         return text[first:text.index(end, first)]
     def clean(source):
+        source=source.replace('function calculatePromptResult(publish = true)', 'function calculatePromptResult()').replace('if(publish)document.dispatchEvent(promptFinishedEvent);','document.dispatchEvent(promptFinishedEvent);')
+        source=re.sub(r'^[ \t]*if\(?[^\n]*nativeBound\(\)[^\n]*return;\n','',source,flags=re.MULTILINE)
+        source=re.sub(r'^[ \t]*if\(?[^\n]*SurfaceInputsTransport\.usesNative\(\)[^\n]*return;\n','',source,flags=re.MULTILINE)
+        source=re.sub(r'^var targetingCompletion = null;\n','',source,flags=re.MULTILINE)
+        source = re.sub(r"document.getElementById\('result_user_id'\)\.value = [^\n]*;", "document.getElementById('result_user_id').value = FORM_LABEL;", source)
         source = re.sub(r'^[ \t]*browserResultRetained = true;\n', '', source, flags=re.MULTILINE)
         source = re.sub(r'^[ \t]*if\s*\(window\.SurfaceInputsTaskUploads[^\n]*\n', '', source, flags=re.MULTILINE)
         return re.sub(r'^[ \t]*if \(dogfoodScrollAborted\) return;\n', '', source, flags=re.MULTILINE)

@@ -1,5 +1,9 @@
 # Shared browser and APK telemetry
 
+## Development dual-destination collection
+
+The owner changed the requirement on November18: APK mode must submit the complete primary task result rows and feedback to Google Forms **and** emit native telemetry. Development now separates those destinations. Forms use the explicit web-entered unixname in both modes; native attribution remains host-owned and is never exported into web/Form fields. Native SDK wire types, metrics and limits are unchanged. Forms retries and native retries affect only their own destination, and opaque requests never prove storage. See [GUIDED_DOGFOOD.md](GUIDED_DOGFOOD.md). The prior production snapshot remains unchanged until reviewed promotion.
+
 ## Stable two-channel SDK
 
 The development SDK negotiates v2 after the unchanged v1 ready exchange. [BRIDGE_CONTRACT.md](BRIDGE_CONTRACT.md) and [telemetry-contract.json](telemetry-contract.json) define the fixed typed intent channel and the separate opaque Arcade JSON channel. Current producer `activity_id` values map to v2 `task_id` at the SDK boundary; any future task ID may use applicable fixed metric families.

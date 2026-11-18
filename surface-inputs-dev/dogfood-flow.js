@@ -24,8 +24,9 @@ function create(win){
  win.addEventListener('surface-inputs-ack',()=>{if(waiting&&!sdk().pendingCount()){const action=waiting;waiting=null;show('');action();}});
  function advance(){state.stage++;persist();win.location.assign(destination());}
  function begin(task){if(!active(task))return null;
- if(!native()&&!win.SurfaceInputsTaskUploads){show('The upload module is unavailable. Reload before starting the task.');return false;}
- if(!native()&&win.SurfaceInputsTaskUploads&&!win.SurfaceInputsTaskUploads.canBegin(task==='typing'?20:6)){show('Pending uploads are full. Keep this session open and retry before starting.');return false;}
+ if(!/^[a-zA-Z0-9_-]{1,64}$/.test(state.participant||'')){show('Enter your unixname on the main page and start a new run before collecting Forms results.');return false;}
+ if(!win.SurfaceInputsTaskUploads){show('The Forms module is unavailable. Reload before starting the task.');return false;}
+ try{if(!win.SurfaceInputsTaskUploads.canBegin(task==='typing'?20:6)){show('Saved Forms records are full. Export/review them before starting.');return false;}}catch(error){show('Forms storage is unavailable: '+error.message);return false;}
  const entry=state.tasks[state.stage];
  if(entry.phase==='retention_wait'){if(retentionRetry){entry.phase='running';persist();retentionRetry();}return false;}
  if(['waiting_ack','sent_wait_ack','skipped_wait_ack'].includes(entry.phase)||(native()&&sdk().pendingCount())){show('Wait for telemetry acceptance before starting another set.');return false;}
@@ -56,8 +57,8 @@ function create(win){
   const start=doc.getElementById('start-dogfooding');if(start)start.addEventListener('click',()=>{
    try{
     const initial=doc.getElementById('unix-name');
-    const participant=native()?'':(initial?initial.value.trim():'');
-    if(!native()&&!/^[a-zA-Z0-9_-]{1,64}$/.test(participant)){doc.getElementById('landing-status').textContent='Enter your unixname to start dogfooding.';if(initial)initial.focus();return;}
+    const participant=initial?initial.value.trim():'';
+    if(!/^[a-zA-Z0-9_-]{1,64}$/.test(participant)){doc.getElementById('landing-status').textContent='Enter your unixname to start dogfooding.';if(initial)initial.focus();return;}
     state={version:1,id:'df_'+win.crypto.randomUUID(),stage:0,session:query.get('session_id')||'dogfood_'+new Date().toISOString().slice(0,10),participant,tasks:TASKS.map(()=>({sets:0,phase:'idle'}))};persist();readyAction(()=>win.location.assign(destination()));
    }catch(error){doc.getElementById('landing-status').textContent=error.message;}
   });
@@ -71,7 +72,7 @@ function create(win){
   status=doc.createElement('p');status.id='dogfood-status';status.setAttribute('role','status');utilities.appendChild(status);doc.body.appendChild(utilities);update();
   // Browser identity is entered once on the landing page. Native identity stays host-owned.
   for(const id of ['button-pad-id','unix-name','user-id']){
-   const input=doc.getElementById(id);if(input){input.value=native()?'':state.participant||'';input.readOnly=true;input.dispatchEvent(new win.Event('input',{bubbles:true}));}
+   const input=doc.getElementById(id);if(input){input.value=state.participant||'';input.readOnly=true;input.dispatchEvent(new win.Event('input',{bubbles:true}));}
   }
   if(doc.documentElement)doc.documentElement.classList.remove('dogfood-loading');
   if(['waiting_ack','sent_wait_ack','skipped_wait_ack'].includes(state.tasks[state.stage].phase)){const start=doc.getElementById('start-button');if(start)start.disabled=true;const typing=doc.getElementById('input-area');if(typing)typing.disabled=true;show('This page was reloaded before telemetry acceptance was confirmed. Return to the main page to restart; do not assume the previous set uploaded.');return;}

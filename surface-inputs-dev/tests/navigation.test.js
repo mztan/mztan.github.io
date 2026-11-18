@@ -53,7 +53,7 @@ test('every tracked dev HTML subpage links the shared Home script in its own env
         const scriptUrl = new URL(nav, pageUrl).href;
         assert.equal(mainPageUrl(scriptUrl, pageUrl), 'https://mztan.github.io/surface-inputs-dev/index.html');
         assert.ok(scripts.some(src => src.split(/[?#]/)[0].endsWith('/transport.js')), file);
-        assert.ok(scripts.some(src => src.endsWith('/transport-ui.js')), file);
+        assert.ok(scripts.some(src => src.split(/[?#]/)[0].endsWith('/transport-ui.js')), file);
         assert.ok(fs.existsSync(path.resolve(path.dirname(path.join(repo, file)), nav.split('?')[0])), file);
     }
 });
@@ -156,7 +156,7 @@ test('targeting result card is hidden without altering task calculations or coll
     const css = fs.readFileSync(path.join(root, 'touchpad/arcade-targeting.css'), 'utf8');
     assert.match(css, /\.arcade-targeting-page \.arcade-history\s*\{\s*display:\s*none/);
     assert.match(fs.readFileSync(path.join(root, 'touchpad/index.html'), 'utf8'), /<body class="arcade-targeting-page">/);
-    for (const file of ['touchpad/event-logger.js', 'transport-ui.js']) {
+    for (const file of ['touchpad/event-logger.js']) {
         assert.equal(fs.readFileSync(path.join(root, file), 'utf8'), fs.readFileSync(path.join(repo, 'surface-inputs', file), 'utf8'), file);
     }
 });
