@@ -17,8 +17,14 @@
 #dogfood-utilities button:active{background:#4db9a5;color:#0d1b2a}
 #dogfood-utilities #dogfood-status{position:absolute;top:48px;left:0;margin:0;background:#142338;max-width:420px;pointer-events:auto}
 #dogfood-status:empty{display:none}
+.guided-dogfood.dogfood-transition #experience-screen,.guided-dogfood.dogfood-transition #scroll-body,.guided-dogfood.dogfood-transition #experience-screen *,.guided-dogfood.dogfood-transition #scroll-body *{pointer-events:none!important}
+.guided-dogfood.dogfood-started .start-screen{display:none!important}
 .guided-dogfood #practice-button,.guided-dogfood .arcade-brand,.guided-dogfood .arcade-task-icon{display:none}
 .guided-dogfood .start-screen .arcade-setup h1{margin-bottom:16px}
+.dogfood-home .dogfood-identity{margin-bottom:20px;text-align:left}
+.dogfood-home .dogfood-identity label{display:block;margin-bottom:8px;color:#9aafc0;font-size:14px}
+.dogfood-home .dogfood-identity input{box-sizing:border-box;width:100%;min-height:48px;padding:12px;border:1px solid #1f3550;border-radius:2px;background:#142338;color:#f2e8d0;font:16px system-ui,sans-serif}
+.guided-dogfood #user-id-group,.guided-dogfood #unix-name-group,.guided-dogfood #button-pad-id{display:none!important}
 .guided-dogfood .settings-panel h2,.guided-dogfood .settings-panel .settings-group:not(#unix-name-group):not(#user-id-group){display:none}
 .guided-dogfood .settings-panel{padding:12px;border:0;position:static}
 .guided-dogfood .test-container #start-button{display:none!important}

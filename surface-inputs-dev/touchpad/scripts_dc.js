@@ -277,8 +277,9 @@ function setExperienceTitle(title, explanation) {
 function finishScrollTask() {
     if (scrollTaskCompleted) return;
     scrollTaskCompleted = true;
-    document.getElementById('start-screen').style.display = "";
-    document.getElementById('scroll-body').style.display = "none";
+    const betweenSets=window.SurfaceInputsDogfood&&window.SurfaceInputsDogfood.continuingSet('scrolling');
+    document.getElementById('start-screen').style.display = betweenSets ? 'none' : '';
+    document.getElementById('scroll-body').style.display = betweenSets ? '' : 'none';
     removeHighlight();
     document.getElementById('scroll-body').removeEventListener('scroll', onScrollCallback);
     if (!isPractice) {

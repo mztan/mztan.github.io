@@ -71,7 +71,7 @@ Browser feedback uses an explicitly configured SDK callback to the corresponding
 
 ### Post-task feedback UI
 
-In a guided session, feedback opens after six complete Targeting sets (54 hits) and six complete Scrolling sets (36 targets), then after the three-prompt Typing block. Direct standalone task completion still opens feedback. Measurements finish before the dialog; the primary control is Next, or Finish for Typing. Finish reaches the thank-you page. A dev-only task Skip is separate from the feedback modal and never manufactures a rating or successful set.
+In a guided session, feedback opens after six complete Targeting sets (54 hits) and six complete Scrolling sets (36 targets), then after the twenty-prompt natural-language-with-punctuation Typing block. Direct standalone task completion still opens feedback. Measurements finish before the dialog; the primary control is Next, or Finish for Typing. Finish reaches the thank-you page. A dev-only task Skip is separate from the feedback modal and never manufactures a rating or successful set.
 
 The widget assigns an ASCII feedback-block identifier. It identifies that local completed-task feedback context; it is not an objective observation attempt ID and does not prove a join to individual intent events. Keyboard observations remain independent and carry no added attempt/order metadata.
 

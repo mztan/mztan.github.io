@@ -64,7 +64,7 @@ Run `node surface-inputs-dev/tests/generate-contract.js --check`, the dev confor
 
 ## Guided dogfood staging
 
-The development main page uses one Start Dogfooding action and the ordered Targeting → Scrolling → Typing flow. Each touchpad task runs six sets before feedback; Typing retains three prompts. Next/Finish deliver feedback before navigation, and only the exact dev path enables Skip task. See `surface-inputs-dev/GUIDED_DOGFOOD.md` for recovery and Form mapping provenance.
+The development main page uses one Start Dogfooding action and the ordered Targeting → Scrolling → Typing flow. Each touchpad task runs six sets before feedback; Typing uses twenty natural-language-with-punctuation prompts. Browser users enter their unixname once on the start page; existing identity fields are prepopulated and hidden on subsequent tasks, while native-ready mode asks for no identity. Next/Finish deliver feedback before navigation, and only the exact dev path enables Skip task. See `surface-inputs-dev/GUIDED_DOGFOOD.md` for recovery and Form mapping provenance.
 
 The new task-specific upload adapter uses 62 question IDs supplied through the owner’s blank prefilled links. The owner confirmed all three Forms published on 2026-11-17, enabling browser requests; respondent restrictions and stored responses are not independently verified. Use mocked requests for tests, not real participant submissions, and retain failed uploads. Native-bound traffic remains on the shared SDK. This staging change does not promote the flow to production or install an APK.
 

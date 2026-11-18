@@ -4,7 +4,7 @@ This folder consolidates the existing public keyboard and touchpad web test impl
 
 ## Run the tests
 
-The [start page](index.html) has one **Start Dogfooding** action. It guides participants through six Targeting sets, six Scrolling sets and the existing three-prompt Typing block. Feedback follows each complete block, with **Next**, **Next** and **Finish** leading to a thank-you page. Only the exact development path has **Skip task**. See [GUIDED_DOGFOOD.md](GUIDED_DOGFOOD.md) for set counts, upload mapping and recovery.
+The [start page](index.html) has one **Start Dogfooding** action. It guides participants through six Targeting sets, six Scrolling sets and the twenty-prompt natural-language-with-punctuation Typing block. Feedback follows each complete block, with **Next**, **Next** and **Finish** leading to a thank-you page. Only the exact development path has **Skip task**. See [GUIDED_DOGFOOD.md](GUIDED_DOGFOOD.md) for set counts, upload mapping and recovery.
 
 - [Keyboard test](keyboard/?setting_preset=uxr): natural language, punctuation/capitalization, email, password, shortcuts, and arrows.
 - [Touchpad targeting](touchpad/index.html).

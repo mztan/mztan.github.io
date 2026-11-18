@@ -3,6 +3,29 @@ const test=require('node:test'),assert=require('node:assert/strict');const flow=
 function memory(){const m=new Map();return{get length(){return m.size},key:i=>[...m.keys()][i]||null,getItem:k=>m.get(k)||null,setItem:(k,v)=>m.set(k,String(v)),removeItem:k=>m.delete(k)};}
 function setup(offline=false){const saved=memory(),requests=[];const state={participant:'fixture-user',session:'fixture-session'};let n=0;const win={localStorage:saved,location:{pathname:'/surface-inputs-dev/touchpad/index.html'},crypto:{randomUUID:()=>String(++n)},URLSearchParams,AbortController,setTimeout,clearTimeout,SurfaceInputsTransport:{usesNative:()=>false,setBrowserFeedbackCallback(cb){this.callback=cb}},SurfaceInputsDogfood:{active:()=>true,context:()=> 'block-fixture',getState:()=>state,show(){}},fetch:async(url,opts)=>{requests.push({url,body:opts.body});if(offline)throw new Error('offline');return{type:'opaque',ok:false,status:0};}};const mock=JSON.parse(JSON.stringify(config));for(const form of Object.values(mock.forms)){form.enabled=true;let i=0;for(const key of ['participant_id','device_os','device_browser','trial_num','time_to_complete','session_id','gesture_count','task_block_id','submission_type','feedback_id','ease','comment'])form.fields[key]='entry.'+(++i);}return{win,saved,requests,mock,api:upload.create(win,mock)};}
 function fakeForm(values){return{elements:Object.entries(values).map(([id,value])=>({id,value,name:'entry.1'}))};}
+test('initial unixname is required for browser Start and omitted for native attribution',()=>{
+ const {environment}=require('./harness.js');
+ for(const native of [false,true]){
+  const e=environment();const state=memory(),destinations=[];
+  e.win.sessionStorage=state;e.win.location={href:'https://mztan.github.io/surface-inputs-dev/index.html',pathname:'/surface-inputs-dev/index.html',search:'',assign:u=>destinations.push(u)};
+  e.doc.currentScript={src:'https://mztan.github.io/surface-inputs-dev/dogfood-flow.js'};e.doc.readyState='loading';e.win.SurfaceInputsTransport={usesNative:()=>native,pendingCount:()=>0};
+  flow.create(e.win);e.doc.dispatchEvent({type:'DOMContentLoaded'});
+  const start=e.doc.getElementById('start-dogfooding');start.click();
+  if(!native){assert.equal(destinations.length,0);e.doc.getElementById('unix-name').value='  fixture-user  ';start.click();}
+  const saved=JSON.parse(state.getItem('arcade-dogfood-v1:surface-inputs-dev'));assert.equal(saved.participant,native?'':'fixture-user');assert.equal(destinations.length,1);
+ }
+});
+test('guided Typing uses twenty existing punctuation prompts and matching reload feedback family',()=>{
+ const fs=require('node:fs'),path=require('node:path'),source=fs.readFileSync(path.join(__dirname,'../dogfood-flow.js'),'utf8');
+ assert(source.includes("set('num_prompts','20')"));assert(source.includes("set('dataset','natural-language-punct')"));assert(source.includes("canBegin(task==='typing'?20:6)"));assert(source.includes("task==='typing'?'keyboard_punctuation'"));
+ const css=fs.readFileSync(path.join(__dirname,'../dogfood-flow.css'),'utf8');assert(css.includes('.guided-dogfood #user-id-group,.guided-dogfood #unix-name-group,.guided-dogfood #button-pad-id{display:none!important}'));
+});
+test('between-set guided setup is hidden while standalone Practice and recovery remain reachable',()=>{
+ const fs=require('node:fs'),path=require('node:path'),root=path.join(__dirname,'..');const css=fs.readFileSync(path.join(root,'dogfood-flow.css'),'utf8');
+ assert(css.includes('.guided-dogfood.dogfood-started .start-screen{display:none!important}'));
+ assert(css.includes('.guided-dogfood.dogfood-transition #experience-screen *,.guided-dogfood.dogfood-transition #scroll-body *{pointer-events:none!important}'));
+ const code=fs.readFileSync(path.join(root,'dogfood-flow.js'),'utf8');assert(code.includes("doc.body.classList.remove('dogfood-started')"));assert(code.includes("state.tasks[state.stage].sets<SETS[task]-1"));
+});
 test('guided task sequence requires six nine-hit sets and six six-target scroll sets',()=>{assert.deepEqual(flow.tasks,['targeting','scrolling','typing']);assert.deepEqual(flow.sets,{targeting:6,scrolling:6,typing:1});});
 test('saved session shape bounds task stages and completed set counts',()=>{const s={version:1,id:'df_fixture',stage:0,tasks:[{sets:0,phase:'idle'},{sets:0,phase:'idle'},{sets:0,phase:'idle'}]};assert(flow.valid(s));assert(!flow.valid({...s,stage:4}));assert(!flow.valid({...s,tasks:[{sets:7,phase:'idle'},...s.tasks.slice(1)]}));});
 test('manual prefilled question mappings are enabled after owner-confirmed publication',()=>{const counts={typing:28,targeting:22,scrolling:12};for(const[task,form]of Object.entries(config.forms)){assert.equal(form.enabled,true);assert.equal(form.fieldsVerified,true);assert.equal(Object.keys(form.fields).length,counts[task]);assert.equal(new Set(Object.values(form.fields)).size,counts[task]);assert.match(form.endpoint,/formResponse$/);}});

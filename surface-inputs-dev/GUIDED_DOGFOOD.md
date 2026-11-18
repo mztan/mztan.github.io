@@ -6,9 +6,17 @@ The main page has one **Start Dogfooding** action. It creates a browser-tab dogf
 
 1. Targeting: six complete sets, nine hits per set (54 hits total), then feedback.
 2. Scrolling: six complete sets, six highlighted targets per set (36 targets total), then feedback.
-3. Typing: the existing three-prompt block, then final feedback.
+3. Typing: twenty prompts from the existing natural-language-with-punctuation corpus, then final feedback.
 
 Feedback uses **Next** after Targeting/Scrolling and **Finish** after Typing. Finish reaches a thank-you page with a return-to-main action. Blank freeform text is allowed; the ease rating is still required. The existing exact metric definitions, prompt corpus and fixed Targeting geometry are retained.
+
+## One-time browser identity
+
+The browser start page asks for a unixname once before Start Dogfooding. The entered value is scoped to that tab's guided run, prepopulates the existing Targeting/Scrolling participant fields and Typing unixname/user fields, and stays hidden/read-only on task pages. It is not placed in task URLs. Native-ready APK mode hides the initial field and asks for no browser identity; native account attribution remains host-owned.
+
+## Between-set transitions
+
+After the first Start, the guided block keeps its task setup screen hidden between sets, including while awaiting native ACKs. The existing playfield remains visible until the next set starts. The initial setup and legitimate storage-retry/reload recovery screens remain available. Direct standalone and Practice behavior are unchanged.
 
 ## Development and recovery
 

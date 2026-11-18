@@ -514,8 +514,9 @@ function startExperience() {
 window.addEventListener('dogfood-task-abort', () => { fittsTest.active=false;SurfaceInputsTouchpad.abort();clearTimeout(stopTimeout); });
 function endExperience() {
 	SurfaceInputsTouchpad.resetCursor();
-	experienceScreen.style.display = "none";
-	startScreen.style.display = "";
+    const betweenSets=window.SurfaceInputsDogfood&&window.SurfaceInputsDogfood.continuingSet('targeting');
+	experienceScreen.style.display = betweenSets ? '' : 'none';
+	startScreen.style.display = betweenSets ? 'none' : '';
 
 	// Compute IDe
 	var groups = [];

@@ -18,30 +18,35 @@ function create(win){
  function context(task=current()){return state?state.id+'_'+task:null;}
  function show(text){if(status)status.textContent=text;}
  function update(){if(!progress||!state)return;const task=current();progress.textContent=task?task.charAt(0).toUpperCase()+task.slice(1)+(task==='typing'?'':' · Set '+Math.min(state.tasks[state.stage].sets+1,SETS[task])+' of '+SETS[task]):'';}
- function destination(){if(state.stage===3)return new URL('thanks.html?dogfood='+encodeURIComponent(state.id),base).href;const u=new URL(PATHS[current()],base);u.searchParams.set('dogfood',state.id);u.searchParams.set('session_id',state.session);if(current()==='typing'){u.searchParams.set('setting_preset','df');u.searchParams.set('num_prompts','3');}return u.href;}
+ function destination(){if(state.stage===3)return new URL('thanks.html?dogfood='+encodeURIComponent(state.id),base).href;const u=new URL(PATHS[current()],base);u.searchParams.set('dogfood',state.id);u.searchParams.set('session_id',state.session);if(current()==='typing'){u.searchParams.set('setting_preset','df');u.searchParams.set('num_prompts','20');u.searchParams.set('dataset','natural-language-punct');}return u.href;}
  function readyAction(action){if(native()&&sdk().pendingCount()){waiting=action;show('Waiting for pending telemetry to be accepted. Retry pending telemetry if needed.');return;}waiting=null;action();}
  win.addEventListener('surface-inputs-ack',()=>{if(waiting&&!sdk().pendingCount()){const action=waiting;waiting=null;show('');action();}});
  function advance(){state.stage++;persist();win.location.assign(destination());}
  function begin(task){if(!active(task))return null;
  if(!native()&&!win.SurfaceInputsTaskUploads){show('The upload module is unavailable. Reload before starting the task.');return false;}
- if(!native()&&win.SurfaceInputsTaskUploads&&!win.SurfaceInputsTaskUploads.canBegin(task==='typing'?3:6)){show('Pending uploads are full. Keep this session open and retry before starting.');return false;}
+ if(!native()&&win.SurfaceInputsTaskUploads&&!win.SurfaceInputsTaskUploads.canBegin(task==='typing'?20:6)){show('Pending uploads are full. Keep this session open and retry before starting.');return false;}
  const entry=state.tasks[state.stage];
  if(entry.phase==='retention_wait'){if(retentionRetry){entry.phase='running';persist();retentionRetry();}return false;}
  if(['waiting_ack','sent_wait_ack','skipped_wait_ack'].includes(entry.phase)||(native()&&sdk().pendingCount())){show('Wait for telemetry acceptance before starting another set.');return false;}
- if(entry.phase==='feedback'||entry.phase==='sent'||entry.phase==='skipped')return false;entry.phase='running';persist();update();show('');return context(task);}
- function complete(task,restart,activity){if(!active(task))return false;const entry=state.tasks[state.stage];if(entry.phase!=='running')return true;entry.sets++;entry.phase=entry.sets>=SETS[task]?'feedback':'idle';persist();update();
+ if(entry.phase==='feedback'||entry.phase==='sent'||entry.phase==='skipped')return false;entry.phase='running';persist();doc.body.classList.remove('dogfood-transition');doc.body.classList.add('dogfood-started');update();show('');return context(task);}
+ function complete(task,restart,activity){if(!active(task))return false;const entry=state.tasks[state.stage];if(entry.phase!=='running')return true;doc.body.classList.add('dogfood-transition');entry.sets++;entry.phase=entry.sets>=SETS[task]?'feedback':'idle';persist();update();
   if(entry.phase==='feedback'){win.SurfaceInputsFeedback.complete(activity,context(task));}
   else{nextSet=restart;
    if(native()&&sdk().pendingCount()){entry.phase='waiting_ack';persist();}
    readyAction(()=>{entry.phase='idle';persist();win.setTimeout(()=>{if(active(task)&&state.tasks[state.stage].phase==='idle')restart();},0);});}
   return true;
  }
- function pauseCompletion(task,retry){if(!active(task))return;state.tasks[state.stage].phase='retention_wait';retentionRetry=retry;persist();show('Completed result is not saved. Press Start to retry saving it; do not reload.');}
+ function pauseCompletion(task,retry){if(!active(task))return;doc.body.classList.remove('dogfood-transition');doc.body.classList.remove('dogfood-started');const stage=doc.getElementById(task==='targeting'?'experience-screen':'scroll-body');if(stage)stage.style.display='none';const setup=doc.getElementById('start-screen');if(setup)setup.style.display='';state.tasks[state.stage].phase='retention_wait';retentionRetry=retry;persist();show('Completed result is not saved. Press Start to retry saving it; do not reload.');}
  function feedbackDone(expectedContext){if(!run||!state||run!==state.id||expectedContext!==context())return false;const entry=state.tasks[state.stage];if(entry.phase!=='feedback'&&entry.phase!=='sent')return false;entry.phase=native()&&sdk().pendingCount()?'sent_wait_ack':'sent';persist();readyAction(advance);return true;}
  function skip(){if(!dev||!run||!state||run!==state.id)return;win.dispatchEvent(new win.CustomEvent('dogfood-task-abort'));state.tasks[state.stage].phase=native()&&sdk().pendingCount()?'skipped_wait_ack':'skipped';persist();readyAction(()=>{state.tasks[state.stage].phase='skipped';persist();advance();});}
  function mount(){
   const start=doc.getElementById('start-dogfooding');if(start)start.addEventListener('click',()=>{
-   try{state={version:1,id:'df_'+win.crypto.randomUUID(),stage:0,session:query.get('session_id')||'dogfood_'+new Date().toISOString().slice(0,10),participant:'',tasks:TASKS.map(()=>({sets:0,phase:'idle'}))};persist();readyAction(()=>win.location.assign(destination()));}catch(error){doc.getElementById('landing-status').textContent=error.message;}
+   try{
+    const initial=doc.getElementById('unix-name');
+    const participant=native()?'':(initial?initial.value.trim():'');
+    if(!native()&&!/^[a-zA-Z0-9_-]{1,64}$/.test(participant)){doc.getElementById('landing-status').textContent='Enter your unixname to start dogfooding.';if(initial)initial.focus();return;}
+    state={version:1,id:'df_'+win.crypto.randomUUID(),stage:0,session:query.get('session_id')||'dogfood_'+new Date().toISOString().slice(0,10),participant,tasks:TASKS.map(()=>({sets:0,phase:'idle'}))};persist();readyAction(()=>win.location.assign(destination()));
+   }catch(error){doc.getElementById('landing-status').textContent=error.message;}
   });
   if(!run)return;
   if(!state||run!==state.id){win.location.replace(new URL('index.html',base).href);return;}
@@ -51,14 +56,17 @@ function create(win){
   const utilities=doc.createElement('div');utilities.id='dogfood-utilities';progress=doc.createElement('span');progress.id='dogfood-progress';utilities.appendChild(progress);
   if(dev){const button=doc.createElement('button');button.type='button';button.id='dogfood-skip';button.textContent='Skip task';button.addEventListener('click',skip);utilities.appendChild(button);}
   status=doc.createElement('p');status.id='dogfood-status';status.setAttribute('role','status');utilities.appendChild(status);doc.body.appendChild(utilities);update();
-  const input=doc.getElementById(task==='typing'?'unix-name':'button-pad-id');if(input){input.value=state.participant||'';input.addEventListener('input',()=>{state.participant=input.value;persist();});input.dispatchEvent(new win.Event('input',{bubbles:true}));}
+  // Browser identity is entered once on the landing page. Native identity stays host-owned.
+  for(const id of ['button-pad-id','unix-name','user-id']){
+   const input=doc.getElementById(id);if(input){input.value=native()?'':state.participant||'';input.readOnly=true;input.dispatchEvent(new win.Event('input',{bubbles:true}));}
+  }
   if(['waiting_ack','sent_wait_ack','skipped_wait_ack'].includes(state.tasks[state.stage].phase)){const start=doc.getElementById('start-button');if(start)start.disabled=true;const typing=doc.getElementById('input-area');if(typing)typing.disabled=true;show('This page was reloaded before telemetry acceptance was confirmed. Return to the main page to restart; do not assume the previous set uploaded.');return;}
   if(state.tasks[state.stage].phase==='retention_wait'){state.tasks[state.stage].phase='idle';persist();show('The previous completion was not saved before reload. Repeat this set.');}
   if(state.tasks[state.stage].phase==='sent'||state.tasks[state.stage].phase==='skipped'){readyAction(advance);return;}
-  if(state.tasks[state.stage].phase==='feedback'){const activity=task==='typing'?'keyboard_natural_language':'touchpad_'+task;win.setTimeout(()=>win.SurfaceInputsFeedback.complete(activity,context(task)),0);}
+  if(state.tasks[state.stage].phase==='feedback'){const activity=task==='typing'?'keyboard_punctuation':'touchpad_'+task;win.setTimeout(()=>win.SurfaceInputsFeedback.complete(activity,context(task)),0);}
  }
  if(doc.readyState==='loading')doc.addEventListener('DOMContentLoaded',mount,{once:true});else mount();
- return{active,begin,complete,pauseCompletion,context,feedbackDone,isGuided:()=>!!(run&&state&&run===state.id),isFinal:()=>!!(run&&state&&state.stage===2),skip,isDevelopment:dev,
+ return{active,begin,complete,pauseCompletion,continuingSet:task=>active(task)&&state.tasks[state.stage].phase==='running'&&state.tasks[state.stage].sets<SETS[task]-1,context,feedbackDone,isGuided:()=>!!(run&&state&&run===state.id),isFinal:()=>!!(run&&state&&state.stage===2),skip,isDevelopment:dev,
    getState:()=>state?JSON.parse(JSON.stringify(state)):null,participant:()=>state?state.participant:'',show,sets:SETS};
 }
 return{create,valid,tasks:TASKS,sets:SETS};});
