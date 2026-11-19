@@ -117,6 +117,8 @@ button:focus-visible, textarea:focus-visible, input:focus-visible {
 .container:fullscreen { background: var(--arcade-card); }
 @media (max-width: 960px) {
   .settings-panel { box-sizing: border-box; }
+  /* Setup copy must not determine the width of the measured typing area. */
+  .container { align-self: stretch; }
 }
 @media (prefers-reduced-motion: reduce) {
   .input-area, .button, .radio-option label, .info-icon, .prompt-count-button, .user-id-input, #prompt-count { transition: none; }

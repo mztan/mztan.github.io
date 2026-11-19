@@ -6,10 +6,22 @@
  * Signature: flat two-pixel edges, two-line wordmark, small direction glyph.
  * Anti-model: no neon, gradients, new task targets or decorative motion.
  * Setup controls share the Targeting theme; measured scroll text and band geometry stay intact.
+ * Exact task guidance uses regular setup prose, not another active-playfield element.
  */
 @import url("arcade-targeting.css");
 
-.start-screen { background: var(--arcade-navy); }
+.start-screen {
+  background: var(--arcade-navy);
+  overflow: auto;
+  align-items: safe center;
+  justify-content: safe center;
+}
+#start-explanation.arcade-instruction {
+  width: auto;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.5;
+}
 #scroll-body { background: var(--arcade-navy); }
 .scroll-container {
   background: var(--arcade-card);
