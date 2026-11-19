@@ -43,7 +43,7 @@
     <script src="../forms-config.js?v=guided-1" defer></script><script src="../task-uploads.js?v=dual-forms-6" defer></script>
     <link rel="stylesheet" href="../dogfood-flow.css?v=guided-icons-4">
     <link rel="stylesheet" href="style_dc.css">
-    <link rel="stylesheet" href="arcade-scroll.css">
+    <link rel="stylesheet" href="arcade-scroll.css?v=task-instructions-1">
     <link rel="stylesheet" href="../post-task-feedback.css?v=feedback-ui-2">
     <script src="../post-task-feedback.js?v=dual-forms-6"></script>
     <script src="../transport.js?v=stable-sdk-2"></script>
@@ -157,7 +157,7 @@
                 <input type="text" id="button-pad-id" placeholder="User ID">
             </div>
             <p id="start-title" style="display: none;"></p>
-            <p id="start-explanation" style="display: none;"></p>
+            <p id="start-explanation" class="arcade-instruction">For this task, scroll the page to the yellow highlighted text to put it inside the purple area. Try to complete the task as fast as possible without sacrificing accuracy.</p>
             <div class="arcade-actions">
                 <button id="start-button" onclick="isPractice = false; startScrollExperience()">Start</button>
                 <button id="practice-button" onclick="isPractice = true; startScrollExperience()">Practice</button>
@@ -189,7 +189,7 @@
 
     <script type="text/javascript">
         const EXPERIENCE_NAME = "Scroll";
-        const EXPLANATION = 'Scroll until the highlighted text is in the purple box.';
+        const EXPLANATION = 'For this task, scroll the page to the yellow highlighted text to put it inside the purple area. Try to complete the task as fast as possible without sacrificing accuracy.';
         setExperienceTitle(EXPERIENCE_NAME, EXPLANATION);
     </script>
 </body>
