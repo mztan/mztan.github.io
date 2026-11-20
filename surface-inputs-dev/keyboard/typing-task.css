@@ -1,0 +1,7 @@
+/* Hunt-and-peck guidance is a compact task instruction, not a new typing playfield. */
+.typing-task-preset .hunt-peck-guidance { display:grid;grid-template-columns:160px minmax(0,1fr);gap:16px;align-items:start;margin:0 0 16px; }
+.typing-task-preset .hunt-peck-guidance figure { margin:0; }
+.typing-task-preset .hunt-peck-guidance img { display:block;width:100%;height:auto; }
+.typing-task-preset .hunt-peck-guidance figcaption { margin-top:4px;font:400 12px/1.4 system-ui,sans-serif;color:#9aafc0; }
+.typing-task-preset .hunt-peck-guidance .instructions { margin:0;font-size:16px;line-height:1.45; }
+@media(max-width:600px) { .typing-task-preset .hunt-peck-guidance { grid-template-columns:112px minmax(0,1fr);gap:12px; } }

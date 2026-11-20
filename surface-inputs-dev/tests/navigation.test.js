@@ -38,23 +38,29 @@ function page() {
     return { win, doc, events, windowEvents, CustomEvent };
 }
 
-test('every tracked dev HTML subpage links the shared Home script in its own environment', () => {
+test('every tracked dev HTML subpage has environment-local Home navigation and shared native guards', () => {
     const pages = execFileSync('git', ['ls-files', 'surface-inputs-dev'], { cwd: repo, encoding: 'utf8' })
         .trim().split('\n').filter(file => file.endsWith('.html') && file !== 'surface-inputs-dev/index.html' && file !== 'surface-inputs-dev/thanks.html');
-    assert.equal(pages.length, 13);
+    assert.equal(pages.length, 14);
     const thanks=fs.readFileSync(path.join(root,'thanks.html'),'utf8');
     assert.match(thanks,/<a href="index.html">Return to main page<\/a>/);
     for (const file of pages) {
         const html = fs.readFileSync(path.join(repo, file), 'utf8');
         const scripts = [...html.matchAll(/<script[^>]+src="([^"]+)"/g)].map(match => match[1]);
-        const nav = scripts.find(src => src.includes('task-navigation.js'));
-        assert.ok(nav, file);
         const pageUrl = 'https://mztan.github.io/' + file;
-        const scriptUrl = new URL(nav, pageUrl).href;
-        assert.equal(mainPageUrl(scriptUrl, pageUrl), 'https://mztan.github.io/surface-inputs-dev/index.html');
+        if (file === 'surface-inputs-dev/touchpad/files.html') {
+            assert.match(html, /<a class="back" href="\.\.\/index.html">Back to Arcade<\/a>/);
+            assert.equal(new URL('../index.html', pageUrl).href, 'https://mztan.github.io/surface-inputs-dev/index.html');
+            assert(scripts.some(src => src.split(/[?#]/)[0] === '../path-results.js'));
+        } else {
+            const nav = scripts.find(src => src.includes('task-navigation.js'));
+            assert.ok(nav, file);
+            const scriptUrl = new URL(nav, pageUrl).href;
+            assert.equal(mainPageUrl(scriptUrl, pageUrl), 'https://mztan.github.io/surface-inputs-dev/index.html');
+            assert.ok(fs.existsSync(path.resolve(path.dirname(path.join(repo, file)), nav.split('?')[0])), file);
+        }
         assert.ok(scripts.some(src => src.split(/[?#]/)[0].endsWith('/transport.js')), file);
         assert.ok(scripts.some(src => src.split(/[?#]/)[0].endsWith('/transport-ui.js')), file);
-        assert.ok(fs.existsSync(path.resolve(path.dirname(path.join(repo, file)), nav.split('?')[0])), file);
     }
 });
 

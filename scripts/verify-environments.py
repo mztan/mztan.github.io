@@ -15,7 +15,7 @@ ENTRIES = ['index.html', 'keyboard/index.html'] + [
     f'touchpad/{prefix}{name}.html'
     for prefix in ('', 'uxr/')
     for name in ('index', 'scroll', 'textselection', 'zoom')
-]
+] + ['touchpad/files.html']
 
 
 class Assets(HTMLParser):
@@ -113,7 +113,7 @@ def main():
         assert 'surface-inputs-dev/' in text and 'surface-inputs/' in text
     result = subprocess.run(['python3', 'scripts/sync-dev.py'], cwd=ROOT, capture_output=True, text=True)
     assert result.returncode != 0 and 'Dev already exists' in result.stderr
-    print('10 dev entry points retain environment-local assets; collection code and task engines unchanged except explicit post-task feedback hooks.')
+    print(f'{len(ENTRIES)} dev entry points retain environment-local assets; existing task engines and collection contracts are checked.')
     if args.allow_production_changes:
         print('Owner-authorized promotion: production/runtime parity verified; jvision unchanged.')
     else:

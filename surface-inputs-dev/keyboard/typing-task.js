@@ -13,7 +13,7 @@
     const HUNT_AND_PECK = Object.freeze({
         id: 'keyboard_hunt_and_peck', title: 'Hunt-and-peck typing', promptCount: 10,
         dataset: 'natural-language-punct',
-        instructions: 'Use your index or middle fingers to hunt and peck on the Surface Keyboard. Copy each prompt as quickly as you can without sacrificing accuracy. Do not use voice dictation. Press Enter to move to the next prompt.',
+        instructions: 'Use only your index or middle fingers, with the other fingers curled back. Find each key and tap it individually. Do not touch-type or use voice dictation. Copy 10 prompts, including capitals and punctuation. Press Enter after each prompt.',
         parameters: Object.freeze({setting_preset: 'df', num_prompts: '10', dataset: 'natural-language-punct'}),
         prescription: Object.freeze({typing_style: 'hunt_and_peck', prescribed_fingers: Object.freeze(['index', 'middle'])})
     });
@@ -26,6 +26,19 @@
         doc.title = task.title + ' · Surface Inputs Arcade';
         doc.querySelector('h1').textContent = task.title;
         doc.querySelector('.instructions').textContent = task.instructions;
+        const instructions = doc.querySelector('.instructions');
+        const guidance = doc.createElement('section');
+        guidance.className = 'hunt-peck-guidance';
+        const figure = doc.createElement('figure');
+        const image = doc.createElement('img');
+        image.src = 'hunt-and-peck.svg?v=hunt-peck-pose-1';
+        image.width = 480; image.height = 220;
+        image.alt = 'Two hands with only the index fingers extended to tap keys; all other fingers are curled back.';
+        const caption = doc.createElement('figcaption');
+        caption.textContent = 'Example: index fingers extended; other fingers curled back.';
+        figure.append(image, caption);
+        instructions.before(guidance);
+        guidance.append(figure, instructions);
         doc.body.classList.add('typing-task-preset');
         const dataset = doc.getElementById('natural-language-punct');
         dataset.checked = true;

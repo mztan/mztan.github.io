@@ -15,7 +15,7 @@ test('one DEV hunt-and-peck profile covers index or middle fingers and locks ten
     assert.deepEqual(profile.parameters, {setting_preset: 'df', num_prompts: '10', dataset: 'natural-language-punct'});
     assert.deepEqual(profile.prescription.prescribed_fingers, ['index', 'middle']);
     assert(profile.instructions.includes('index or middle fingers'));
-    assert(profile.instructions.includes('Do not use voice dictation'));
+    assert(profile.instructions.includes('Do not touch-type or use voice dictation'));
     assert(Object.isFrozen(profile));
 });
 
@@ -26,10 +26,11 @@ test('ordinary typing, production and jvision are not converted to hunt-and-peck
 
 test('profile applies before the shared engine, keeps editable participant identity and hides only task settings', () => {
     const controls = new Map(['natural-language-punct', 'physical-keyboard', 'prompt-count'].map(id => [id, {}]));
-    const heading = {}, instruction = {}, settings = {querySelectorAll: () => [{}, {}]};
+    const heading = {}, instruction = {before() {}}, settings = {querySelectorAll: () => [{}, {}]};
     const identity = {id: 'unix-name-group', querySelectorAll: () => {throw new Error('Identity must stay editable');}};
     let className;
     const doc = {body: {classList: {add: name => {className = name;}}},
+        createElement: () => ({append() {}}),
         querySelector: selector => selector === 'h1' ? heading : instruction,
         getElementById: id => controls.get(id), querySelectorAll: () => [identity, settings]};
     api.apply(doc, api.profile(location));
@@ -45,7 +46,8 @@ test('profile applies before the shared engine, keeps editable participant ident
 test('DEV page loads the preset before its engine and keeps the original capture/metrics implementation', () => {
     const html = fs.readFileSync(path.join(root, 'keyboard/index.html'), 'utf8');
     const engine = fs.readFileSync(path.join(root, 'keyboard/script.js'), 'utf8');
-    assert(html.indexOf('typing-task.js?v=hunt-peck-1') < html.indexOf('script.js?v=hunt-peck-1'));
+    assert(html.indexOf('typing-task.js?v=hunt-peck-visual-2') < html.indexOf('script.js?v=hp-forms-1'));
+    assert(html.indexOf('hunt-peck-forms.js?v=hp-forms-1') < html.indexOf('script.js?v=hp-forms-1'));
     assert(engine.includes('if (taskProfile) transport.requireV2();'));
     assert(engine.includes("transport.getCapabilityState() !== 'v2'"));
     assert(engine.includes('if (taskProfile) newCount = taskProfile.promptCount;'));
