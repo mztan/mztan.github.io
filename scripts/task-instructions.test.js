@@ -17,7 +17,7 @@ const cases = [
   {
     file: 'touchpad/scroll.html',
     opening: '<p id="start-explanation" class="arcade-instruction">',
-    text: 'For this task, scroll the page to the yellow highlighted text to put it inside the purple area. Try to complete the task as fast as possible without sacrificing accuracy.',
+    text: 'For this task, scroll the page to the yellow highlighted text to put it inside the purple area. Keep the cursor over the page for scrolling to work. Try to complete the task as fast as possible without sacrificing accuracy.',
   },
   {
     file: 'keyboard/index.html',
