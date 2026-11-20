@@ -77,6 +77,10 @@ class RandomGenerator {
 
 
 function loadChimes() {
+    if (window.SurfaceInputsScrollAudio) {
+        window.SurfaceInputsScrollAudio.unlock();
+        return;
+    }
     for (var i = 1; i <= 1; i++) {
         successChimes.push(new Audio('audio/chime_' + i + '.mp3'));
     }
@@ -85,6 +89,11 @@ function loadChimes() {
 }
 
 function playChime(success) {
+    if (success && window.SurfaceInputsScrollAudio) {
+        rng.random(); // Preserve the original sound-selection draw and subsequent target sequence.
+        window.SurfaceInputsScrollAudio.play();
+        return;
+    }
     if (success) {
         let soundToPlay = successChimes[Math.floor(rng.random() * successChimes.length)];
         console.log(`Playing chime ${soundToPlay.src}`);
