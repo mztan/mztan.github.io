@@ -54,6 +54,8 @@ function page(canvasId, globals = {}) {
         localStorage: { getItem: k => (storage.has(k) ? storage.get(k) : null), setItem: (k, v) => storage.set(k, String(v)), removeItem: k => storage.delete(k) },
         SurfaceInputsTransport: {usesNative:()=>false, requireV2(){}, canQueue:()=>true, validate(){}, submitArcadeEvent(){throw Error("No browser network submission");}}, crypto: {randomUUID:()=>"page-fixture"}, Blob: class {}, URL: { createObjectURL: () => 'blob:x', revokeObjectURL() {} }, clearTimeout() {}
     }, globals));
+    require('./files-form-fixture.js').attach(win);
+    element('files-participant').value = 'page-fixture';
     const context = vm.createContext({ window: win, navigator: { userAgent: 'node' } });
     const files = ["path-tasks.js", "path-results.js", "touchpad/files-task.js"];
     for (const file of files) {

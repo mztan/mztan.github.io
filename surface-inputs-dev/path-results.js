@@ -52,11 +52,15 @@
     function create(win) {
         const local = store(win.localStorage), sdk = win.SurfaceInputsTransport;
         if (!sdk) throw new Error('The Files telemetry SDK is unavailable. Reload before starting.');
-        let run = null, nativeStarted = false, routeChosen = false;
+        if (!win.SurfaceInputsFilesForms) throw new Error('The Files Forms adapter is unavailable. Reload before starting.');
+        const forms = win.SurfaceInputsFilesForms.create(win, win.SurfaceInputsFilesFormsConfig);
+        let run = null, nativeStarted = false, routeChosen = false, participant = '';
         const listeners = new Set();
         const notify = () => listeners.forEach(listener => listener());
         function persist() { local.put(run); }
-        function canBegin() {
+        function canBegin(label) {
+            if (!routeChosen) participant = typeof label === 'string' ? label.trim() : '';
+            forms.canBegin(participant);
             if (local.list().length >= LIMIT) throw new Error('Local results are full (' + LIMIT + '). Export before starting another task.');
             // Probe persistence before measurement; never fall back silently to unsaved results.
             const probe = KEY + ':probe';
@@ -96,13 +100,23 @@
             }
             if (explicitRetry) sdk.retryPending();
         }
+        function stageForms() {
+            run.forms.result = forms.stage(run, 'result');
+            if (run.rating_saved) run.forms.feedback = forms.stage(run, 'feedback');
+            persist();
+        }
+        function sendForms() {
+            for (const id of Object.values(run.forms)) {
+                if (forms.status(id) === 'not_sent') forms.send(id).catch(() => notify());
+            }
+        }
         function complete(task, rows) {
             if (task !== TASK) throw new Error('Unexpected Files task.');
             if (!run) {
                 const id = 'files_' + win.crypto.randomUUID();
                 run = { version: 1, id, task, recorded_at: new Date().toISOString(),
-                    targets: clone(rows), ease: null, comment: '', rating_saved: false,
-                    native_required: nativeStarted, native: {} };
+                    targets: clone(rows), participant_label: participant, ease: null, comment: '', rating_saved: false,
+                    native_required: nativeStarted, native: {}, forms: {} };
                 run.targets.forEach(row => {
                     const payload = message(run, row);
                     validate(sdk, payload);
@@ -110,6 +124,8 @@
                 });
             }
             persist();
+            stageForms();
+            sendForms();
             try { send(); } finally { notify(); }
             return clone(run);
         }
@@ -122,6 +138,8 @@
             draft.native[feedbackMessage(draft).id] = run.native_required ? 'not_queued' : 'not_requested';
             local.put(draft);
             run = draft;
+            stageForms();
+            sendForms();
             try { send(); } finally { notify(); }
             return clone(run);
         }
@@ -133,8 +151,15 @@
             try { persist(); } catch (_) { /* The retained pending state remains honest on reload. */ }
             notify();
         });
+        forms.subscribe(notify);
         return { canBegin, complete, rate,
-            retry() { if (!run) throw new Error('No Files result to retry.'); persist(); send(true); notify(); },
+            retry() { if (!run) throw new Error('No Files result to retry.'); persist(); stageForms(); send(true); notify(); },
+            async retryForms(confirmUnknown) {
+                if (!run) throw new Error('No Files result to retry.');
+                stageForms(); await forms.retry(run.id, confirmUnknown); notify();
+            },
+            formsStatus: () => run ? Object.fromEntries(Object.entries(run.forms).map(([key, id]) => [key, forms.status(id)])) : {},
+            exportRecords: () => ({version: 1, results: local.list(), forms: forms.list()}),
             list: local.list, current: () => run ? clone(run) : null,
             subscribe(listener) { listeners.add(listener); },
             interruptedByNativeMode: () => !nativeStarted && sdk.usesNative()
@@ -150,11 +175,16 @@
             const run = api.current();
             if (!run) return '';
             const local = 'Results saved in this browser.';
-            if (!run.native_required) return local + (run.rating_saved ? ' Rating saved.' : ' Choose a rating, or Skip rating.');
+            const formStates = Object.values(api.formsStatus());
+            const formText = formStates.length && formStates.every(value => value === 'request_sent')
+                ? ' Google Form request sent; storage is not confirmed.'
+                : formStates.includes('delivery_unknown') ? ' Google Form delivery is unknown; retry may duplicate a row.'
+                : ' Google Form records are retained for delivery.';
+            if (!run.native_required) return local + formText + (run.rating_saved ? ' Rating saved.' : ' Choose a rating, or Skip rating.');
             const values = Object.values(run.native);
-            if (values.every(value => value === 'accepted')) return local + ' Native sink accepted the observations; server storage is not confirmed.';
-            if (values.includes('rejected')) return local + ' Native sink rejected an observation. Retry pending native telemetry.';
-            return local + ' Native telemetry is pending. Use Retry if needed; do not reload before acceptance.';
+            if (values.every(value => value === 'accepted')) return local + formText + ' Native sink accepted the observations; server storage is not confirmed.';
+            if (values.includes('rejected')) return local + formText + ' Native sink rejected an observation. Retry pending native telemetry.';
+            return local + formText + ' Native telemetry is pending. Use Retry if needed; do not reload before acceptance.';
         }
         function refresh() {
             status().textContent = describe();
@@ -164,7 +194,7 @@
         function download() {
             try {
                 if (!api) throw new Error(failure);
-                const blob = new win.Blob([JSON.stringify(api.list(), null, 2)], { type: 'application/json' });
+                const blob = new win.Blob([JSON.stringify(api.exportRecords(), null, 2)], { type: 'application/json' });
                 const link = doc.createElement('a');
                 link.href = win.URL.createObjectURL(blob);
                 link.download = 'surface-inputs-dev-files-results-' + new Date().toISOString().replace(/[:.]/g, '-') + '.json';
@@ -203,14 +233,32 @@
             doc.getElementById('completion-save').onclick = saveChoice;
             doc.getElementById('completion-skip').onclick = () => finish(null);
             doc.getElementById('completion-export').onclick = download;
+            doc.getElementById('completion-forms-retry').onclick = async () => {
+                try {
+                    if (!api) throw new Error(failure);
+                    await api.retryForms(() => win.confirm('A previous Google Form request may already have arrived. Retry may duplicate a row. Retry this retained submission?'));
+                    refresh();
+                } catch (error) { status().textContent = error.message; }
+            };
             doc.getElementById('completion-retry').onclick = () => {
-                try { if (!api) throw new Error(failure); api.complete(task, rows); api.retry(); refresh(); }
+                try { if (!api) throw new Error(failure); api.retry(); refresh(); }
                 catch (error) { status().textContent = error.message; }
             };
             try { if (!api) throw new Error(failure); api.complete(task, rows); refresh(); }
             catch (error) { status().textContent = error.message; }
             form.querySelector('input[name="ease"]').focus();
         }
+        function mountParticipant() {
+            const input = doc.getElementById('files-participant');
+            if (!input) return;
+            const key = 'arcade-participant-v1:surface-inputs-dev';
+            try {
+                const saved = win.localStorage.getItem(key);
+                if (win.SurfaceInputsFilesForms.labelValid(saved) && !input.value) input.value = saved;
+            } catch (_) { /* Manual label entry remains available. */ }
+        }
+        if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', mountParticipant, {once: true});
+        else mountParticipant();
         if (api) api.subscribe(refresh);
         doc.addEventListener('click', event => {
             if (!event.target.closest || !event.target.closest('a[href]') || !api) return;
@@ -223,11 +271,18 @@
         return { complete, download, list: () => api ? api.list() : [],
             canBegin() {
                 if (!api) throw new Error(failure);
-                try { return api.canBegin(); }
+                try {
+                    const input = doc.getElementById('files-participant');
+                    const ready = api.canBegin(input ? input.value : '');
+                    if (input) input.readOnly = true;
+                    const group = doc.getElementById('files-participant-group');
+                    if (group) group.hidden = true;
+                    return ready;
+                }
                 catch (error) {
                     const exportButton = doc.getElementById('files-export');
                     try {
-                        if (exportButton && api.list().length) {
+                        if (exportButton && (api.list().length || api.exportRecords().forms.length)) {
                             exportButton.hidden = false;
                             exportButton.onclick = download;
                         }

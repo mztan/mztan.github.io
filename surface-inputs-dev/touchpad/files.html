@@ -7,18 +7,26 @@
   <link rel="stylesheet" href="path-tasks.css?v=dev-files-1">
   <script src="../transport.js?v=stable-sdk-2"></script>
   <script src="../transport-ui.js?v=dual-forms-6"></script>
+  <script src="../task-navigation.js?v=home-1" defer></script>
+  <script src="../files-forms-config.js?v=dev-files-dual-1"></script>
+  <script src="../files-forms.js?v=dev-files-dual-1"></script>
   <script src="../path-tasks.js?v=dev-files-1"></script>
-  <script src="../path-results.js?v=dev-files-1"></script>
+  <script src="../path-results.js?v=dev-files-dual-1"></script>
   <script src="files-task.js?v=dev-files-1" defer></script>
 </head>
 <body oncontextmenu="return false;">
   <header>
     <div class="brand">Surface Inputs <span>Arcade</span></div>
     <h1>Files</h1>
-    <a class="back" href="../index.html">Back to Arcade</a>
+    <a class="back" id="arcade-task-navigation" href="../index.html" aria-label="Back to Arcade main page">Back to Arcade</a>
   </header>
   <p class="prompt">Select Begin, find the requested file and drag it onto the requested folder. Scroll to find it, then press, hold and move to drag it, and release over the folder. If you drag the wrong file or drop it somewhere else, it returns to the list; try again.</p>
   <p class="prompt">Move <strong id="requested-file"></strong> to the <strong id="requested-folder"></strong> folder</p>
+  <div id="files-participant-group" role="dialog" aria-label="Files participant label">
+    <label for="files-participant">Web participant label</label>
+    <input id="files-participant" type="text" maxlength="64" autocomplete="off" spellcheck="false" aria-describedby="files-participant-note">
+    <span id="files-participant-note">Used only for Google Forms. Native attribution stays with the APK.</span>
+  </div>
   <div class="stage"><canvas id="files-canvas" role="img" aria-label="File manager measurement area"></canvas></div>
   <p class="status" id="status" aria-live="polite"></p>
   <div class="controls">
@@ -50,11 +58,12 @@
       </form>
       <p id="completion-status" aria-live="polite"></p>
       <div class="actions">
-        <button type="button" class="secondary" id="completion-retry">Retry saved result / native telemetry</button>
+        <button type="button" class="secondary" id="completion-retry">Retry native telemetry</button>
+        <button type="button" class="secondary" id="completion-forms-retry">Retry Google Forms</button>
         <button type="button" class="secondary" id="completion-export">Export saved results</button>
         <a class="back" href="../index.html">Back to Arcade</a>
       </div>
-      <p class="note">Results and ratings are saved in this browser. In the APK, this task also sends native v2 telemetry. Native acceptance means sink handoff, not confirmed server storage. No Google Forms collector is configured.</p>
+      <p class="note">Results and feedback are retained in this browser and sent to the configured Google Form. In the APK, this task also sends native v2 telemetry. A Google Form request-sent receipt or native sink acceptance does not confirm server storage. Retries are separate for each destination.</p>
     </div>
   </div>
 </body>

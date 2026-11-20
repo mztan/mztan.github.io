@@ -27,7 +27,7 @@ function setup(mode = 'browser') {
     e.port.capabilityBehavior = mode;
     e.load('transport.js');
     if (mode !== 'browser') e.ready();
-    const api = results.create(e.win);
+    const api = results.create(require('./files-form-fixture.js').attach(e.win, e.requests));
     return {...e, api, memory};
 }
 
@@ -43,8 +43,8 @@ test('Files-only extraction keeps exact authored conditions, model and all origi
     assert(!('CircleTrials' in imported));
 });
 
-test('browser completion and rating are local-only, duplicate save updates one immutable result', () => {
-    const e = setup(); e.api.canBegin(); const rows = completed();
+test('browser completion and feedback retain one immutable local result alongside Form delivery', () => {
+    const e = setup(); e.api.canBegin('fixture-participant'); const rows = completed();
     const run = e.api.complete('stp_file_drag', rows); rows[0] = null;
     assert.equal(e.api.list().length, 1);
     assert.equal(run.native_required, false);
@@ -58,24 +58,24 @@ test('browser completion and rating are local-only, duplicate save updates one i
 });
 
 test('native new task requires explicitly negotiated v2; legacy and connecting do not start', () => {
-    const legacy = setup('legacy'); assert.throws(() => legacy.api.canBegin(), /requires v2/);
-    const e = setup(); e.handshake(); assert.throws(() => e.api.canBegin(), /requires v2/);
+    const legacy = setup('legacy'); assert.throws(() => legacy.api.canBegin('fixture-participant'), /requires v2/);
+    const e = setup(); e.handshake(); assert.throws(() => e.api.canBegin('fixture-participant'), /requires v2/);
     assert.equal(legacy.api.list().length, 0); assert.equal(e.api.list().length, 0);
     assert.equal(legacy.port.sent.length, 1); // ready control only, never a Files observation
 });
 
 test('late native binding cannot relabel earlier browser target measurements', () => {
-    const e = setup(); e.api.canBegin();
+    const e = setup(); e.api.canBegin('fixture-participant');
     e.port.capabilityBehavior = 'v2'; e.ready();
     assert(e.api.interruptedByNativeMode());
-    assert.throws(() => e.api.canBegin(), /Delivery mode changed/);
+    assert.throws(() => e.api.canBegin('fixture-participant'), /Delivery mode changed/);
     e.api.complete('stp_file_drag', completed());
     assert.equal(e.api.current().native_required, false);
     assert.equal(e.port.sent.filter(message => message.type === 'arcade').length, 0);
 });
 
 test('native v2 sends unchanged bounded per-target JSON and independent skipped-rating feedback', () => {
-    const e = setup('v2'); e.api.canBegin(); const rows = completed();
+    const e = setup('v2'); e.api.canBegin('fixture-participant'); const rows = completed();
     const run = e.api.complete('stp_file_drag', rows);
     const messages = e.port.sent.filter(message => message.type === 'arcade');
     assert.equal(messages.length, 3);
@@ -96,7 +96,7 @@ test('native v2 sends unchanged bounded per-target JSON and independent skipped-
 });
 
 test('rejected native observation retries the original id and exact bytes; local feedback cannot mutate', () => {
-    const e = setup('v2'); e.api.canBegin(); e.api.complete('stp_file_drag', completed());
+    const e = setup('v2'); e.api.canBegin('fixture-participant'); e.api.complete('stp_file_drag', completed());
     const first = e.port.sent.find(message => message.type === 'arcade');
     e.port.receive({version: 2, id: first.id, status: 'rejected', reason: 'fixture rejection'});
     assert.equal(e.api.current().native[first.id], 'rejected');
@@ -107,10 +107,11 @@ test('rejected native observation retries the original id and exact bytes; local
 });
 
 test('reloaded local receipts never automatically repost uncertain or accepted native observations', () => {
-    const e = setup('v2'); e.api.canBegin(); e.api.complete('stp_file_drag', completed());
+    const e = setup('v2'); e.api.canBegin('fixture-participant'); e.api.complete('stp_file_drag', completed());
     const first = e.port.sent.find(message => message.type === 'arcade');
     e.port.receive({version: 2, id: first.id, status: 'accepted'});
     const count = e.port.sent.length;
+    e.win.SurfaceInputsFilesForms = require('../files-forms.js');
     const reloaded = results.create(e.win);
     assert.equal(reloaded.current(), null); assert.equal(reloaded.list().length, 1);
     assert.equal(e.port.sent.length, count);
@@ -119,10 +120,10 @@ test('reloaded local receipts never automatically repost uncertain or accepted n
 
 test('storage unavailable/full and SDK backpressure fail before measurements or retain completion', () => {
     const e = setup(); e.win.localStorage.setItem = () => {throw Error('fixture storage failure');};
-    assert.throws(() => e.api.canBegin(), /storage failure/);
+    assert.throws(() => e.api.canBegin('fixture-participant'), /storage failure/);
     const full = setup(); full.memory.set(results.storageKey, JSON.stringify(Array.from({length: 50}, (_, i) => ({id: String(i)}))));
-    assert.throws(() => full.api.canBegin(), /Local results are full/);
-    const native = setup('v2'); native.api.canBegin();
+    assert.throws(() => full.api.canBegin('fixture-participant'), /Local results are full/);
+    const native = setup('v2'); native.api.canBegin('fixture-participant');
     native.win.SurfaceInputsTransport.canQueue = () => false;
     assert.throws(() => native.api.complete('stp_file_drag', completed()), /queue is full/);
     assert.equal(native.api.list().length, 1);
@@ -131,7 +132,7 @@ test('storage unavailable/full and SDK backpressure fail before measurements or 
 });
 
 test('rating bytes are bounded without truncation or replacing prior local result', () => {
-    const e = setup(); e.api.canBegin(); e.api.complete('stp_file_drag', completed());
+    const e = setup(); e.api.canBegin('fixture-participant'); e.api.complete('stp_file_drag', completed());
     assert.throws(() => e.api.rate(4, '🙂'.repeat(1024)), /details|UTF|long/);
     assert.equal(e.api.current().rating_saved, false);
     assert.equal(e.api.list().length, 1);
@@ -141,9 +142,9 @@ test('Files entry references only DEV assets and preserves imported canvas style
     const root = path.join(__dirname, '..');
     const html = fs.readFileSync(path.join(root, 'touchpad/files.html'), 'utf8');
     assert(!html.includes('jvision/')); assert(!html.includes('formResponse'));
-    assert(html.includes('No Google Forms collector is configured.'));
-    for (const reference of ['../transport.js?v=stable-sdk-2', '../transport-ui.js?v=dual-forms-6', '../path-tasks.js?v=dev-files-1', '../path-results.js?v=dev-files-1', 'files-task.js?v=dev-files-1', 'path-tasks.css?v=dev-files-1']) assert(html.includes(reference));
+    assert(html.includes('sent to the configured Google Form'));
+    for (const reference of ['../transport.js?v=stable-sdk-2', '../transport-ui.js?v=dual-forms-6', '../path-tasks.js?v=dev-files-1', '../path-results.js?v=dev-files-dual-1', '../files-forms.js?v=dev-files-dual-1', '../files-forms-config.js?v=dev-files-dual-1', 'files-task.js?v=dev-files-1', 'path-tasks.css?v=dev-files-1']) assert(html.includes(reference));
     const css = fs.readFileSync(path.join(root, 'touchpad/path-tasks.css'), 'utf8');
     const originalCss = fs.readFileSync(path.join(root, '../jvision/touchpad/path-tasks.css'), 'utf8');
-    assert.equal(css.slice(css.indexOf(':root'), css.indexOf('/* Photo crop task */') < 0 ? css.indexOf('#completion .card { max-height') : undefined), originalCss.slice(originalCss.indexOf(':root'), originalCss.indexOf('/* Photo crop task */')));
+    assert.equal(css.slice(css.indexOf(':root'), css.indexOf('/* Photo crop task */') < 0 ? css.indexOf('#files-participant-group {') : undefined), originalCss.slice(originalCss.indexOf(':root'), originalCss.indexOf('/* Photo crop task */')));
 });

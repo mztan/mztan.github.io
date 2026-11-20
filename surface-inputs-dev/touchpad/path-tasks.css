@@ -99,4 +99,21 @@ textarea {
 .actions { display: flex; gap: 10px; flex-wrap: wrap; }
 #completion-status { margin: 12px 0 0; min-height: 1.5em; color: var(--mint); }
 .note { margin: 12px 0 0; font-size: 13px; color: var(--muted); }
+#files-participant-group {
+  position: fixed;
+  z-index: 1001;
+  top: 72px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(440px, calc(100% - 48px));
+  padding: 16px;
+  border: 2px solid var(--border);
+  border-radius: 2px;
+  background: var(--card);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, .35);
+}
+#files-participant-group label, #files-participant-note { display: block; }
+#files-participant-note { margin-top: 8px; font-size: 12px; color: var(--cream); }
+#files-participant { width: 100%; padding: 8px; margin-top: 8px; background: var(--navy); color: var(--cream); border: 1px solid var(--border); font: 16px var(--body); }
+#files-participant-group[hidden] { display: none; }
 #completion .card { max-height: calc(100% - 32px); overflow: auto; }
