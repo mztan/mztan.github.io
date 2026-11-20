@@ -1,9 +1,16 @@
 document.addEventListener('DOMContentLoaded', async function () {
     const taskProfile = window.SurfaceInputsTypingTask ? window.SurfaceInputsTypingTask.profile(window.location) : null;
+    let huntPeck = null, huntPeckSetupError = '';
+    if (taskProfile) {
+        try {
+            if (!window.SurfaceInputsHuntPeckForms) throw new Error('Hunt-and-peck Forms adapter is unavailable. Reload before starting.');
+            huntPeck = window.SurfaceInputsHuntPeckForms.activate(window, taskProfile);
+        } catch (error) { huntPeckSetupError = error.message; }
+    }
     const transport = window.SurfaceInputsTransport;
     const capture = window.SurfaceInputsKeyboardCapture.createCapture(reason => {
         window.dispatchEvent(new CustomEvent('surface-inputs-transport-error', { detail: { reason } }));
-    }, () => transport.usesNative());
+    }, () => transport.usesNative() || !!taskProfile);
     const nativeBound = () => transport.usesNative();
     const winForms=()=>window.SurfaceInputsTaskUploads;
     function nativePromptId(index) {
@@ -18,6 +25,33 @@ document.addEventListener('DOMContentLoaded', async function () {
             'shortcuts': 'keyboard_shortcuts', 'arrows': 'keyboard_arrows' }[dataset];
     }
     let pendingNativeCompletion = null, keyboardTaskContext = null, pendingBrowserCompletion = null, browserResultRetained = true, stageForms = false;
+    let pendingHuntPeckCompletion = null;
+    function huntPeckCanBegin(start = false) {
+        if (!taskProfile) return true;
+        try {
+            if (!huntPeck) throw new Error(huntPeckSetupError || 'Hunt-and-peck Forms adapter is unavailable.');
+            const label = document.getElementById('unix-name').value;
+            if (start) keyboardTaskContext = huntPeck.begin(label);
+            else huntPeck.canBegin(label);
+            return true;
+        } catch (error) {
+            inputArea.disabled = true;
+            inputArea.placeholder = error.message;
+            return false;
+        }
+    }
+    function stageHuntPeckPrompt(prompt, finalText) {
+        if (!pendingHuntPeckCompletion) {
+            const observation = capture.complete(prompt, finalText);
+            pendingHuntPeckCompletion = {
+                id:transport.newObservationId(),context:keyboardTaskContext,
+                prompt_text:prompt,input_event_stream:observation.input_event_stream,final_text:finalText,
+                result:nativeResultCopy(calculatePromptResult(false)),observation
+            };
+        }
+        huntPeck.stagePrompt(pendingHuntPeckCompletion);
+        return pendingHuntPeckCompletion;
+    }
     function nativeResultCopy(result){
         const identityKeys=new Set(['user_id','userId','participant_id','participantId','unixname','unix_name','session_id','sessionId','account_id','accountId','model_id','modelId']);
         const copy=value=>Array.isArray(value)?value.map(copy):(value&&typeof value==='object'?Object.fromEntries(Object.entries(value).filter(([key])=>!identityKeys.has(key)).map(([key,v])=>[key,copy(v)])):value);
@@ -28,7 +62,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         try {
             if (taskProfile) transport.requireV2();
             if (!pendingNativeCompletion) {
-                const observation = capture.complete(prompt, finalText, format);
+                const observation = taskProfile ? pendingHuntPeckCompletion.observation : capture.complete(prompt, finalText, format);
                 const result = resultFactory();
                 if (!keyboardTaskContext) keyboardTaskContext = transport.newObservationId();
                 pendingNativeCompletion = {result, keyboard:Object.assign(observation, {
@@ -37,7 +71,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                 }), arcade:{id:transport.newObservationId(),task_id:nativeActivity(),event_name:'uxr_result',task_context_id:keyboardTaskContext,
                     elapsed_ms:Math.max(0,Math.round(elapsedMs)),details:{details_version:1,result_schema:format?'keyboard_shortcut_result_v1':'keyboard_prompt_result_v1',...(taskProfile?{task_profile:taskProfile.id,prescription:taskProfile.prescription}:{}),result:nativeResultCopy(result)}}};
             }
-            if(!pendingNativeCompletion.formsRetained&&winForms()){
+            if(!taskProfile&&!pendingNativeCompletion.formsRetained&&winForms()){
                 stageForms=true;browserResultRetained=false;
                 try{
                     if(!uxrModeEnabled&&!dfModeEnabled)submitPromptResultToGoogleForm(pendingNativeCompletion.result);
@@ -1397,7 +1431,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             // Disable input area until unix name is provided
             checkAndUpdateInputAreaState();
 
-            document.addEventListener('promptFinishedEvent', function (e) {
+            if (!taskProfile) document.addEventListener('promptFinishedEvent', function (e) {
                 submitPromptResultToDFGoogleForm(e.detail.message);
             });
         }
@@ -1450,6 +1484,12 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     // Function to check if input area should be disabled based on UXR/DF mode and user ID/unix name
     function checkAndUpdateInputAreaState() {
+        if (taskProfile) {
+            if (!huntPeckCanBegin()) return;
+            inputArea.disabled = false;
+            inputArea.placeholder = 'Start typing here...';
+            return;
+        }
         if (taskProfile && nativeBound() && transport.getCapabilityState() !== 'v2') {
             inputArea.disabled = true;
             inputArea.placeholder = 'Hunt-and-peck typing requires v2 native telemetry. Wait/retry or upgrade the APK.';
@@ -1614,14 +1654,16 @@ document.addEventListener('DOMContentLoaded', async function () {
     // unresolved ones (a 229 tap that produced no input event was a no-op).
     // Handle all input events in a single handler for better cross-browser compatibility
     inputArea.addEventListener('beforeinput', event => {
-        if (nativeBound()) capture.beforeInput(event, inputArea.value, inputArea.selectionStart, inputArea.selectionEnd);
+        if (taskProfile && !huntPeckCanBegin(true)) { event.preventDefault(); return; }
+        if (nativeBound() || taskProfile) capture.beforeInput(event, inputArea.value, inputArea.selectionStart, inputArea.selectionEnd);
     });
     inputArea.addEventListener('paste', event => {
-        if (nativeBound()) capture.paste(event, inputArea.value, inputArea.selectionStart, inputArea.selectionEnd);
+        if (nativeBound() || taskProfile) capture.paste(event, inputArea.value, inputArea.selectionStart, inputArea.selectionEnd);
     });
     inputArea.addEventListener('compositionstart', () => capture.compositionStart(inputArea.value));
     inputArea.addEventListener('compositionend', () => capture.compositionEnd(inputArea.value));
     inputArea.addEventListener('input', function (event) {
+        if (taskProfile && !huntPeckCanBegin(true)) return;
         capture.input(inputArea.value, event);
         if (!testActive) {
             startTest();
@@ -1715,7 +1757,8 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     // Handle key presses for Enter key
     inputArea.addEventListener('keydown', function (e) {
-        if ((pendingNativeCompletion && nativeBound()) || pendingBrowserCompletion) {
+        if (taskProfile && !pendingHuntPeckCompletion && !huntPeckCanBegin(true)) { e.preventDefault(); return; }
+        if ((pendingNativeCompletion && nativeBound()) || pendingBrowserCompletion || pendingHuntPeckCompletion) {
             e.preventDefault();
             if (e.key !== 'Enter') return;
         } else if (!capture.key(e)) return;
@@ -1805,15 +1848,27 @@ document.addEventListener('DOMContentLoaded', async function () {
             lengthErrorElement.style.display = 'none';
 
             // Enqueue the complete observation before any scoring/form event or advance.
+            if (taskProfile) {
+                try { stageHuntPeckPrompt(promptText, typedText); }
+                catch (error) {
+                    inputArea.readOnly = true;
+                    window.dispatchEvent(new CustomEvent('surface-inputs-transport-error', {detail:{reason:error.message}}));
+                    return;
+                }
+            }
             if (!emitNativePrompt(promptText, typedText, endTime - startTime,
-                nativePromptId(getCurrentPromptOriginalIndex()), undefined, ()=>calculatePromptResult(false))) return;
+                nativePromptId(getCurrentPromptOriginalIndex()), undefined,
+                ()=>taskProfile ? pendingHuntPeckCompletion.result : calculatePromptResult(false))) return;
 
             // Native retry uses the once-measured immutable result; browser scoring is unchanged.
-            const promptResult = nativeBound() ? pendingNativeCompletion.result : (pendingBrowserCompletion || calculatePromptResult());
-            if(!nativeBound()&&pendingBrowserCompletion){browserResultRetained=true;document.dispatchEvent(new CustomEvent('promptFinishedEvent',{detail:{message:promptResult}}));}
+            const promptResult = taskProfile ? pendingHuntPeckCompletion.result
+                : nativeBound() ? pendingNativeCompletion.result : (pendingBrowserCompletion || calculatePromptResult());
+            if (taskProfile) huntPeck.commitPrompt(pendingHuntPeckCompletion.id);
+            if(!taskProfile&&!nativeBound()&&pendingBrowserCompletion){browserResultRetained=true;document.dispatchEvent(new CustomEvent('promptFinishedEvent',{detail:{message:promptResult}}));}
             if(!nativeBound()&&!browserResultRetained){pendingBrowserCompletion=promptResult;inputArea.readOnly=true;if(window.SurfaceInputsDogfood)window.SurfaceInputsDogfood.show('Completed prompt is not saved. Keep the page open and press Enter to retry.');return;}
             pendingBrowserCompletion=null;inputArea.readOnly=false;
             pendingNativeCompletion = null;
+            pendingHuntPeckCompletion = null;
             promptResults.push(promptResult);
 
             // Detailed logging: accumulate per-prompt log, clear event buffer
@@ -1956,7 +2011,9 @@ document.addEventListener('DOMContentLoaded', async function () {
     function resetTest() {
         pendingNativeCompletion = null;
         pendingBrowserCompletion = null;
-        keyboardTaskContext = nativeBound() ? transport.newObservationId() : null;
+        pendingHuntPeckCompletion = null;
+        if (huntPeck) huntPeck.reset();
+        keyboardTaskContext = taskProfile ? null : nativeBound() ? transport.newObservationId() : null;
         inputArea.readOnly = false;
         testActive = false;
 
@@ -1995,6 +2052,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         }
 
         // Focus the input area after reset
+        if (taskProfile) checkAndUpdateInputAreaState();
         inputArea.focus();
     }
 
