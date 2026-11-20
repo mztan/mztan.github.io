@@ -13,7 +13,7 @@
     const HUNT_AND_PECK = Object.freeze({
         id: 'keyboard_hunt_and_peck', title: 'Hunt-and-peck typing', promptCount: 10,
         dataset: 'natural-language-punct',
-        instructions: 'Use only your index or middle fingers, with the other fingers curled back. Find each key and tap it individually. Do not touch-type or use voice dictation. Copy 10 prompts, including capitals and punctuation. Press Enter after each prompt.',
+        instructions: 'Use only your index or middle fingers to type. Press Enter after each prompt.',
         parameters: Object.freeze({setting_preset: 'df', num_prompts: '10', dataset: 'natural-language-punct'}),
         prescription: Object.freeze({typing_style: 'hunt_and_peck', prescribed_fingers: Object.freeze(['index', 'middle'])})
     });
@@ -34,9 +34,7 @@
         image.src = 'hunt-and-peck.svg?v=hunt-peck-pose-3';
         image.width = 480; image.height = 220;
         image.alt = 'Two pointing hands with only the index fingers extended; the other fingers are folded into the palms.';
-        const caption = doc.createElement('figcaption');
-        caption.textContent = 'Example: index fingers extended; other fingers curled back.';
-        figure.append(image, caption);
+        figure.append(image);
         instructions.before(guidance);
         guidance.append(figure, instructions);
         doc.body.classList.add('typing-task-preset');
