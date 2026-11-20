@@ -47,8 +47,8 @@ test('profile applies before the shared engine, keeps editable participant ident
 test('DEV page loads the preset before its engine and keeps the original capture/metrics implementation', () => {
     const html = fs.readFileSync(path.join(root, 'keyboard/index.html'), 'utf8');
     const engine = fs.readFileSync(path.join(root, 'keyboard/script.js'), 'utf8');
-    assert(html.indexOf('typing-task.js?v=hunt-peck-copy-4') < html.indexOf('script.js?v=hp-forms-1'));
-    assert(html.indexOf('hunt-peck-forms.js?v=hp-forms-1') < html.indexOf('script.js?v=hp-forms-1'));
+    assert(html.indexOf('typing-task.js?v=hunt-peck-copy-4') < html.indexOf('script.js?v=five-stage-1'));
+    assert(html.indexOf('hunt-peck-forms.js?v=five-stage-1') < html.indexOf('script.js?v=five-stage-1'));
     assert(engine.includes('if (taskProfile) transport.requireV2();'));
     assert(engine.includes("transport.getCapabilityState() !== 'v2'"));
     assert(engine.includes('if (taskProfile) newCount = taskProfile.promptCount;'));
@@ -58,11 +58,11 @@ test('DEV page loads the preset before its engine and keeps the original capture
     assert(engine.includes("file: 'prompts/nat_lang_with_cap_punc.txt'"));
 });
 
-test('landing exposes exactly one hunt-and-peck task without changing the three-task guided flow', () => {
+test('H&P is fourth in the five-task DEV flow, not an extra landing task', () => {
     const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
     const flow = fs.readFileSync(path.join(root, 'dogfood-flow.js'), 'utf8');
-    assert.equal((html.match(/href="keyboard\/index\.html\?task=hunt-and-peck"/g) || []).length, 1);
+    assert.equal((html.match(/href="keyboard\/index\.html\?task=hunt-and-peck"/g) || []).length, 0);
     assert(html.includes('id="start-dogfooding"'));
-    assert(flow.includes("const TASKS=['targeting','scrolling','typing']"));
-    assert(flow.includes("u.searchParams.set('num_prompts','20')"));
+    assert(flow.includes("const TASKS=['targeting','scrolling','typing','hunt_peck','files']"));
+    assert(flow.includes("task==='typing'?'20':'10'"));
 });

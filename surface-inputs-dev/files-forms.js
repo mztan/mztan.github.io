@@ -148,10 +148,13 @@
             inflight.set(id, operation);
             return operation;
         }
-        async function retry(block, confirmUnknown) {
+        async function retry(block, confirmUnknown, stillActive = () => true) {
             const candidates = list().filter(entry => entry.block === block && status(entry.id) !== 'request_sent');
             if (candidates.some(entry => entry.status === 'delivery_unknown') && (!confirmUnknown || !confirmUnknown())) throw new Error('Retry cancelled: a previous Form request may already have reached Google.');
-            for (const entry of candidates) await send(entry.id, true);
+            for (const entry of candidates) {
+                if (!stillActive()) throw new Error('Task retry cancelled. Retained records were not discarded.');
+                await send(entry.id, true);
+            }
         }
         return {canBegin, stageSubmission, stage, send, retry, list, status, storageKey:key,
             exportRecords:()=>JSON.stringify({version:1,task_id:task,records:list()},null,2),

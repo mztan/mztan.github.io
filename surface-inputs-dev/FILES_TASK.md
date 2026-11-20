@@ -1,6 +1,6 @@
 # DEV Files task
 
-Standalone entry: `touchpad/files.html`. The existing three-stage guided dogfood flow is unchanged.
+Final DEV dogfood stage: `touchpad/files.html`, reached after H&P. The five-stage flow owns its web context and participant; Files feedback advances to Finish only after both configured delivery destinations satisfy their separate receipt contracts.
 
 ## Imported measurements
 
@@ -8,7 +8,7 @@ Standalone entry: `touchpad/files.html`. The existing three-stage guided dogfood
 
 ## Delivery configuration
 
-`files-forms-config.js` is a deliberately disabled placeholder until the parent supplies the verified owner-published Form endpoint and exact question IDs:
+`files-forms-config.js` has the parent-supplied endpoint and nine question mappings banked, but remains disabled until respondent access and an actual stored-response test are resolved:
 
 ```js
 {version: 1, enabled: true, fieldsVerified: true, endpoint: '<exact formResponse URL>',

@@ -8,9 +8,19 @@ Each environment remembers the entered unixname in an environment-scoped `localS
 
 1. Targeting: six complete sets, nine hits each (54 hits), then Next feedback.
 2. Scrolling: six complete sets, six highlighted targets each (36 targets), then Next feedback.
-3. Typing: twenty prompts from the existing natural-language-with-punctuation corpus, then Finish feedback.
+3. Typing: twenty prompts from the existing natural-language-with-punctuation corpus, then Next feedback.
+4. Hunt-and-peck typing: ten punctuation prompts with the prescribed index-or-middle-finger guidance, then Next feedback.
+5. Files: three original file-to-folder drag targets, then Finish feedback.
 
 Finish reaches a thank-you page with Return to main page. The development path alone has Skip task. Skips do not fabricate completed sets, ratings or metrics. Existing geometry, prompt corpus, calculations and timing remain unchanged. Startup and between-set setup flashes are suppressed; feedback stays visible through navigation, with errors instead of transient success text.
+
+## Versioned flow and new-task readiness
+
+DEV uses five-stage state version 2 under `arcade-dogfood-v2:surface-inputs-dev`. Old three-task v1 links return to the main page with an explicit restart notice. No v1 state, pending Form row, feedback or measurement history is erased or extended in place. Production keeps its existing three-stage implementation.
+
+H&P and Files are stages in this flow, not extra landing links. Both use the saved flow participant and the short-stage web contexts (`<flow_id>_hunt_peck`, `<flow_id>_files`). They require negotiated native v2 and their dedicated Form configuration before measurement. The actual dedicated configuration remains disabled because respondent access/stored-response proof is unresolved: the normal flow reaches H&P and stops truthfully before its first measurement. It does not skip or drop either new stage. Offline enabled fixtures do not establish live collector readiness.
+
+Reload during completed H&P or Files feedback restores only the matching retained full result, label, context and receipts, without remeasurement or automatic repost. Saved native result payloads/ACK state allow an explicit native retry; a fresh document queue is never treated as evidence of acceptance. In-progress new-task reloads cannot replay missing input/intent, so they instruct a restart while retaining records. Files' custom modal advances only after an explicit rating/Skip choice, both Form request-sent receipts and all required native sink ACKs. Abort/Skip cancels the active drag and suppresses delayed completion; it never creates a completed row or rating.
 
 ## Independent collection destinations
 

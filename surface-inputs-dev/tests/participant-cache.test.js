@@ -102,7 +102,7 @@ test('disabled or quota-limited localStorage never blocks explicitly entered par
 test('an in-flight guided run retains its participant rather than adopting another cached label', () => {
     const storage = memory(), state = memory();
     storage.setItem('arcade-participant-v1:surface-inputs-dev', 'new-fixture');
-    state.setItem('arcade-dogfood-v1:surface-inputs-dev', JSON.stringify({ version: 1, id: 'df_fixture', stage: 0, participant: 'original-fixture', session: 'fixture', tasks: [{sets:0,phase:'idle'},{sets:0,phase:'idle'},{sets:0,phase:'idle'}] }));
+    state.setItem('arcade-dogfood-v2:surface-inputs-dev', JSON.stringify({ version: 2, id: 'df_fixture', stage: 0, participant: 'original-fixture', session: 'fixture', tasks: Array.from({length:5},()=>({sets:0,phase:'idle'})) }));
     const e = page(storage, { path: 'touchpad/index.html', search: '?dogfood=df_fixture', state });
     assert.equal(e.input.value, 'original-fixture');
     assert.equal(e.input.readOnly, true);

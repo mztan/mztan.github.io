@@ -13,6 +13,7 @@
 .dogfood-home button:active,.dogfood-home a:active{background:#4db9a5;color:#0d1b2a}
 #dogfood-utilities{position:fixed;top:8px;left:12px;right:12px;z-index:1000;display:flex;align-items:center;justify-content:space-between;gap:12px;font:12px/1.4 system-ui,sans-serif;color:#9aafc0;pointer-events:none}
 #dogfood-utilities button{position:fixed;bottom:12px;right:12px;width:44px;min-height:44px;padding:0;border:1px solid #1f3550;border-radius:2px;background:#142338;color:#f2e8d0;cursor:pointer;pointer-events:auto}
+#dogfood-utilities #dogfood-native-retry{left:12px;right:auto;width:auto;min-width:140px;padding:8px 12px}
 #dogfood-utilities button:hover{border-color:#4db9a5}
 #dogfood-utilities button:active{background:#4db9a5;color:#0d1b2a}
 #dogfood-utilities #dogfood-status{position:absolute;top:48px;left:0;margin:0;background:#142338;max-width:420px;pointer-events:auto}

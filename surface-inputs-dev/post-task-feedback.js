@@ -122,7 +122,7 @@
                     status('');
                 } catch (error) { status(error.message + ' Your response is retained locally.'); }
             });
-            find('feedback-retry-native').addEventListener('click',()=>{if(!current||!current.deliveries)return;if(current.navigating){win.SurfaceInputsTransport.retryPending();return;}submitNativeFeedback(true);});
+            find('feedback-retry-native').addEventListener('click',()=>{if(!current||!current.deliveries)return;if(current.navigating){const flow=win.SurfaceInputsDogfood;if(flow&&flow.retryPendingDelivery)flow.retryPendingDelivery();else win.SurfaceInputsTransport.retryPending();return;}submitNativeFeedback(true);});
             find('feedback-retry-saved').addEventListener('click', () => {
                 try {
                     const transport = win.SurfaceInputsTransport;
@@ -166,7 +166,11 @@
             try{
                 // Forms must be persisted before either destination is allowed to emit.
                 win.SurfaceInputsTaskUploads.retainFeedback(current.message);
-                if(retry&&current.nativeQueued)transport.retryPending();else transport.submitFeedback(current.message);
+                const flow=win.SurfaceInputsDogfood;
+                if(retry&&flow&&flow.retryPendingDelivery&&flow.pendingDelivery()){
+                    flow.retryPendingDelivery();
+                    if(!current.nativeQueued)transport.submitFeedback(current.message);
+                }else if(retry&&current.nativeQueued)transport.retryPending();else transport.submitFeedback(current.message);
                 current.nativeQueued=true;find('feedback-retry-native').hidden=true;
             }catch(error){find('feedback-retry-native').hidden=false;status(error.message+' Native feedback remains retained.');}
         }
@@ -195,7 +199,7 @@
                         current.continuationFailed=false;
                         current.navigating=true;
                         status('');
-                        const pending=win.SurfaceInputsTransport.usesNative()&&win.SurfaceInputsTransport.pendingCount();
+                        const pending=win.SurfaceInputsTransport.usesNative()&&(win.SurfaceInputsTransport.pendingCount()||(flow.pendingDelivery&&flow.pendingDelivery()));
                         if(current.deliveries){
                             find('feedback-retry').hidden=true;find('feedback-retry-native').hidden=!pending;
                             if(pending)find('feedback-retry-native').textContent='Retry pending telemetry';

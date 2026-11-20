@@ -9,11 +9,12 @@
     const button = doc.getElementById('files-button');
     const TOUCH_SLOP_PX = 8;
     const now = () => win.performance.now();
-    let width = 0, height = 0, hover = null, frame = 0, finished = false, pointerId = null;
+    let width = 0, height = 0, hover = null, frame = 0, finished = false, pointerId = null, aborted = false;
+    const activeFlow = () => !win.SurfaceInputsDogfood || !win.SurfaceInputsDogfood.isGuided() || win.SurfaceInputsDogfood.active('files');
 
     const state = new FileDragTrials(at => {
         finished = true;
-        win.setTimeout(() => win.SurfaceInputsPathResults.complete('stp_file_drag', 'Files', state.targetResults(at)), 300);
+        win.setTimeout(() => {if (!aborted && activeFlow()) win.SurfaceInputsPathResults.complete('stp_file_drag', 'Files', state.targetResults(at));}, 300);
     });
 
     const C = {
@@ -36,6 +37,7 @@
 
     function draw() {
         frame = 0;
+        if (aborted) return;
         const dpr = win.devicePixelRatio || 1;
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         ctx.fillStyle = C.background;
@@ -195,12 +197,18 @@
     doc.addEventListener('visibilitychange', () => { if (doc.hidden) cancel(); });
 
     button.addEventListener('click', () => {
+        if (aborted || finished || !activeFlow()) return;
         try { win.SurfaceInputsPathResults.canBegin(); }
         catch (error) { doc.getElementById('status').textContent = error.message; return; }
         if (state.resolved) state.next(); else state.begin(now());
         hover = null;
         redraw();
     });
+    win.addEventListener('dogfood-task-abort', () => {
+        pointerId = null;state.cancel(now());aborted=true;finished=true;button.disabled=true;
+        if(frame){win.cancelAnimationFrame(frame);frame=0;}
+    });
+    win.addEventListener('dogfood-files-restored', () => {finished=true;button.disabled=true;});
     win.addEventListener('surface-inputs-mode', () => {
         if ((state.started || state.results.length) && !state.allCompleted && win.SurfaceInputsPathResults.interruptedByNativeMode()) {
             cancel();

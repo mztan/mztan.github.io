@@ -143,7 +143,7 @@ test('Files entry references only DEV assets and preserves imported canvas style
     const html = fs.readFileSync(path.join(root, 'touchpad/files.html'), 'utf8');
     assert(!html.includes('jvision/')); assert(!html.includes('formResponse'));
     assert(html.includes('sent to the configured Google Form'));
-    for (const reference of ['../transport.js?v=stable-sdk-2', '../transport-ui.js?v=dual-forms-6', '../path-tasks.js?v=dev-files-1', '../path-results.js?v=dev-files-dual-1', '../files-forms.js?v=dev-files-dual-1', '../files-forms-config.js?v=dev-files-dual-1', 'files-task.js?v=dev-files-1', 'path-tasks.css?v=dev-files-1']) assert(html.includes(reference));
+    for (const reference of ['../transport.js?v=stable-sdk-2', '../transport-ui.js?v=dual-forms-6', '../path-tasks.js?v=dev-files-1', '../path-results.js?v=five-stage-1', '../files-forms.js?v=five-stage-1', '../files-forms-config.js?v=dev-files-dual-1', 'files-task.js?v=five-stage-1', 'path-tasks.css?v=dev-files-1']) assert(html.includes(reference));
     const css = fs.readFileSync(path.join(root, 'touchpad/path-tasks.css'), 'utf8');
     const originalCss = fs.readFileSync(path.join(root, '../jvision/touchpad/path-tasks.css'), 'utf8');
     assert.equal(css.slice(css.indexOf(':root'), css.indexOf('/* Photo crop task */') < 0 ? css.indexOf('#files-participant-group {') : undefined), originalCss.slice(originalCss.indexOf(':root'), originalCss.indexOf('/* Photo crop task */')));

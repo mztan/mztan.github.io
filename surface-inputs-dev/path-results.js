@@ -1,5 +1,5 @@
-/* DEV Files results: local-only in browsers, plus existing native v2 Arcade JSON in the APK.
- * Measurement snapshots come from the unchanged FileDragTrials model, not a new drag formula. */
+/* DEV Files results: retained local snapshots, dedicated Forms, and native v2 Arcade JSON.
+ * Measurements come from the unchanged FileDragTrials model, not a new drag formula. */
 (function (root, factory) {
     const api = factory();
     if (typeof module === 'object' && module.exports) module.exports = api;
@@ -54,12 +54,25 @@
         if (!sdk) throw new Error('The Files telemetry SDK is unavailable. Reload before starting.');
         if (!win.SurfaceInputsFilesForms) throw new Error('The Files Forms adapter is unavailable. Reload before starting.');
         const forms = win.SurfaceInputsFilesForms.create(win, win.SurfaceInputsFilesFormsConfig);
-        let run = null, nativeStarted = false, routeChosen = false, participant = '';
+        let run = null, nativeStarted = false, routeChosen = false, participant = '', aborted = false, receiptSaveFailed = false;
+        const flow = () => win.SurfaceInputsDogfood;
+        const guided = () => !!(flow() && flow().isGuided());
+        const collecting = () => !aborted && (!guided() || flow().active('files'));
+        function nativeReady() {return !!(run && !receiptSaveFailed && (!run.native_required || Object.values(run.native).every(value=>value==='accepted')));}
+        function finishGuided() {
+            if (!guided() || !collecting() || !run || !run.rating_saved || !nativeReady()) return;
+            const statuses=Object.values(run.forms).map(id=>forms.status(id));
+            if (statuses.length===2 && statuses.every(value=>value==='request_sent')) flow().feedbackDone(run.id);
+        }
+        const queuedInDocument = new Set();
         const listeners = new Set();
         const notify = () => listeners.forEach(listener => listener());
         function persist() { local.put(run); }
         function canBegin(label) {
-            if (!routeChosen) participant = typeof label === 'string' ? label.trim() : '';
+            if (!collecting()) throw new Error('Files is not the active dogfood task.');
+            if (run) throw new Error('Files measurements are complete. Finish the retained feedback; do not repeat the task.');
+            if (guided() && flow().phase('files')==='running' && !routeChosen) throw new Error('This in-progress Files task cannot resume after reload. Return to the main page; retained responses are kept.');
+            if (!routeChosen) participant = guided()?flow().participant():typeof label === 'string' ? label.trim() : '';
             forms.canBegin(participant);
             if (local.list().length >= LIMIT) throw new Error('Local results are full (' + LIMIT + '). Export before starting another task.');
             // Probe persistence before measurement; never fall back silently to unsaved results.
@@ -71,6 +84,7 @@
                 sdk.requireV2();
                 if (!sdk.canQueue(3)) throw new Error('Native telemetry is full. Retry pending telemetry before starting Files.');
             }
+            if (guided() && !routeChosen && !flow().begin('files',true)) throw new Error('Files cannot begin until prior delivery is accepted.');
             nativeStarted = sdk.usesNative();
             routeChosen = true;
             return true;
@@ -85,20 +99,20 @@
             sdk.requireV2();
             const payloads = deliveries();
             payloads.forEach(payload => validate(sdk, payload));
-            const unsent = payloads.filter(payload => run.native[payload.id] === 'not_queued');
+            const unsent = payloads.filter(payload => run.native[payload.id] === 'not_queued' || (explicitRetry && run.native[payload.id] !== 'accepted' && !queuedInDocument.has(payload.id)));
             if (!sdk.canQueue(unsent.length || 1) && unsent.length) throw new Error('Native queue is full. Results are saved locally; retry after telemetry acceptance.');
+            if (explicitRetry) sdk.retryPending();
             for (const payload of unsent) {
                 // Save the uncertain handoff first. A reload never automatically resubmits it.
                 run.native[payload.id] = 'pending';
                 persist();
-                try { sdk.submitArcadeEvent(payload); }
+                try { sdk.submitArcadeEvent(payload);queuedInDocument.add(payload.id); }
                 catch (error) {
                     run.native[payload.id] = 'not_queued';
                     persist();
                     throw error;
                 }
             }
-            if (explicitRetry) sdk.retryPending();
         }
         function stageForms() {
             run.forms.result = forms.stage(run, 'result');
@@ -111,9 +125,10 @@
             }
         }
         function complete(task, rows) {
+            if (!collecting()) throw new Error('Files was skipped or is no longer active.');
             if (task !== TASK) throw new Error('Unexpected Files task.');
             if (!run) {
-                const id = 'files_' + win.crypto.randomUUID();
+                const id = guided()?flow().context('files'):'files_' + win.crypto.randomUUID();
                 run = { version: 1, id, task, recorded_at: new Date().toISOString(),
                     targets: clone(rows), participant_label: participant, ease: null, comment: '', rating_saved: false,
                     native_required: nativeStarted, native: {}, forms: {} };
@@ -124,12 +139,14 @@
                 });
             }
             persist();
+            if (guided()) flow().completeWithoutFeedback('files');
             stageForms();
             sendForms();
             try { send(); } finally { notify(); }
             return clone(run);
         }
         function rate(ease, comment) {
+            if (!collecting()) throw new Error('Files was skipped or is no longer active.');
             if (!run) throw new Error('Complete Files before saving feedback.');
             if (run.rating_saved) return clone(run);
             if (ease !== null && !(Number.isInteger(ease) && ease >= 1 && ease <= 5)) throw new Error('Ease must be 1..5 or skipped.');
@@ -148,15 +165,26 @@
             if (!run || !ack || ack.version !== 2 || !(ack.id in run.native)) return;
             if (run.native[ack.id] === 'accepted') return;
             run.native[ack.id] = ack.status === 'accepted' ? 'accepted' : 'rejected';
-            try { persist(); } catch (_) { /* The retained pending state remains honest on reload. */ }
+            try { persist(); receiptSaveFailed=false; } catch (_) { receiptSaveFailed=true; }
             notify();
         });
+        function restoreGuided() {
+            if (!guided() || !flow().active('files')) return false;
+            const saved=local.list().find(record=>record.id===flow().context('files'));
+            if (saved && saved.targets.length===3 && saved.participant_label===flow().participant()) {
+                run=clone(saved);participant=run.participant_label;nativeStarted=run.native_required;routeChosen=true;
+            }
+            flow().registerCompletionGate('files',{ready:nativeReady,retry:()=>{persist();receiptSaveFailed=false;send(true);notify();}});
+            return !!run;
+        }
+        win.addEventListener('dogfood-task-abort',()=>{aborted=true;});
         forms.subscribe(notify);
-        return { canBegin, complete, rate,
-            retry() { if (!run) throw new Error('No Files result to retry.'); persist(); stageForms(); send(true); notify(); },
+        listeners.add(finishGuided);
+        return { canBegin, complete, rate, restoreGuided,
+            retry() { if (!run) throw new Error('No Files result to retry.'); persist(); receiptSaveFailed=false; stageForms(); send(true); notify(); },
             async retryForms(confirmUnknown) {
                 if (!run) throw new Error('No Files result to retry.');
-                stageForms(); await forms.retry(run.id, confirmUnknown); notify();
+                stageForms(); await forms.retry(run.id, confirmUnknown, collecting); notify();
             },
             formsStatus: () => run ? Object.fromEntries(Object.entries(run.forms).map(([key, id]) => [key, forms.status(id)])) : {},
             exportRecords: () => ({version: 1, results: local.list(), forms: forms.list()}),
@@ -204,10 +232,17 @@
                 win.setTimeout(() => win.URL.revokeObjectURL(link.href), 1000);
             } catch (error) { status().textContent = error.message; }
         }
-        function complete(task, title, rows) {
+        function complete(task, title, rows, restored = false) {
             doc.getElementById('completion').hidden = false;
             doc.getElementById('completion-title').textContent = title + ' complete';
             const form = doc.getElementById('completion-form');
+            const guided = win.SurfaceInputsDogfood && win.SurfaceInputsDogfood.isGuided();
+            doc.getElementById('completion-save').textContent=guided?'Finish':'Save';
+            if (restored && api && api.current()) {
+                const saved=api.current();
+                doc.getElementById('completion-comment').value=saved.comment;
+                form.querySelectorAll('input[name="ease"]').forEach(input=>{input.checked=Number(input.value)===saved.ease;});
+            }
             function finish(ease) {
                 if (!api) { status().textContent = failure; return; }
                 let completionError = null;
@@ -244,11 +279,17 @@
                 try { if (!api) throw new Error(failure); api.retry(); refresh(); }
                 catch (error) { status().textContent = error.message; }
             };
-            try { if (!api) throw new Error(failure); api.complete(task, rows); refresh(); }
+            try { if (!api) throw new Error(failure); if (!restored) api.complete(task, rows); refresh(); }
             catch (error) { status().textContent = error.message; }
+            if (restored) refreshRatingControls();
             form.querySelector('input[name="ease"]').focus();
         }
         function mountParticipant() {
+            if (api) api.restoreGuided();
+            const flow=win.SurfaceInputsDogfood;
+            if (flow && flow.isGuided()) {
+                const group=doc.getElementById('files-participant-group');if(group)group.hidden=true;
+            }
             const input = doc.getElementById('files-participant');
             if (!input) return;
             const key = 'arcade-participant-v1:surface-inputs-dev';
@@ -259,6 +300,12 @@
         }
         if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', mountParticipant, {once: true});
         else mountParticipant();
+        win.addEventListener('dogfood-restore-feedback',event=>{
+            if (!api || event.detail.task!=='files') return;
+            if (!api.restoreGuided()) {status().textContent='No retained completed Files result matches this flow. Return to the main page; no result was reconstructed.';return;}
+            const saved=api.current();complete(TASK,'Files',saved.targets,true);
+            win.dispatchEvent(new win.CustomEvent('dogfood-files-restored'));
+        });
         if (api) api.subscribe(refresh);
         doc.addEventListener('click', event => {
             if (!event.target.closest || !event.target.closest('a[href]') || !api) return;

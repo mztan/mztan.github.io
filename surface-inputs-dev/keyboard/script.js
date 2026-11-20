@@ -80,6 +80,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                 if(!browserResultRetained){inputArea.readOnly=true;return false;}
                 pendingNativeCompletion.formsRetained=true;winForms().commitResult('typing');
             }
+            if (taskProfile) huntPeck.stageNativePrompt(pendingHuntPeckCompletion.id,pendingNativeCompletion.keyboard,pendingNativeCompletion.arcade);
             transport.submitKeyboardWithResult(pendingNativeCompletion.keyboard,pendingNativeCompletion.arcade);
             inputArea.readOnly = false;
             return true;
@@ -818,7 +819,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
         flushDetailedLogs(); // download the per-prompt JSON (no-op if logging off)
         // BEGIN POST-TASK FEEDBACK HOOK
-        if (!(window.SurfaceInputsDogfood && window.SurfaceInputsDogfood.complete('typing', resetTest, nativeActivity())) && window.SurfaceInputsFeedback) window.SurfaceInputsFeedback.complete(nativeActivity(), keyboardTaskContext);
+        if (!(window.SurfaceInputsDogfood && window.SurfaceInputsDogfood.complete(taskProfile ? 'hunt_peck' : 'typing', resetTest, nativeActivity())) && window.SurfaceInputsFeedback) window.SurfaceInputsFeedback.complete(nativeActivity(), keyboardTaskContext);
         // END POST-TASK FEEDBACK HOOK
     }
 
@@ -2005,7 +2006,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             results.style.display = 'block';
         }
         // BEGIN POST-TASK FEEDBACK HOOK
-        if (!(window.SurfaceInputsDogfood && window.SurfaceInputsDogfood.complete('typing', resetTest, nativeActivity())) && window.SurfaceInputsFeedback) window.SurfaceInputsFeedback.complete(nativeActivity(), keyboardTaskContext);
+        if (!(window.SurfaceInputsDogfood && window.SurfaceInputsDogfood.complete(taskProfile ? 'hunt_peck' : 'typing', resetTest, nativeActivity())) && window.SurfaceInputsFeedback) window.SurfaceInputsFeedback.complete(nativeActivity(), keyboardTaskContext);
         // END POST-TASK FEEDBACK HOOK
     }
 

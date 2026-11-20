@@ -1,10 +1,10 @@
-# Additional DEV tasks
+# Additional guided DEV stages
 
-These task entries are available only in `surface-inputs-dev/`. They do not change the existing three-stage **Start Dogfooding** run or production.
+Hunt-and-peck and Files are the fourth and fifth stages of DEV **Start Dogfooding**, after Targeting, Scrolling and twenty-prompt Typing. They are not standalone landing choices. Production retains its three-stage flow.
 
 ## Hunt-and-peck typing
 
-- Open **Hunt-and-peck typing** from the DEV home page.
+- Reach **Hunt-and-peck typing** after the first three stages and their feedback.
 - Use your index or middle fingers on Surface Keyboard. This is one task, not separate finger-specific tasks; do not use voice dictation.
 - Complete **10 prompts** from the existing `keyboard/prompts/nat_lang_with_cap_punc.txt` corpus. Press Enter after each prompt.
 - Prompt count and corpus are fixed for this task; ordinary typing retains its existing settings.
@@ -14,7 +14,7 @@ These task entries are available only in `surface-inputs-dev/`. They do not chan
 
 ## Files
 
-- Open **Files** from the DEV home page. Complete the original three file-to-folder targets using the copied jvision drag, scroll, wrong-target and cancellation behavior.
+- Reach **Files** after H&P feedback. Complete the original three file-to-folder targets using the copied jvision drag, scroll, wrong-target and cancellation behavior; its feedback is the only final **Finish**.
 - Browser and APK both retain local results and send the complete three-target measurement JSON and separate Likert/free-form feedback to the dedicated DEV task Form. No old primary Forms mapping is reused or invented.
 - APK mode also requires negotiated v2 and sends the original per-target UXR measurements and task rating through the existing opaque Arcade channel. Local saving, Forms request-sent state and native acceptance are separate receipts. Forms/native retries remain independent, with no automatic reposts after reload.
 - These are custom task UXR results, not new typed touchpad-atom fields. Geometry and measurements match the original task. See [Files task details](FILES_TASK.md).
