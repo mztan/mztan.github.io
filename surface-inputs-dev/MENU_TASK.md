@@ -17,7 +17,9 @@ Final guided stage: `touchpad/menu.html`. It replaces Files in new DEV dogfood r
 
 New DEV flow state is version 3, stored under `arcade-dogfood-v3:surface-inputs-dev`. Old v1/v2 links restart at the main page with a notice; no old state, results, Form receipts or Files data is deleted or relabeled. Files source and its original collector remain available outside the current flow.
 
-Menu's result store is `surface-inputs-dev-menu-results-v1`; its Forms outbox is `surface-inputs-dev-menu-forms-v1`. Context is `<flow_id>_menu`. The result adapter uses an explicit Menu profile; old Files defaults and stores remain separate. A partial Menu reload cannot reconstruct missing input and asks for restart. Completed feedback reload restores only a matching two-row Menu result. Finish waits for the saved rating/explicit Skip, both Form request-sent receipts and required native ACKs. Task Skip interrupts the model and suppresses the delayed completion callback.
+Menu's result store is `surface-inputs-dev-menu-results-v1`; its Forms outbox is `surface-inputs-dev-menu-forms-v1`. Context is `<flow_id>_menu`. The result adapter uses an explicit Menu profile; old Files defaults and stores remain separate. A partial Menu reload cannot reconstruct missing input and asks for restart. Completed feedback reload restores only a matching two-row Menu result. Finish waits for the saved rating, both Form request-sent receipts and required native ACKs. Task Skip interrupts the model and suppresses the delayed completion callback.
+
+The feedback dialog uses the same compact styling as the other tasks: **Feedback**, five ease ratings, a comment box and **Finish**. There is no storage/telemetry boilerplate, export link, back link or separate Skip rating action. Destination-specific retries appear only for unfinished delivery after feedback is saved. Historical skipped ratings and retained result exports remain supported by the collector.
 
 ## Validation boundary
 

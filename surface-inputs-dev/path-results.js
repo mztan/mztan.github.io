@@ -207,14 +207,21 @@
         const taskId = (doc.documentElement && doc.documentElement.getAttribute && doc.documentElement.getAttribute('data-path-task')) || TASK;
         const profile = PROFILES[taskId];
         if (!profile) throw new Error('Unknown path-task page.');
+        const standardFeedback = taskId === 'stp_cascading_menu';
         const participantId=profile.stage+'-participant',groupId=participantId+'-group',exportId=profile.stage+'-export';
-        let api = null, failure = null;
+        let api = null, failure = null, feedbackBackground = [];
         try { api = create(win,taskId); } catch (error) { failure = error.message; }
         const status = () => doc.getElementById('completion-status');
         function describe() {
             if (!api) return failure;
             const run = api.current();
             if (!run) return '';
+            if (standardFeedback) {
+                if (!run.rating_saved) return '';
+                if (Object.values(api.formsStatus()).some(value => value !== 'request_sent')) return 'Forms delivery is pending or unknown. Retry may duplicate a row.';
+                if (run.native_required && Object.values(run.native).some(value => value !== 'accepted')) return 'Waiting for native telemetry.';
+                return '';
+            }
             const local = 'Results saved in this browser.';
             const formStates = Object.values(api.formsStatus());
             const formText = formStates.length && formStates.every(value => value === 'request_sent')
@@ -230,7 +237,11 @@
         function refresh() {
             status().textContent = describe();
             const run = api && api.current();
-            if (run && run.rating_saved) doc.getElementById('completion-form').querySelectorAll('input, textarea, button').forEach(element => { element.disabled = true; });
+            if (run && run.rating_saved) doc.getElementById('completion-form').querySelectorAll('input[name="ease"], textarea, #completion-save, #completion-skip').forEach(element => { element.disabled = true; });
+            if (standardFeedback) {
+                doc.getElementById('completion-retry').hidden = !run || !run.rating_saved || !run.native_required || Object.values(run.native).every(value => value === 'accepted');
+                doc.getElementById('completion-forms-retry').hidden = !run || !run.rating_saved || Object.values(api.formsStatus()).every(value => value === 'request_sent');
+            }
         }
         function download() {
             try {
@@ -246,8 +257,27 @@
             } catch (error) { status().textContent = error.message; }
         }
         function complete(task, title, rows, restored = false) {
-            doc.getElementById('completion').hidden = false;
-            doc.getElementById('completion-title').textContent = title + ' complete';
+            const modal = doc.getElementById('completion');
+            if (standardFeedback && modal.hidden && doc.body.children) {
+                feedbackBackground = Array.from(doc.body.children).filter(element => element !== modal).map(element => [element, element.inert]);
+                feedbackBackground.forEach(([element]) => { element.inert = true; });
+            }
+            modal.hidden = false;
+            if (standardFeedback) modal.onkeydown = event => {
+                if (event.key === 'Escape') {
+                    event.preventDefault(); modal.hidden = true;
+                    feedbackBackground.forEach(([element, inert]) => { element.inert = inert; });
+                    feedbackBackground = [];
+                }
+                if (event.key !== 'Tab' || !modal.querySelectorAll) return;
+                const enabled = Array.from(modal.querySelectorAll('input, textarea, button')).filter(element => !element.disabled && !element.hidden && element.getClientRects().length);
+                const radio = enabled.find(element => element.type === 'radio' && element.checked) || enabled.find(element => element.type === 'radio');
+                const controls = enabled.filter(element => element.type !== 'radio' || element === radio);
+                if (!controls.length) { event.preventDefault(); modal.querySelector('.feedback-panel').focus(); return; }
+                if (event.shiftKey && (doc.activeElement === controls[0] || doc.activeElement.type === 'radio')) { event.preventDefault(); controls.at(-1).focus(); }
+                else if (!event.shiftKey && doc.activeElement === controls.at(-1)) { event.preventDefault(); controls[0].focus(); }
+            };
+            doc.getElementById('completion-title').textContent = standardFeedback ? 'Feedback' : title + ' complete';
             const form = doc.getElementById('completion-form');
             const guided = win.SurfaceInputsDogfood && win.SurfaceInputsDogfood.isGuided();
             doc.getElementById('completion-save').textContent=guided?'Finish':'Save';
@@ -270,7 +300,7 @@
             }
             function refreshRatingControls() {
                 const run = api && api.current();
-                if (run && run.rating_saved) form.querySelectorAll('input, textarea, button').forEach(element => { element.disabled = true; });
+                if (run && run.rating_saved) form.querySelectorAll('input[name="ease"], textarea, #completion-save, #completion-skip').forEach(element => { element.disabled = true; });
             }
             function saveChoice() {
                 const choice = form.querySelector('input[name="ease"]:checked');
@@ -279,8 +309,8 @@
             }
             form.onsubmit = event => { event.preventDefault(); saveChoice(); };
             doc.getElementById('completion-save').onclick = saveChoice;
-            doc.getElementById('completion-skip').onclick = () => finish(null);
-            doc.getElementById('completion-export').onclick = download;
+            if (doc.getElementById('completion-skip')) doc.getElementById('completion-skip').onclick = () => finish(null);
+            if (doc.getElementById('completion-export')) doc.getElementById('completion-export').onclick = download;
             doc.getElementById('completion-forms-retry').onclick = async () => {
                 try {
                     if (!api) throw new Error(failure);

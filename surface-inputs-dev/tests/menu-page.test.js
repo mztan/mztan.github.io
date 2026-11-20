@@ -44,7 +44,7 @@ function page(canvasId, globals = {}) {
     form.querySelectorAll = () => radios;
     form.submit = () => form.onsubmit({ preventDefault() {} });
     const storage = new Map();
-    const doc = listeners({ getElementById: element, hidden: false, body: { appendChild() {} }, createElement: () => ({ click() {}, remove() {} }) });
+    const doc = listeners({ getElementById: id => ['completion-skip','completion-export'].includes(id) ? null : element(id), hidden: false, body: { appendChild() {} }, createElement: () => ({ click() {}, remove() {} }) });
     const win = listeners(Object.assign({
         document: doc, devicePixelRatio: 1,
         performance: { now: () => clock },
@@ -80,7 +80,7 @@ function page(canvasId, globals = {}) {
     return { win, element, radios, form, pointer, wheel, flush, saved, tick: ms => { clock += ms; }, now: () => clock };
 }
 
-test('menu page: wrong pick, two paths, skip rating and save local results', () => {
+test('menu page: wrong pick, two paths, standard feedback and saved local results', () => {
     const p = page('menu-canvas');
     const { MENU_LABELS, MENU_PATH } = p.win.SurfaceInputsMenuTasks;
     const W = 1000, H = 600, rh = Math.min(36, H / 10), cw = W / 5, tops = [];
@@ -109,10 +109,20 @@ test('menu page: wrong pick, two paths, skip rating and save local results', () 
     hover(0, 2); hover(1, 0); hover(2, 1); hover(3, 2); click(4, 1);
     p.flush();
     assert.equal(p.element('completion').hidden, false);
-    p.element('completion-skip').click();
+    assert.equal(p.element('completion-title').textContent, 'Feedback');
+    assert.equal(p.element('completion-status').textContent, '');
+    assert.equal(p.element('completion-retry').hidden, true);
+    assert.equal(p.element('completion-forms-retry').hidden, true);
+    p.element('completion-save').click();
+    assert.match(p.element('completion-status').textContent, /Choose a rating/);
+    assert.equal(p.saved()[0].rating_saved, false);
+    p.radios[3].checked = true;
+    p.element('completion-comment').value = 'Fixture Menu feedback';
+    p.element('completion-save').click();
     const [run] = p.saved();
     assert.equal(run.task, 'stp_cascading_menu');
-    assert.equal(run.ease, null);
+    assert.equal(run.ease, 4);
+    assert.equal(run.comment, 'Fixture Menu feedback');
     const [shallow, deep] = run.targets;
     assert.deepEqual([shallow.status, deep.status], ['completed', 'completed']);
     assert.equal(shallow.metrics.stp_menu_attempt_count, 2);
