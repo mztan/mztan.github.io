@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             const observation = capture.complete(prompt, finalText);
             pendingHuntPeckCompletion = {
                 id:transport.newObservationId(),context:keyboardTaskContext,
-                prompt_text:prompt,input_event_stream:observation.input_event_stream,final_text:finalText,
+                prompt_text:observation.prompt_text,input_event_stream:observation.input_event_stream,final_text:finalText,
                 result:nativeResultCopy(calculatePromptResult(false)),observation
             };
         }
@@ -1856,7 +1856,8 @@ document.addEventListener('DOMContentLoaded', async function () {
                     return;
                 }
             }
-            if (!emitNativePrompt(promptText, typedText, endTime - startTime,
+            if (!emitNativePrompt(promptText, typedText,
+                taskProfile ? pendingHuntPeckCompletion.result.timeSpentMs : endTime - startTime,
                 nativePromptId(getCurrentPromptOriginalIndex()), undefined,
                 ()=>taskProfile ? pendingHuntPeckCompletion.result : calculatePromptResult(false))) return;
 

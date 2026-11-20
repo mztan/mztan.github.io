@@ -45,9 +45,14 @@ test('actual H&P core emits ten full prompt captures to dedicated Form and never
    assert.equal(request.options.body.get(fields.task_id),'keyboard_hunt_and_peck');
    assert.equal(request.options.body.get(fields.participant_label),'fixture-web-label');
    const result=JSON.parse(request.options.body.get(fields.results_json));
-   assert.equal(result.prompt_text,rows[i]);assert.equal(result.final_text,rows[i]);
+   assert.equal(result.prompt_text,rows[i]+'⏎');assert.equal(result.final_text,rows[i]);
    assert.equal(result.input_event_stream,'x⌫'+rows[i]+'⏎');
    assert.deepEqual(result.prescription,e.profile.prescription);assert.equal(result.task_profile,e.profile.id);
+   if(mode==='v2') {
+    const native=e.port.sent.filter(message=>message.type==='keyboard')[i];
+    assert.equal(result.prompt_text,native.prompt_text);
+    assert.equal(result.input_event_stream,native.input_event_stream);
+   }
    assert.equal(result.result.promptText,rows[i]);assert.equal(result.result.typedText,rows[i]);
    assert.equal(result.result.correctedErrors,1);
    assert.equal(result.result.timeSpentMs,200);assert(!('user_id'in result.result));
@@ -112,6 +117,13 @@ test('completion storage failure retains original full stream and timing until E
  fail=false;e.setNow(9000);input.dispatchEvent(key('Enter'));await settle();
  assert.equal(e.requests.length,1);const body=e.requests[0].options.body,fields=require('./files-form-fixture.js').config().fields,result=JSON.parse(body.get(fields.results_json));
  assert.equal(result.input_event_stream,'x⌫'+prompt+'⏎');assert.equal(result.result.timeSpentMs,200);assert.equal(e.shim.current().prompts.length,1);
+ const keyboard=e.port.sent.filter(message=>message.type==='keyboard');
+ const uxr=e.port.sent.filter(message=>message.event_name==='uxr_result');
+ assert.equal(keyboard.length,1);assert.equal(uxr.length,1);
+ assert.equal(keyboard[0].elapsed_ms,result.result.timeSpentMs);
+ assert.equal(uxr[0].elapsed_ms,result.result.timeSpentMs);
+ assert.equal(JSON.parse(uxr[0].details).result.timeSpentMs,result.result.timeSpentMs);
+ assert.equal(keyboard[0].input_event_stream,'x⌫'+prompt+'⏎');
 });
 
 test('ordinary typing formula/capture sections are unchanged outside H&P conditional hooks',()=>{
