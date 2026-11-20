@@ -1,4 +1,4 @@
-/* Immutable Forms outbox for the dedicated Files / hunt-and-peck Form.
+/* Immutable Forms outboxes: one destination per task, shared across environments.
  * Native telemetry is independent and is never dispatched by this module. */
 (function (root, factory) {
     const api = factory();
@@ -39,7 +39,7 @@
         return JSON.stringify(value);
     }
     function validateConfig(config) {
-        if (!config || config.version !== 1 || config.enabled !== true || config.fieldsVerified !== true) throw new Error('The Files / hunt-and-peck Google Form is not configured. Do not start until the published mapping is available.');
+        if (!config || config.version !== 1 || config.enabled !== true || config.fieldsVerified !== true) throw new Error('The task Google Form is not configured. Do not start until the published mapping is available.');
         if (!/^https:\/\/docs\.google\.com\/forms\/d\/e\/1FAIpQL[A-Za-z0-9_-]+\/formResponse$/.test(config.endpoint)) throw new Error('Invalid task Form endpoint.');
         if (!config.fields || FIELDS.some(key => !/^entry\.\d+$/.test(config.fields[key] || '')) || Object.keys(config.fields).some(key => !FIELDS.includes(key)) || new Set(Object.values(config.fields)).size !== FIELDS.length) throw new Error('Task Form requires all nine unique verified question mappings.');
         return {endpoint: config.endpoint, fields: clone(config.fields)};
@@ -48,6 +48,7 @@
     function create(win, config, options = {}) {
         const task = options.task_id || 'stp_file_drag';
         if (!TASKS.includes(task)) throw new Error('Unsupported dedicated-Form task_id.');
+        const taskConfig = config && config.forms ? config.forms[task] : config;
         const key = task === 'stp_file_drag' ? KEY : KEY + ':' + task;
         const storage = win.localStorage, inflight = new Map(), sent = new Set(), listeners = new Set();
         function list() {
@@ -69,7 +70,7 @@
         }
         function canBegin(participant, expectedSubmissions = 2) {
             if (!labelValid(participant)) throw new Error('Enter your web participant label before starting.');
-            validateConfig(config);
+            validateConfig(taskConfig);
             if (!Number.isInteger(expectedSubmissions) || expectedSubmissions < 1 || expectedSubmissions > MAX_ROWS) throw new Error('Invalid expected Form submission count.');
             const rows = list();
             if (rows.length + expectedSubmissions > MAX_ROWS || bytes(JSON.stringify(rows)) + expectedSubmissions * MAX_RESULTS_BYTES > MAX_BYTES) throw new Error('Task Form records are full. Export before starting another task.');
@@ -77,7 +78,7 @@
             return true;
         }
         function stageSubmission(packet) {
-            const destination = validateConfig(config);
+            const destination = validateConfig(taskConfig);
             if (!packet || !labelValid(packet.participant_label)) throw new Error('Missing explicit web participant label.');
             if (Object.keys(packet).some(name => !['id', 'block', 'participant_label', 'submission_type', 'results', 'ease', 'comment', 'rating_skipped'].includes(name))) throw new Error('Unexpected Form submission field.');
             if (!idValid(packet.id) || !idValid(packet.block)) throw new Error('Invalid web submission or task context ID.');
@@ -124,7 +125,7 @@
             if (inflight.has(id)) return inflight.get(id);
             const saved = list().find(entry => entry.id === id);
             if (!saved) return Promise.reject(new Error('Task Form record was not retained.'));
-            const activeDestination = validateConfig(config);
+            const activeDestination = validateConfig(taskConfig);
             if (JSON.stringify(saved.destination) !== JSON.stringify(activeDestination)) return Promise.reject(new Error('Retained task Form destination differs from the verified current configuration. No request was sent.'));
             if (!saved.values || Object.keys(saved.values).some(name => !FIELDS.includes(name)) || Object.values(saved.values).some(value => typeof value !== 'string') || !labelValid(saved.values.participant_label) || saved.values.task_id !== task) return Promise.reject(new Error('Invalid retained task Form values. No request was sent.'));
             if (saved.status === 'delivery_unknown' && !explicit) return Promise.reject(new Error('Task Form delivery is unknown. Explicit retry may duplicate a row.'));

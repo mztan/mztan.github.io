@@ -18,7 +18,7 @@ Finish reaches a thank-you page with Return to main page. The development path a
 
 DEV uses five-stage state version 2 under `arcade-dogfood-v2:surface-inputs-dev`. Old three-task v1 links return to the main page with an explicit restart notice. No v1 state, pending Form row, feedback or measurement history is erased or extended in place. Production keeps its existing three-stage implementation.
 
-H&P and Files are stages in this flow, not extra landing links. Both use the saved flow participant and the short-stage web contexts (`<flow_id>_hunt_peck`, `<flow_id>_files`). They require negotiated native v2 and their dedicated Form configuration before measurement. The actual dedicated configuration remains disabled because respondent access/stored-response proof is unresolved: the normal flow reaches H&P and stops truthfully before its first measurement. It does not skip or drop either new stage. Offline enabled fixtures do not establish live collector readiness.
+H&P and Files are stages in this flow, not extra landing links. Both use the saved flow participant and the short-stage web contexts (`<flow_id>_hunt_peck`, `<flow_id>_files`). In APK mode they require negotiated native v2 before measurement. Each task uses its own Google Form for results and feedback, with the same Form shared by development and production. The owner updated responder permissions on November20; anonymous access and published question mappings are checked before enabling collection. If a task's configuration becomes unavailable, the flow stops before its measurement rather than skipping or dropping the stage.
 
 Reload during completed H&P or Files feedback restores only the matching retained full result, label, context and receipts, without remeasurement or automatic repost. Saved native result payloads/ACK state allow an explicit native retry; a fresh document queue is never treated as evidence of acceptance. In-progress new-task reloads cannot replay missing input/intent, so they instruct a restart while retaining records. Files' custom modal advances only after an explicit rating/Skip choice, both Form request-sent receipts and all required native sink ACKs. Abort/Skip cancels the active drag and suppresses delayed completion; it never creates a completed row or rating.
 
@@ -38,7 +38,7 @@ An opaque `no-cors` response establishes **request sent**, not HTTP acceptance o
 
 ## Verification boundary
 
-Tests intercept all HTTP and use fake private ports. They do not prove current Google permissions, real APK networking or Scuba receipt. No real Form responses or permission changes are part of this change. The previous labeled browser Typing feedback was verified through Google API readback on November17; that earlier result does not prove the new APK dual path or the other two Forms.
+Offline tests intercept HTTP and use fake private ports; they do not prove physical APK networking or Scuba receipt. On November20, the two new task Forms were checked after the owner updated responder permissions: anonymous pages and mappings were verified, and labelled request bodies from the full client flow produced 11 stored H&P responses and 2 stored Files responses. Detailed answer readbacks were rate-limited, so backend field-by-field equality is not claimed. See [task Form verification](TASK_FORM_VERIFICATION.md).
 
 ## Release scope
 

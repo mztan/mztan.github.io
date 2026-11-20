@@ -10,7 +10,7 @@ function setup(native=false){const e=environment(),m=new Map();e.win.localStorag
 
 test('strict nine-field config rejects disabled, foreign endpoints, duplicates and unknown mappings',()=>{
  const c=config();forms.validateConfig(c);
- assert.throws(()=>forms.validateConfig(require('../files-forms-config.js')),/not configured/);
+ assert.throws(()=>forms.validateConfig({...c, enabled:false}),/not configured/);
  assert.throws(()=>forms.validateConfig({...c,endpoint:'https://example.com/formResponse'}),/endpoint/);
  assert.throws(()=>forms.validateConfig({...c,fields:{...c.fields,ease:c.fields.comment}}),/unique/);
  assert.throws(()=>forms.validateConfig({...c,fields:{...c.fields,native_user_id:'entry.123'}}),/unique/);

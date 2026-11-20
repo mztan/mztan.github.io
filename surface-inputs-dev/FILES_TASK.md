@@ -8,7 +8,7 @@ Final DEV dogfood stage: `touchpad/files.html`, reached after H&P. The five-stag
 
 ## Delivery configuration
 
-`files-forms-config.js` has the parent-supplied endpoint and nine question mappings banked, but remains disabled until respondent access and an actual stored-response test are resolved:
+Each Form's question IDs are shown in `files-forms-config.js`; `forms.stp_file_drag` and `forms.keyboard_hunt_and_peck` hold separate task destinations. The same task-specific Form is used by DEV and PROD, not a separate Form per environment. The owner updated responder permissions on November20; both anonymous respondent pages now load successfully. Complete result and feedback requests are verified before publication.
 
 ```js
 {version: 1, enabled: true, fieldsVerified: true, endpoint: '<exact formResponse URL>',
@@ -16,7 +16,7 @@ Final DEV dogfood stage: `touchpad/files.html`, reached after H&P. The five-stag
           results_json, ease, comment, rating_skipped}} // each value is a unique entry.N
 ```
 
-Begin fails closed without a valid nine-field mapping, explicit web participant label and writable bounded storage. The label is prefilled only from the main DEV participant cache, remains editable until Begin, and is never derived from host identity. The preflight label panel is removed before measurement without changing canvas dimensions.
+Begin fails closed without a valid nine-field mapping, explicit web participant label and writable bounded storage. In the guided flow the label comes from the saved web participant snapshot, never host identity. A preflight label panel, where present, is removed before measurement without changing canvas dimensions.
 
 `files-forms.js` is reusable by the parent's H&P shim: `SurfaceInputsFilesForms.create(win, config, {task_id: 'keyboard_hunt_and_peck'})`; the default task is `stp_file_drag`. These are the only allowed task IDs and have separate outbox keys. API: `canBegin(label, expectedSubmissions)`, `stageSubmission({id, block, participant_label, submission_type, results, ease, comment, rating_skipped})` returns a retained immutable ID; `send(id)` returns an opaque request-sent promise or rejects with retained uncertainty; `retry(block, confirmUnknown)`, `status(id)`, `list()`, `exportRecords()` and `subscribe(listener)`. The Files-specific `stage(run, kind)` is only a convenience wrapper. H&P can stage each complete prompt's full JSON object with its own submission ID, then separate task feedback. This module never emits native telemetry.
 
@@ -29,4 +29,4 @@ Begin fails closed without a valid nine-field mapping, explicit web participant 
 - **Retries:** Google Forms and native Retry controls are independent. Form retries never resend native events; native retries never resend Form rows. Opaque-sent rows are never reposted. Unknown Form retries warn about possible duplicates. Reload never automatically resubmits historical records; retained copies remain exportable.
 - **Bounds:** 50 local task runs; 100 Form submissions / 1 MiB outbox; full results JSON up to 32 KiB; native per-target details retain the existing 2 KiB contract. Oversized data fails explicitly without truncation. Optional feedback must also fit the unchanged native details bound.
 
-All tests use fixture mappings, fake native ports and intercepted network requests. No actual Form publication/submissions, native/device proof, production/jvision edits or downstream receipt claim is included. Parent owns exact Form configuration, launcher/verifier integration and publication.
+Offline tests use fixture mappings, fake native ports and intercepted network requests. The November20 integration check submitted only labelled new-task request bodies to the separate actual Forms and confirmed stored response counts through the Google API; detailed answer reads were rate-limited. See [Form verification](TASK_FORM_VERIFICATION.md). Physical headset/native backend proof and production/jvision source changes are not included.
