@@ -7,7 +7,7 @@
 })(typeof window === 'undefined' ? null : window, function () {
     'use strict';
     const KEY = 'surface-inputs-dev-files-forms-v1';
-    const TASKS = ['stp_file_drag', 'keyboard_hunt_and_peck'];
+    const TASKS = ['stp_file_drag', 'keyboard_hunt_and_peck', 'stp_cascading_menu'];
     const FIELDS = ['participant_label', 'task_id', 'task_context_id', 'submission_id', 'submission_type', 'results_json', 'ease', 'comment', 'rating_skipped'];
     const MAX_ROWS = 100, MAX_BYTES = 1048576, MAX_RESULTS_BYTES = 32768;
     const bytes = value => new TextEncoder().encode(value).length;
@@ -49,7 +49,7 @@
         const task = options.task_id || 'stp_file_drag';
         if (!TASKS.includes(task)) throw new Error('Unsupported dedicated-Form task_id.');
         const taskConfig = config && config.forms ? config.forms[task] : config;
-        const key = task === 'stp_file_drag' ? KEY : KEY + ':' + task;
+        const key = task === 'stp_cascading_menu' ? 'surface-inputs-dev-menu-forms-v1' : task === 'stp_file_drag' ? KEY : KEY + ':' + task;
         const storage = win.localStorage, inflight = new Map(), sent = new Set(), listeners = new Set();
         function list() {
             const value = JSON.parse(storage.getItem(key) || '[]');

@@ -63,6 +63,6 @@ test('H&P is fourth in the five-task DEV flow, not an extra landing task', () =>
     const flow = fs.readFileSync(path.join(root, 'dogfood-flow.js'), 'utf8');
     assert.equal((html.match(/href="keyboard\/index\.html\?task=hunt-and-peck"/g) || []).length, 0);
     assert(html.includes('id="start-dogfooding"'));
-    assert(flow.includes("const TASKS=['targeting','scrolling','typing','hunt_peck','files']"));
+    assert(flow.includes("const TASKS=['targeting','scrolling','typing','hunt_peck','menu']"));
     assert(flow.includes("task==='typing'?'20':'10'"));
 });

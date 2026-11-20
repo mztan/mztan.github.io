@@ -1,6 +1,6 @@
 # DEV Files task
 
-Final DEV dogfood stage: `touchpad/files.html`, reached after H&P. The five-stage flow owns its web context and participant; Files feedback advances to Finish only after both configured delivery destinations satisfy their separate receipt contracts.
+Retained Files entry: `touchpad/files.html`. It is outside the new Menu-ended DEV flow. Old Files models, collector mappings and history remain available; old v2 guided links restart without relabeling their data.
 
 ## Imported measurements
 

@@ -1,10 +1,10 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
-const {environment}=require('./harness.js'),flow=require('../dogfood-flow.js'),hp=require('../keyboard/hunt-peck-forms.js'),files=require('../path-results.js'),{attach}=require('./files-form-fixture.js'),profile=require('../keyboard/typing-task.js').profile({pathname:'/surface-inputs-dev/keyboard/index.html',search:'?task=hunt-and-peck'}),{FileDragTrials}=require('../path-tasks.js');
+const {environment}=require('./harness.js'),flow=require('../dogfood-flow.js'),hp=require('../keyboard/hunt-peck-forms.js'),files=require('../path-results.js'),{attach}=require('./files-form-fixture.js'),profile=require('../keyboard/typing-task.js').profile({pathname:'/surface-inputs-dev/keyboard/index.html',search:'?task=hunt-and-peck'}),{MenuTrials,MENU_PATH}=require('../menu-tasks.js');
 function memory(){const m=new Map();return{getItem:k=>m.get(k)||null,setItem:(k,v)=>m.set(k,String(v)),removeItem:k=>m.delete(k)};}
-function state(stage,phase='idle'){return{version:2,id:'df_five_fixture',stage,participant:'five-fixture',session:'fixture',tasks:flow.tasks.map((task,i)=>({sets:i<stage?flow.sets[task]:0,phase:i<stage?'sent':i===stage?phase:'idle'}))};}
-function page(stage,search,phase='idle',native=false){const e=environment(search),storage=memory(),destinations=[];storage.setItem('arcade-dogfood-v2:surface-inputs-dev',JSON.stringify(state(stage,phase)));e.win.sessionStorage=storage;e.win.localStorage=memory();e.doc.currentScript={src:'https://mztan.github.io/surface-inputs-dev/dogfood-flow.js'};e.doc.readyState='loading';e.doc.documentElement.classList.contains=()=>false;e.win.location={origin:'https://mztan.github.io',pathname:'/surface-inputs-dev/'+(stage===4?'touchpad/files.html':'keyboard/index.html'),href:'https://mztan.github.io/surface-inputs-dev/keyboard/index.html'+search,search,assign:u=>destinations.push(u),replace:u=>destinations.push(u)};e.load('transport.js');if(native){e.port.capabilityBehavior='v2';e.ready();}attach(e.win,e.requests);const api=flow.create(e.win);e.win.SurfaceInputsDogfood=api;return{...e,api,storage,destinations};}
-function rows(){const s=new FileDragTrials();s.geometry(1000,420,1,8);for(let i=0;i<3;i++){s.begin(i*1000);s.scroll(s.spec.fileIndex*s.rowHeight-s.listRect.height/2-s.offset,i*1000+10);const x=s.listRect.centerX,y=s.spec.fileIndex*s.rowHeight-s.offset+s.rowHeight/2,f=s.folderRects[s.spec.folderIndex];s.pressAt(x,y,i*1000+100,true);s.move(f.centerX,f.centerY,i*1000+120);s.release(f.centerX,f.centerY,i*1000+150);s.next();}return s.targetResults(4000);}
+function state(stage,phase='idle'){return{version:3,id:'df_five_fixture',stage,participant:'five-fixture',session:'fixture',tasks:flow.tasks.map((task,i)=>({sets:i<stage?flow.sets[task]:0,phase:i<stage?'sent':i===stage?phase:'idle'}))};}
+function page(stage,search,phase='idle',native=false){const e=environment(search),storage=memory(),destinations=[];storage.setItem('arcade-dogfood-v3:surface-inputs-dev',JSON.stringify(state(stage,phase)));e.win.sessionStorage=storage;e.win.localStorage=memory();e.doc.currentScript={src:'https://mztan.github.io/surface-inputs-dev/dogfood-flow.js'};e.doc.readyState='loading';e.doc.documentElement.classList.contains=()=>false;e.win.location={origin:'https://mztan.github.io',pathname:'/surface-inputs-dev/'+(stage===4?'touchpad/menu.html':'keyboard/index.html'),href:'https://mztan.github.io/surface-inputs-dev/keyboard/index.html'+search,search,assign:u=>destinations.push(u),replace:u=>destinations.push(u)};e.load('transport.js');if(native){e.port.capabilityBehavior='v2';e.ready();}attach(e.win,e.requests);const api=flow.create(e.win);e.win.SurfaceInputsDogfood=api;return{...e,api,storage,destinations};}
+function rows(){const s=new MenuTrials();for(let i=0;i<2;i++){const at=i*1000;s.open(at);s.move(0,0,at+1);s.move(3,4,at+2);for(let l=0;l<s.depth-1;l++)s.hover(l,MENU_PATH[l],at+10+l);s.select(s.depth-1,MENU_PATH[s.depth-1],at+20);s.next();}return s.targetResults(3000);}
 const settle=()=>new Promise(r=>setImmediate(r));
 
 test('v1 links restart at main without erasing old flow or any retained response',()=>{
@@ -14,7 +14,7 @@ test('v1 links restart at main without erasing old flow or any retained response
  assert(dest[0].endsWith('index.html?dogfood_restart=1'));assert.equal(storage.getItem('arcade-dogfood-v1:surface-inputs-dev'),old);assert.equal(e.win.localStorage.getItem('old-results'),'retained');
 });
 
-test('same keyboard path routes by profile and only Files is final',()=>{
+test('same keyboard path routes by profile and only Menu is final',()=>{
  const normal=page(2,'?dogfood=df_five_fixture&task=hunt-and-peck');normal.doc.dispatchEvent({type:'DOMContentLoaded'});assert(!new URL(normal.destinations[0]).searchParams.has('task'));assert.equal(normal.api.isFinal(),false);
  const hunt=page(3,'?dogfood=df_five_fixture');hunt.doc.dispatchEvent({type:'DOMContentLoaded'});assert.equal(new URL(hunt.destinations[0]).searchParams.get('task'),'hunt-and-peck');
  const final=page(4,'?dogfood=df_five_fixture');assert(final.api.isFinal());
@@ -34,29 +34,29 @@ test('H&P guided context and participant come from the flow and completion requi
  e.win.dispatchEvent(new e.context.CustomEvent('surface-inputs-ack',{detail:{id:'u9',status:'accepted'}}));assert.equal(e.destinations.length,1);
 });
 
-test('Files uses final flow context, holds until both destinations and rating, and never double advances',async()=>{
- const e=page(4,'?dogfood=df_five_fixture','idle',true),api=files.create(e.win);api.restoreGuided();api.canBegin('ignored-label');api.complete('stp_file_drag',rows());await settle();assert.equal(e.api.getState().tasks[4].phase,'feedback');assert.equal(e.destinations.length,0);
- const id=api.current().id;assert.equal(id,'df_five_fixture_files');assert.equal(api.current().participant_label,'five-fixture');
+test('Menu uses final flow context, holds until both destinations and rating, and never double advances',async()=>{
+ const e=page(4,'?dogfood=df_five_fixture','idle',true),api=files.create(e.win,'stp_cascading_menu');api.restoreGuided();api.canBegin('ignored-label');api.complete('stp_cascading_menu',rows());await settle();assert.equal(e.api.getState().tasks[4].phase,'feedback');assert.equal(e.destinations.length,0);
+ const id=api.current().id;assert.equal(id,'df_five_fixture_menu');assert.equal(api.current().participant_label,'five-fixture');
  api.rate(4,'fixture');await settle();assert.equal(e.destinations.length,0);
- const messages=e.port.sent.filter(m=>m.type==='arcade');assert.equal(messages.length,4);messages.forEach(m=>e.port.receive({version:2,id:m.id,status:'accepted'}));
+ const messages=e.port.sent.filter(m=>m.type==='arcade');assert.equal(messages.length,3);messages.forEach(m=>e.port.receive({version:2,id:m.id,status:'accepted'}));
  assert.equal(e.api.getState().stage,5);assert.equal(e.destinations.length,1);messages.forEach(m=>e.port.receive({version:2,id:m.id,status:'accepted'}));assert.equal(e.destinations.length,1);
 });
 
-test('Files abort blocks delayed completion and no result or feedback is emitted',()=>{
- const e=page(4,'?dogfood=df_five_fixture'),api=files.create(e.win);api.restoreGuided();api.canBegin('five-fixture');e.api.skip();
- assert.throws(()=>api.complete('stp_file_drag',rows()),/skipped|no longer/);assert.equal(api.list().length,0);assert.equal(e.requests.length,0);assert.equal(e.api.getState().tasks[4].phase,'skipped');
+test('Menu abort blocks delayed completion and no result or feedback is emitted',()=>{
+ const e=page(4,'?dogfood=df_five_fixture'),api=files.create(e.win,'stp_cascading_menu');api.restoreGuided();api.canBegin('five-fixture');e.api.skip();
+ assert.throws(()=>api.complete('stp_cascading_menu',rows()),/skipped|no longer/);assert.equal(api.list().length,0);assert.equal(e.requests.length,0);assert.equal(e.api.getState().tasks[4].phase,'skipped');
 });
 
-test('restored Files feedback requires explicit exact native retry and never reposts Forms',async()=>{
- const e=page(4,'?dogfood=df_five_fixture','idle',true),api=files.create(e.win);api.restoreGuided();api.canBegin('five-fixture');api.complete('stp_file_drag',rows());api.rate(4,'fixture');await settle();
+test('restored Menu feedback requires explicit exact native retry and never reposts Forms',async()=>{
+ const e=page(4,'?dogfood=df_five_fixture','idle',true),api=files.create(e.win,'stp_cascading_menu');api.restoreGuided();api.canBegin('five-fixture');api.complete('stp_cascading_menu',rows());api.rate(4,'fixture');await settle();
  const first=e.port.sent.filter(message=>message.type==='arcade').map(message=>JSON.parse(JSON.stringify(message))),postCount=e.requests.length;
- const restored=files.create(e.win);assert(restored.restoreGuided());assert.equal(e.requests.length,postCount);assert.equal(e.port.sent.filter(message=>message.type==='arcade').length,4);
- restored.retry();assert.equal(e.port.sent.filter(message=>message.type==='arcade').length,8);assert.deepEqual(e.port.sent.filter(message=>message.type==='arcade').slice(4),first);assert.equal(e.requests.length,postCount);
+ const restored=files.create(e.win,'stp_cascading_menu');assert(restored.restoreGuided());assert.equal(e.requests.length,postCount);assert.equal(e.port.sent.filter(message=>message.type==='arcade').length,3);
+ restored.retry();assert.equal(e.port.sent.filter(message=>message.type==='arcade').length,6);assert.deepEqual(e.port.sent.filter(message=>message.type==='arcade').slice(3),first);assert.equal(e.requests.length,postCount);
 });
 
 test('dedicated Forms explicit retry stops after task abort without dropping retained records',async()=>{
- const e=page(4,'?dogfood=df_five_fixture'),dispatcher=require('../files-forms.js').create(e.win,e.win.SurfaceInputsFilesFormsConfig);
- const run={id:'abort_fixture',task:'stp_file_drag',participant_label:'five-fixture',targets:rows(),ease:4,comment:''};
+ const e=page(4,'?dogfood=df_five_fixture'),dispatcher=require('../files-forms.js').create(e.win,e.win.SurfaceInputsFilesFormsConfig,{task_id:'stp_cascading_menu'});
+ const run={id:'abort_fixture',task:'stp_cascading_menu',participant_label:'five-fixture',targets:rows(),ease:4,comment:''};
  dispatcher.stage(run,'result');dispatcher.stage(run,'feedback');let resolve,active=true;
  e.win.fetch=(url,options)=>{e.requests.push({url,options});return new Promise(r=>{resolve=r;});};
  const retry=dispatcher.retry(run.id,()=>true,()=>active);await settle();assert.equal(e.requests.length,1);

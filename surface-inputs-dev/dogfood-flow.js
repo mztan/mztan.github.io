@@ -1,14 +1,14 @@
 /* DEV guided dogfooding. Versioned browser-local state; no host identity or metric attribution. */
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;if(root&&root.document)root.SurfaceInputsDogfood=api.create(root);})(typeof window==='undefined'?null:window,function(){
 'use strict';
-const TASKS=['targeting','scrolling','typing','hunt_peck','files'],SETS={targeting:6,scrolling:6,typing:1,hunt_peck:1,files:1};
-const PATHS={targeting:'touchpad/index.html',scrolling:'touchpad/scroll.html',typing:'keyboard/index.html',hunt_peck:'keyboard/index.html',files:'touchpad/files.html'};
-const LABELS={targeting:'Targeting',scrolling:'Scrolling',typing:'Typing',hunt_peck:'Hunt-and-peck typing',files:'Files'};
+const TASKS=['targeting','scrolling','typing','hunt_peck','menu'],SETS={targeting:6,scrolling:6,typing:1,hunt_peck:1,menu:1};
+const PATHS={targeting:'touchpad/index.html',scrolling:'touchpad/scroll.html',typing:'keyboard/index.html',hunt_peck:'keyboard/index.html',menu:'touchpad/menu.html'};
+const LABELS={targeting:'Targeting',scrolling:'Scrolling',typing:'Typing',hunt_peck:'Hunt-and-peck typing',menu:'Menu'};
 const PHASES=['idle','running','waiting_ack','retention_wait','feedback','sent','sent_wait_ack','skipped','skipped_wait_ack'];
-function valid(s){return !!(s&&s.version===2&&typeof s.id==='string'&&/^df_[a-zA-Z0-9_-]{1,48}$/.test(s.id)&&Number.isInteger(s.stage)&&s.stage>=0&&s.stage<=TASKS.length&&Array.isArray(s.tasks)&&s.tasks.length===TASKS.length&&s.tasks.every((t,i)=>t&&Number.isInteger(t.sets)&&t.sets>=0&&t.sets<=SETS[TASKS[i]]&&PHASES.includes(t.phase)));}
+function valid(s){return !!(s&&s.version===3&&typeof s.id==='string'&&/^df_[a-zA-Z0-9_-]{1,48}$/.test(s.id)&&Number.isInteger(s.stage)&&s.stage>=0&&s.stage<=TASKS.length&&Array.isArray(s.tasks)&&s.tasks.length===TASKS.length&&s.tasks.every((t,i)=>t&&Number.isInteger(t.sets)&&t.sets>=0&&t.sets<=SETS[TASKS[i]]&&PHASES.includes(t.phase)));}
 function create(win){
  const doc=win.document,script=doc.currentScript,base=new URL('.',script?script.src:new URL('dogfood-flow.js',win.location.href));
- const env=win.location.pathname.split('/')[1],dev=env==='surface-inputs-dev',key='arcade-dogfood-v2:'+env;
+ const env=win.location.pathname.split('/')[1],dev=env==='surface-inputs-dev',key='arcade-dogfood-v3:'+env;
  const query=new URLSearchParams(win.location.search),run=query.get('dogfood');
  const participantKey='arcade-participant-v1:'+env;
  let state=null,waiting=null,status=null,progress=null,retentionRetry=null,retryButton=null;
@@ -31,7 +31,7 @@ function create(win){
   return u.href;
  }
  let skippedGate=false;
- function gateReady(){if(skippedGate)return true;const gate=gates.get(current());return gate?gate.ready():!['hunt_peck','files'].includes(current());}
+ function gateReady(){if(skippedGate)return true;const gate=gates.get(current());return gate?gate.ready():!['hunt_peck','menu'].includes(current());}
  function pending(){return !!((native()&&sdk().pendingCount())||!gateReady());}
  function readyAction(action){
   if(failed()){waiting=null;return;}
@@ -49,7 +49,7 @@ function create(win){
   if(!active(task))return null;
   if(!participantValid(state.participant)){show('Enter your unixname on the main page and start a new run.');return false;}
   if(!preflightDone){
-   if(task==='hunt_peck'||task==='files'){show('The task must validate its dedicated Form and v2 capabilities before starting.');return false;}
+   if(task==='hunt_peck'||task==='menu'){show('The task must validate its dedicated Form and v2 capabilities before starting.');return false;}
    if(!win.SurfaceInputsTaskUploads){show('The Forms module is unavailable. Reload before starting.');return false;}
    try{if(!win.SurfaceInputsTaskUploads.canBegin(task==='typing'?20:6)){show('Saved Forms records are full. Export/review them before starting.');return false;}}catch(error){show('Forms storage is unavailable: '+error.message);return false;}
   }
@@ -100,11 +100,11 @@ function create(win){
   if(!run){
    let remembered='';try{const value=win.localStorage.getItem(participantKey);if(participantValid(value))remembered=value;}catch(_){}
    for(const id of ['unix-name','button-pad-id']){const input=doc.getElementById(id);if(!input)continue;if(!input.value.trim()&&remembered){input.value=remembered;input.dispatchEvent(new win.Event('input',{bubbles:true}));}const save=()=>{try{const label=input.value.trim();if(participantValid(label))win.localStorage.setItem(participantKey,label);else win.localStorage.removeItem(participantKey);}catch(_){}};input.addEventListener('input',save);input.addEventListener('change',save);}
-   if(query.has('dogfood_restart')){const landing=doc.getElementById('landing-status');if(landing)landing.textContent='The previous three-task or unavailable run cannot resume this five-task flow. Start a new run; saved responses are retained.';}
+   if(query.has('dogfood_restart')){const landing=doc.getElementById('landing-status');if(landing)landing.textContent='The previous three-task, Files-stage or unavailable run cannot resume this Menu flow. Start a new run; saved responses are retained.';}
   }
   if(start)start.addEventListener('click',()=>{
    try{const input=doc.getElementById('unix-name'),participant=input?input.value.trim():'';if(!participantValid(participant)){doc.getElementById('landing-status').textContent='Enter your unixname to start dogfooding.';if(input)input.focus();return;}
-    state={version:2,id:'df_'+win.crypto.randomUUID(),stage:0,session:query.get('session_id')||'dogfood_'+new Date().toISOString().slice(0,10),participant,tasks:TASKS.map(()=>({sets:0,phase:'idle'}))};persist();try{win.localStorage.setItem(participantKey,participant);}catch(_){}readyAction(()=>win.location.assign(destination()));
+    state={version:3,id:'df_'+win.crypto.randomUUID(),stage:0,session:query.get('session_id')||'dogfood_'+new Date().toISOString().slice(0,10),participant,tasks:TASKS.map(()=>({sets:0,phase:'idle'}))};persist();try{win.localStorage.setItem(participantKey,participant);}catch(_){}readyAction(()=>win.location.assign(destination()));
    }catch(error){doc.getElementById('landing-status').textContent=error.message;}
   });
   if(!run)return;
@@ -117,8 +117,8 @@ function create(win){
   if(dev){const button=doc.createElement('button');button.type='button';button.id='dogfood-skip';button.textContent='Skip task';button.addEventListener('click',skip);utilities.appendChild(button);}
   retryButton=doc.createElement('button');retryButton.type='button';retryButton.id='dogfood-native-retry';retryButton.textContent='Retry native telemetry';retryButton.hidden=true;retryButton.addEventListener('click',()=>{try{const gate=gates.get(current());if(gate&&gate.retry)gate.retry();else if(sdk())sdk().retryPending();resume();}catch(error){show(error.message);}});utilities.appendChild(retryButton);
   status=doc.createElement('p');status.id='dogfood-status';status.setAttribute('role','status');utilities.appendChild(status);doc.body.appendChild(utilities);update();
-  for(const id of ['button-pad-id','unix-name','user-id','files-participant']){const input=doc.getElementById(id);if(input){input.value=state.participant||'';input.readOnly=true;input.dispatchEvent(new win.Event('input',{bubbles:true}));}}
-  const filesLabel=doc.getElementById('files-participant-group');if(filesLabel)filesLabel.hidden=true;
+  for(const id of ['button-pad-id','unix-name','user-id','files-participant','menu-participant']){const input=doc.getElementById(id);if(input){input.value=state.participant||'';input.readOnly=true;input.dispatchEvent(new win.Event('input',{bubbles:true}));}}
+  const filesLabel=doc.getElementById('menu-participant-group');if(filesLabel)filesLabel.hidden=true;
   if(doc.documentElement)doc.documentElement.classList.remove('dogfood-loading');
   const entry=state.tasks[state.stage];
   if(entry.phase==='skipped_wait_ack'||(entry.phase==='waiting_ack'&&SETS[task]>1)){show('This page reloaded before acceptance was confirmed. Return to the main page; do not assume previous telemetry was delivered.');const input=doc.getElementById('input-area');if(input)input.disabled=true;return;}
@@ -127,7 +127,7 @@ function create(win){
   if(entry.phase==='skipped'){gates.delete(task);skippedGate=true;readyAction(advance);return;}
   if(['feedback','sent_wait_ack'].includes(entry.phase))win.setTimeout(()=>{
    if(!active(task))return;
-   if(task==='files'){win.dispatchEvent(new win.CustomEvent('dogfood-restore-feedback',{detail:{task}}));return;}
+   if(task==='menu'){win.dispatchEvent(new win.CustomEvent('dogfood-restore-feedback',{detail:{task}}));return;}
    win.SurfaceInputsFeedback.complete(task==='typing'||task==='hunt_peck'?'keyboard_punctuation':'touchpad_'+task,context(task));
   },0);
  }

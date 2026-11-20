@@ -1,5 +1,5 @@
-/* DEV Files results: retained local snapshots, dedicated Forms, and native v2 Arcade JSON.
- * Measurements come from the unchanged FileDragTrials model, not a new drag formula. */
+/* Task-specific retained snapshots, Forms and native v2 Arcade JSON for Files and Menu.
+ * Measurement rows come from the unchanged original task models. */
 (function (root, factory) {
     const api = factory();
     if (typeof module === 'object' && module.exports) module.exports = api;
@@ -9,29 +9,35 @@
     const KEY = 'surface-inputs-dev-files-results-v1';
     const LIMIT = 50;
     const TASK = 'stp_file_drag';
+    const PROFILES = {
+        stp_file_drag: {stage:'files',key:KEY,count:3,title:'Files'},
+        stp_cascading_menu: {stage:'menu',key:'surface-inputs-dev-menu-results-v1',count:2,title:'Menus'}
+    };
     const clone = value => JSON.parse(JSON.stringify(value));
-    function store(storage) {
+    function store(storage, key = KEY) {
         function list() {
-            const parsed = JSON.parse(storage.getItem(KEY) || '[]');
-            if (!Array.isArray(parsed)) throw new Error('Saved Files results are invalid. Export before clearing site data.');
+            const parsed = JSON.parse(storage.getItem(key) || '[]');
+            if (!Array.isArray(parsed)) throw new Error('Saved path-task results are invalid. Export before clearing site data.');
             return parsed;
         }
         return {
             list,
             put(record) {
                 const entries = list(), index = entries.findIndex(entry => entry.id === record.id);
+                if(index>=0 && entries[index].task!==record.task)throw new Error('Cannot replace a retained result with another task.');
+                if(index>=0 && JSON.stringify(entries[index].targets)!==JSON.stringify(record.targets))throw new Error('Retained target measurements are immutable.');
                 if (index < 0) {
                     if (entries.length >= LIMIT) throw new Error('Local results are full (' + LIMIT + '). Export before starting another task.');
                     entries.push(clone(record));
                 } else entries[index] = clone(record);
-                storage.setItem(KEY, JSON.stringify(entries));
+                storage.setItem(key, JSON.stringify(entries));
             }
         };
     }
     function message(record, row) {
         return {
             id: record.id + '_target_' + row.index,
-            task_id: TASK,
+            task_id: record.task || TASK,
             event_name: 'uxr_result',
             task_context_id: record.id,
             elapsed_ms: Math.round(row.elapsed_ms),
@@ -40,7 +46,7 @@
     }
     function feedbackMessage(record) {
         return {
-            id: record.id + '_feedback', task_id: TASK, event_name: 'feedback_submitted',
+            id: record.id + '_feedback', task_id: record.task || TASK, event_name: 'feedback_submitted',
             task_context_id: record.id,
             details: { details_version: 1, ratings: record.ease === null ? {} : { ease: record.ease },
                 rating_skipped: record.ease === null, comment: record.comment }
@@ -49,15 +55,17 @@
     function validate(sdk, payload) {
         sdk.validate({ ...payload, version: 2, type: 'arcade', details: JSON.stringify(payload.details) });
     }
-    function create(win) {
-        const local = store(win.localStorage), sdk = win.SurfaceInputsTransport;
-        if (!sdk) throw new Error('The Files telemetry SDK is unavailable. Reload before starting.');
-        if (!win.SurfaceInputsFilesForms) throw new Error('The Files Forms adapter is unavailable. Reload before starting.');
-        const forms = win.SurfaceInputsFilesForms.create(win, win.SurfaceInputsFilesFormsConfig);
+    function create(win, taskId = TASK) {
+        if (!Object.prototype.hasOwnProperty.call(PROFILES,taskId)) throw new Error('Unknown path-task results profile.');
+        const profile = PROFILES[taskId];
+        const local = store(win.localStorage, profile.key), sdk = win.SurfaceInputsTransport;
+        if (!sdk) throw new Error('The '+profile.title+' telemetry SDK is unavailable. Reload before starting.');
+        if (!win.SurfaceInputsFilesForms) throw new Error('The '+profile.title+' Forms adapter is unavailable. Reload before starting.');
+        const forms = win.SurfaceInputsFilesForms.create(win, win.SurfaceInputsFilesFormsConfig, {task_id:taskId});
         let run = null, nativeStarted = false, routeChosen = false, participant = '', aborted = false, receiptSaveFailed = false;
         const flow = () => win.SurfaceInputsDogfood;
         const guided = () => !!(flow() && flow().isGuided());
-        const collecting = () => !aborted && (!guided() || flow().active('files'));
+        const collecting = () => !aborted && (!guided() || flow().active(profile.stage));
         function nativeReady() {return !!(run && !receiptSaveFailed && (!run.native_required || Object.values(run.native).every(value=>value==='accepted')));}
         function finishGuided() {
             if (!guided() || !collecting() || !run || !run.rating_saved || !nativeReady()) return;
@@ -69,22 +77,22 @@
         const notify = () => listeners.forEach(listener => listener());
         function persist() { local.put(run); }
         function canBegin(label) {
-            if (!collecting()) throw new Error('Files is not the active dogfood task.');
-            if (run) throw new Error('Files measurements are complete. Finish the retained feedback; do not repeat the task.');
-            if (guided() && flow().phase('files')==='running' && !routeChosen) throw new Error('This in-progress Files task cannot resume after reload. Return to the main page; retained responses are kept.');
+            if (!collecting()) throw new Error(''+profile.title+' is not the active dogfood task.');
+            if (run) throw new Error(''+profile.title+' measurements are complete. Finish the retained feedback; do not repeat the task.');
+            if (guided() && flow().phase(profile.stage)==='running' && !routeChosen) throw new Error('This in-progress '+profile.title+' task cannot resume after reload. Return to the main page; retained responses are kept.');
             if (!routeChosen) participant = guided()?flow().participant():typeof label === 'string' ? label.trim() : '';
             forms.canBegin(participant);
             if (local.list().length >= LIMIT) throw new Error('Local results are full (' + LIMIT + '). Export before starting another task.');
             // Probe persistence before measurement; never fall back silently to unsaved results.
-            const probe = KEY + ':probe';
+            const probe = profile.key + ':probe';
             win.localStorage.setItem(probe, '1');
             win.localStorage.removeItem(probe);
-            if (routeChosen && nativeStarted !== sdk.usesNative()) throw new Error('Delivery mode changed during Files. Reload before starting a new task.');
+            if (routeChosen && nativeStarted !== sdk.usesNative()) throw new Error('Delivery mode changed during '+profile.title+'. Reload before starting a new task.');
             if (sdk.usesNative()) {
                 sdk.requireV2();
-                if (!sdk.canQueue(3)) throw new Error('Native telemetry is full. Retry pending telemetry before starting Files.');
+                if (!sdk.canQueue(profile.count)) throw new Error('Native telemetry is full. Retry pending telemetry before starting '+profile.title+'.');
             }
-            if (guided() && !routeChosen && !flow().begin('files',true)) throw new Error('Files cannot begin until prior delivery is accepted.');
+            if (guided() && !routeChosen && !flow().begin(profile.stage,true)) throw new Error(''+profile.title+' cannot begin until prior delivery is accepted.');
             nativeStarted = sdk.usesNative();
             routeChosen = true;
             return true;
@@ -125,10 +133,11 @@
             }
         }
         function complete(task, rows) {
-            if (!collecting()) throw new Error('Files was skipped or is no longer active.');
-            if (task !== TASK) throw new Error('Unexpected Files task.');
+            if (!collecting()) throw new Error(''+profile.title+' was skipped or is no longer active.');
+            if (task !== taskId) throw new Error('Unexpected path task.');
+            if (taskId === 'stp_cascading_menu' && (rows.length !== profile.count || rows.some(row=>row.attributes.stp_target_kind!=='cascading_menu'))) throw new Error('Menu results must contain the two original menu target rows.');
             if (!run) {
-                const id = guided()?flow().context('files'):'files_' + win.crypto.randomUUID();
+                const id = guided()?flow().context(profile.stage):profile.stage+'_' + win.crypto.randomUUID();
                 run = { version: 1, id, task, recorded_at: new Date().toISOString(),
                     targets: clone(rows), participant_label: participant, ease: null, comment: '', rating_saved: false,
                     native_required: nativeStarted, native: {}, forms: {} };
@@ -139,15 +148,15 @@
                 });
             }
             persist();
-            if (guided()) flow().completeWithoutFeedback('files');
+            if (guided()) flow().completeWithoutFeedback(profile.stage);
             stageForms();
             sendForms();
             try { send(); } finally { notify(); }
             return clone(run);
         }
         function rate(ease, comment) {
-            if (!collecting()) throw new Error('Files was skipped or is no longer active.');
-            if (!run) throw new Error('Complete Files before saving feedback.');
+            if (!collecting()) throw new Error(''+profile.title+' was skipped or is no longer active.');
+            if (!run) throw new Error('Complete '+profile.title+' before saving feedback.');
             if (run.rating_saved) return clone(run);
             if (ease !== null && !(Number.isInteger(ease) && ease >= 1 && ease <= 5)) throw new Error('Ease must be 1..5 or skipped.');
             const draft = { ...run, ease, comment: comment || '', rating_saved: true, native: { ...run.native } };
@@ -169,21 +178,21 @@
             notify();
         });
         function restoreGuided() {
-            if (!guided() || !flow().active('files')) return false;
-            const saved=local.list().find(record=>record.id===flow().context('files'));
-            if (saved && saved.targets.length===3 && saved.participant_label===flow().participant()) {
+            if (!guided() || !flow().active(profile.stage)) return false;
+            const saved=local.list().find(record=>record.id===flow().context(profile.stage));
+            if (saved && saved.task===taskId && saved.targets.length===profile.count && (taskId!=='stp_cascading_menu'||saved.targets.every(row=>row.attributes&&row.attributes.stp_target_kind==='cascading_menu')) && saved.participant_label===flow().participant()) {
                 run=clone(saved);participant=run.participant_label;nativeStarted=run.native_required;routeChosen=true;
             }
-            flow().registerCompletionGate('files',{ready:nativeReady,retry:()=>{persist();receiptSaveFailed=false;send(true);notify();}});
+            flow().registerCompletionGate(profile.stage,{ready:nativeReady,retry:()=>{persist();receiptSaveFailed=false;send(true);notify();}});
             return !!run;
         }
         win.addEventListener('dogfood-task-abort',()=>{aborted=true;});
         forms.subscribe(notify);
         listeners.add(finishGuided);
         return { canBegin, complete, rate, restoreGuided,
-            retry() { if (!run) throw new Error('No Files result to retry.'); persist(); receiptSaveFailed=false; stageForms(); send(true); notify(); },
+            retry() { if (!run) throw new Error('No '+profile.title+' result to retry.'); persist(); receiptSaveFailed=false; stageForms(); send(true); notify(); },
             async retryForms(confirmUnknown) {
-                if (!run) throw new Error('No Files result to retry.');
+                if (!run) throw new Error('No '+profile.title+' result to retry.');
                 stageForms(); await forms.retry(run.id, confirmUnknown, collecting); notify();
             },
             formsStatus: () => run ? Object.fromEntries(Object.entries(run.forms).map(([key, id]) => [key, forms.status(id)])) : {},
@@ -195,8 +204,12 @@
     }
     function mount(win) {
         const doc = win.document;
+        const taskId = (doc.documentElement && doc.documentElement.getAttribute && doc.documentElement.getAttribute('data-path-task')) || TASK;
+        const profile = PROFILES[taskId];
+        if (!profile) throw new Error('Unknown path-task page.');
+        const participantId=profile.stage+'-participant',groupId=participantId+'-group',exportId=profile.stage+'-export';
         let api = null, failure = null;
-        try { api = create(win); } catch (error) { failure = error.message; }
+        try { api = create(win,taskId); } catch (error) { failure = error.message; }
         const status = () => doc.getElementById('completion-status');
         function describe() {
             if (!api) return failure;
@@ -225,7 +238,7 @@
                 const blob = new win.Blob([JSON.stringify(api.exportRecords(), null, 2)], { type: 'application/json' });
                 const link = doc.createElement('a');
                 link.href = win.URL.createObjectURL(blob);
-                link.download = 'surface-inputs-dev-files-results-' + new Date().toISOString().replace(/[:.]/g, '-') + '.json';
+                link.download = profile.key+'-' + new Date().toISOString().replace(/[:.]/g, '-') + '.json';
                 // A detached blob link downloads retained data without document navigation;
                 // the shared SDK correctly blocks in-document links while native ACKs are pending.
                 link.click();
@@ -288,9 +301,9 @@
             if (api) api.restoreGuided();
             const flow=win.SurfaceInputsDogfood;
             if (flow && flow.isGuided()) {
-                const group=doc.getElementById('files-participant-group');if(group)group.hidden=true;
+                const group=doc.getElementById(groupId);if(group)group.hidden=true;
             }
-            const input = doc.getElementById('files-participant');
+            const input = doc.getElementById(participantId);
             if (!input) return;
             const key = 'arcade-participant-v1:surface-inputs-dev';
             try {
@@ -301,10 +314,10 @@
         if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', mountParticipant, {once: true});
         else mountParticipant();
         win.addEventListener('dogfood-restore-feedback',event=>{
-            if (!api || event.detail.task!=='files') return;
-            if (!api.restoreGuided()) {status().textContent='No retained completed Files result matches this flow. Return to the main page; no result was reconstructed.';return;}
-            const saved=api.current();complete(TASK,'Files',saved.targets,true);
-            win.dispatchEvent(new win.CustomEvent('dogfood-files-restored'));
+            if (!api || event.detail.task!==profile.stage) return;
+            if (!api.restoreGuided()) {status().textContent='No retained completed '+profile.title+' result matches this flow. Return to the main page; no result was reconstructed.';return;}
+            const saved=api.current();complete(taskId,profile.title,saved.targets,true);
+            win.dispatchEvent(new win.CustomEvent('dogfood-'+profile.stage+'-restored'));
         });
         if (api) api.subscribe(refresh);
         doc.addEventListener('click', event => {
@@ -319,15 +332,15 @@
             canBegin() {
                 if (!api) throw new Error(failure);
                 try {
-                    const input = doc.getElementById('files-participant');
+                    const input = doc.getElementById(participantId);
                     const ready = api.canBegin(input ? input.value : '');
                     if (input) input.readOnly = true;
-                    const group = doc.getElementById('files-participant-group');
+                    const group = doc.getElementById(groupId);
                     if (group) group.hidden = true;
                     return ready;
                 }
                 catch (error) {
-                    const exportButton = doc.getElementById('files-export');
+                    const exportButton = doc.getElementById(exportId);
                     try {
                         if (exportButton && (api.list().length || api.exportRecords().forms.length)) {
                             exportButton.hidden = false;
@@ -340,5 +353,5 @@
             interruptedByNativeMode: () => api ? api.interruptedByNativeMode() : false
         };
     }
-    return { store, create, mount, message, feedbackMessage, storageKey: KEY, limit: LIMIT };
+    return { store, create, mount, message, feedbackMessage, storageKey: KEY, limit: LIMIT, profiles:PROFILES };
 });

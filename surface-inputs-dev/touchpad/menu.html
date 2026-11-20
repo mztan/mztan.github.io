@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en" data-task-forms data-path-task="stp_cascading_menu">
+<head>
+  <style>html{background:#0d1b2a;color-scheme:dark}html.dogfood-loading body{visibility:hidden}</style>
+  <script>
+    if (new URLSearchParams(location.search).has('dogfood')) {
+      document.documentElement.classList.add('dogfood-loading');
+      setTimeout(() => {
+        if (!document.documentElement.classList.contains('dogfood-loading')) return;
+        document.documentElement.classList.add('dogfood-startup-failed');
+        const fail = () => {
+          if (!document.body) return;
+          document.body.replaceChildren();
+          const message=document.createElement('p');message.textContent='Dogfooding could not finish loading. Return to the main page and try again.';message.setAttribute('role','alert');
+          const home=document.createElement('a');home.href='../index.html';home.textContent='Return to main page';
+          document.body.append(message,home);document.documentElement.classList.remove('dogfood-loading');
+        };
+        if(document.body)fail();else{const observer=new MutationObserver(()=>{if(document.body){observer.disconnect();fail();}});observer.observe(document.documentElement,{childList:true,subtree:true});}
+      },10000);
+    }
+  </script>
+  <script src="../dogfood-flow.js?v=menu-flow-3" defer></script>
+  <link rel="stylesheet" href="../dogfood-flow.css?v=five-stage-1">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Menus · Surface Inputs Arcade</title>
+  <link rel="stylesheet" href="path-tasks.css?v=dev-files-1">
+  <script src="../transport.js?v=stable-sdk-2"></script>
+  <script src="../transport-ui.js?v=dual-forms-6"></script>
+  <script src="../task-navigation.js?v=home-1" defer></script>
+  <script src="../files-forms-config.js?v=task-forms-2"></script>
+  <script src="../files-forms.js?v=task-forms-2"></script>
+  <script src="../menu-tasks.js?v=menu-1"></script>
+  <script src="../path-results.js?v=menu-1"></script>
+  <script src="menu-task.js?v=menu-1" defer></script>
+<style>
+/* Faithful Arcade canvas. Fixed preflight identity does not resize the original menu layout. */
+#menu-participant-group{position:fixed;z-index:1001;top:72px;left:50%;transform:translateX(-50%);width:min(440px,calc(100% - 48px));padding:16px;border:2px solid var(--border);background:var(--card);color:var(--cream)}
+#menu-participant-group[hidden]{display:none}#menu-participant-group label{display:block}#menu-participant{width:100%;padding:8px;margin-top:8px;background:var(--navy);color:var(--cream);border:1px solid var(--border);font:16px var(--body)}#menu-participant-group p{font-size:12px}
+</style>
+</head>
+<body oncontextmenu="return false;">
+  <header>
+    <div class="brand">Surface Inputs <span>Arcade</span></div>
+    <h1>Menus</h1>
+    <a class="back" id="arcade-task-navigation" href="../index.html">Back to Arcade</a>
+  </header>
+  <p class="prompt">Select: <strong id="requested-path"></strong> <span class="hint">(follow the gray path)</span></p>
+  <div id="menu-participant-group" role="dialog" aria-label="Menu participant label">
+    <label for="menu-participant">Web participant label</label>
+    <input id="menu-participant" type="text" maxlength="64" autocomplete="off" spellcheck="false">
+    <p>Used only for Google Forms. Native attribution stays with the APK.</p>
+  </div>
+  <div class="stage"><canvas id="menu-canvas" role="img" aria-label="Cascading menu measurement area"></canvas></div>
+  <p class="status" id="status" aria-live="polite"></p>
+  <div class="controls">
+    <button id="menu-button" type="button">Open menu</button>
+    <span id="counts">Selections: 0 · Wrong: 0</span>
+    <span id="trial">Path 1 of 2</span>
+    <button id="menu-export" type="button" hidden>Export saved results</button>
+  </div>
+
+  <div id="completion" hidden>
+    <div class="card" role="dialog" aria-modal="true" aria-labelledby="completion-title">
+      <h2 id="completion-title"></h2>
+      <form id="completion-form">
+        <fieldset>
+          <legend>How easy or difficult was this task?</legend>
+          <div class="scale">
+            <label><input type="radio" name="ease" value="1"><b>1</b>Very difficult</label>
+            <label><input type="radio" name="ease" value="2"><b>2</b>Difficult</label>
+            <label><input type="radio" name="ease" value="3"><b>3</b>Neither easy nor difficult</label>
+            <label><input type="radio" name="ease" value="4"><b>4</b>Easy</label>
+            <label><input type="radio" name="ease" value="5"><b>5</b>Very easy</label>
+          </div>
+        </fieldset>
+        <label for="completion-comment">What worked well, or what could be improved? (optional)</label>
+        <textarea id="completion-comment" maxlength="1024"></textarea>
+        <div class="actions">
+          <button type="button" id="completion-save">Save</button>
+          <button type="button" class="secondary" id="completion-skip">Skip rating</button>
+        </div>
+      </form>
+      <p id="completion-status" aria-live="polite"></p>
+      <div class="actions">
+        <button type="button" class="secondary" id="completion-retry">Retry native telemetry</button>
+        <button type="button" class="secondary" id="completion-forms-retry">Retry Google Forms</button>
+        <button type="button" class="secondary" id="completion-export">Export saved results</button>
+        <a class="back" href="../index.html">Back to Arcade</a>
+      </div>
+      <p class="note">Results and feedback are retained in this browser and sent to the task Google Form. The APK also sends native v2 telemetry. Request sent or native sink acceptance does not confirm server storage; retries are separate for each destination.</p>
+    </div>
+  </div>
+</body>
+</html>

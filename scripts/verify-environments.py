@@ -15,7 +15,7 @@ ENTRIES = ['index.html', 'keyboard/index.html'] + [
     f'touchpad/{prefix}{name}.html'
     for prefix in ('', 'uxr/')
     for name in ('index', 'scroll', 'textselection', 'zoom')
-] + ['touchpad/files.html']
+] + ['touchpad/files.html', 'touchpad/menu.html']
 
 
 class Assets(HTMLParser):

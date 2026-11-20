@@ -10,17 +10,17 @@ Each environment remembers the entered unixname in an environment-scoped `localS
 2. Scrolling: six complete sets, six highlighted targets each (36 targets), then Next feedback.
 3. Typing: twenty prompts from the existing natural-language-with-punctuation corpus, then Next feedback.
 4. Hunt-and-peck typing: ten punctuation prompts with the prescribed index-or-middle-finger guidance, then Next feedback.
-5. Files: three original file-to-folder drag targets, then Finish feedback.
+5. Menu: two original cascading-menu paths (3 levels, then 5 levels), then Finish feedback.
 
 Finish reaches a thank-you page with Return to main page. The development path alone has Skip task. Skips do not fabricate completed sets, ratings or metrics. Existing geometry, prompt corpus, calculations and timing remain unchanged. Startup and between-set setup flashes are suppressed; feedback stays visible through navigation, with errors instead of transient success text.
 
 ## Versioned flow and new-task readiness
 
-DEV uses five-stage state version 2 under `arcade-dogfood-v2:surface-inputs-dev`. Old three-task v1 links return to the main page with an explicit restart notice. No v1 state, pending Form row, feedback or measurement history is erased or extended in place. Production keeps its existing three-stage implementation.
+DEV uses five-stage state version 3 under `arcade-dogfood-v3:surface-inputs-dev`. Old v1 and Files-stage v2 links return to the main page with an explicit restart notice. No old state, pending Form row, feedback or measurement history is erased or extended in place. Production keeps its existing three-stage implementation.
 
-H&P and Files are stages in this flow, not extra landing links. Both use the saved flow participant and the short-stage web contexts (`<flow_id>_hunt_peck`, `<flow_id>_files`). In APK mode they require negotiated native v2 before measurement. Each task uses its own Google Form for results and feedback, with the same Form shared by development and production. The owner updated responder permissions on November20; anonymous access and published question mappings are checked before enabling collection. If a task's configuration becomes unavailable, the flow stops before its measurement rather than skipping or dropping the stage.
+H&P and Menu are stages in this flow, not extra landing links. Both use the saved participant and short-stage web contexts (`<flow_id>_hunt_peck`, `<flow_id>_menu`). In APK mode they require negotiated v2 before measurement. Each task uses its own Form shared across environments. The Menu entry uses the parent's supplied endpoint/question mappings; its live storage verification is a separate parent release check. Existing H&P/Files collector entries and histories remain unchanged. Unavailable configuration stops measurement instead of skipping or dropping a stage.
 
-Reload during completed H&P or Files feedback restores only the matching retained full result, label, context and receipts, without remeasurement or automatic repost. Saved native result payloads/ACK state allow an explicit native retry; a fresh document queue is never treated as evidence of acceptance. In-progress new-task reloads cannot replay missing input/intent, so they instruct a restart while retaining records. Files' custom modal advances only after an explicit rating/Skip choice, both Form request-sent receipts and all required native sink ACKs. Abort/Skip cancels the active drag and suppresses delayed completion; it never creates a completed row or rating.
+Reload during completed H&P or Menu feedback restores only the matching retained result, label, context and receipts, without remeasurement or automatic repost. Saved native payloads/ACK state support explicit native retry; an empty new document queue is not evidence of acceptance. In-progress reloads cannot reconstruct missing input, so they instruct restart while retaining history. Menu's custom modal waits for an explicit rating/Skip, both Form request-sent receipts and all required native ACKs. Abort/Skip interrupts selection and suppresses delayed completion; it never creates a result or rating.
 
 ## Independent collection destinations
 

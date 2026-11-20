@@ -41,7 +41,7 @@ function page() {
 test('every tracked dev HTML subpage has environment-local Home navigation and shared native guards', () => {
     const pages = execFileSync('git', ['ls-files', 'surface-inputs-dev'], { cwd: repo, encoding: 'utf8' })
         .trim().split('\n').filter(file => file.endsWith('.html') && file !== 'surface-inputs-dev/index.html' && file !== 'surface-inputs-dev/thanks.html');
-    assert.equal(pages.length, 14);
+    assert.equal(pages.length, 15);
     const thanks=fs.readFileSync(path.join(root,'thanks.html'),'utf8');
     assert.match(thanks,/<a href="index.html">Return to main page<\/a>/);
     for (const file of pages) {
