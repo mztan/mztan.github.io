@@ -9,6 +9,6 @@
     </g>
   </defs>
   <rect width="480" height="220" rx="8" fill="#0d1b2a"/>
-  <use href="#pointing-hand" transform="translate(55 20) scale(5)"/>
-  <use href="#pointing-hand" transform="translate(425 20) scale(-5 5)"/>
+  <use id="left-hand" href="#pointing-hand" transform="translate(235 20) scale(-5 5)"/>
+  <use id="right-hand" href="#pointing-hand" transform="translate(245 20) scale(5)"/>
 </svg>

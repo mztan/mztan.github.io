@@ -31,7 +31,7 @@
         guidance.className = 'hunt-peck-guidance';
         const figure = doc.createElement('figure');
         const image = doc.createElement('img');
-        image.src = 'hunt-and-peck.svg?v=hunt-peck-pose-2';
+        image.src = 'hunt-and-peck.svg?v=hunt-peck-pose-3';
         image.width = 480; image.height = 220;
         image.alt = 'Two pointing hands with only the index fingers extended; the other fingers are folded into the palms.';
         const caption = doc.createElement('figcaption');
