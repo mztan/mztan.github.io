@@ -65,7 +65,7 @@ test('launcher negotiates the APK ready handshake without changing browser links
     assert.equal(e.win.SurfaceInputsTransport.isNative(), true);
     assert.equal(e.requests.length, 0);
     const links = [...html.matchAll(/<a[^>]*href="([^"]+)"/g)].map(value => value[1]);
-    assert.deepEqual(links, []); // task choices are replaced by the guided Start action
+    assert.deepEqual(links, ['keyboard/index.html?task=hunt-and-peck', 'touchpad/files.html']);
 });
 
 test('identity hiding is only installed after real private port ready reply, not URL or untrusted dispatch', () => {

@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', async function () {
+    const taskProfile = window.SurfaceInputsTypingTask ? window.SurfaceInputsTypingTask.profile(window.location) : null;
     const transport = window.SurfaceInputsTransport;
     const capture = window.SurfaceInputsKeyboardCapture.createCapture(reason => {
         window.dispatchEvent(new CustomEvent('surface-inputs-transport-error', { detail: { reason } }));
@@ -25,6 +26,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     function emitNativePrompt(prompt, finalText, elapsedMs, promptId, format, resultFactory) {
         if (!nativeBound()) return true;
         try {
+            if (taskProfile) transport.requireV2();
             if (!pendingNativeCompletion) {
                 const observation = capture.complete(prompt, finalText, format);
                 const result = resultFactory();
@@ -33,7 +35,7 @@ document.addEventListener('DOMContentLoaded', async function () {
                     id:transport.newObservationId(), activity_id:nativeActivity(), prompt_id:promptId,
                     elapsed_ms:Math.max(0, Math.round(elapsedMs))
                 }), arcade:{id:transport.newObservationId(),task_id:nativeActivity(),event_name:'uxr_result',task_context_id:keyboardTaskContext,
-                    elapsed_ms:Math.max(0,Math.round(elapsedMs)),details:{details_version:1,result_schema:format?'keyboard_shortcut_result_v1':'keyboard_prompt_result_v1',result:nativeResultCopy(result)}}};
+                    elapsed_ms:Math.max(0,Math.round(elapsedMs)),details:{details_version:1,result_schema:format?'keyboard_shortcut_result_v1':'keyboard_prompt_result_v1',...(taskProfile?{task_profile:taskProfile.id,prescription:taskProfile.prescription}:{}),result:nativeResultCopy(result)}}};
             }
             if(!pendingNativeCompletion.formsRetained&&winForms()){
                 stageForms=true;browserResultRetained=false;
@@ -54,6 +56,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         }
     }
     function getURLParameter(name) {
+        if (taskProfile && Object.prototype.hasOwnProperty.call(taskProfile.parameters, name)) return taskProfile.parameters[name];
         const urlParams = new URLSearchParams(window.location.search);
         return urlParams.get(name);
     }
@@ -80,7 +83,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     };
 
     // Number of prompts to use per test (default: 5)
-    let maxPromptsPerTest = 5;
+    let maxPromptsPerTest = taskProfile ? taskProfile.promptCount : 5;
 
     // Configuration for dataset-specific settings
     const datasetConfig = {
@@ -122,6 +125,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     // Function to get the selected dataset filename
     function getSelectedDatasetFile() {
+        if (taskProfile) return datasetConfig[taskProfile.dataset].file;
         const selectedDataset = document.querySelector('input[name="dataset"]:checked');
         if (!selectedDataset) {
             return datasetConfig['practice'].file; // Default fallback
@@ -135,6 +139,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     // 'keychord' (capture keyboard shortcuts). Datasets opt into 'keychord' via
     // datasetConfig.mode.
     function getSelectedDatasetMode() {
+        if (taskProfile) return 'text';
         const selectedDataset = document.querySelector('input[name="dataset"]:checked');
         const config = selectedDataset ? datasetConfig[selectedDataset.value] : null;
         return (config && config.mode) ? config.mode : 'text';
@@ -1084,6 +1089,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     // Function to update the prompt count
     function updatePromptCount(newCount) {
+        if (taskProfile) newCount = taskProfile.promptCount;
         // Ensure the count is within valid range (1-20)
         newCount = Math.max(1, Math.min(100, newCount));
 
@@ -1444,6 +1450,11 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     // Function to check if input area should be disabled based on UXR/DF mode and user ID/unix name
     function checkAndUpdateInputAreaState() {
+        if (taskProfile && nativeBound() && transport.getCapabilityState() !== 'v2') {
+            inputArea.disabled = true;
+            inputArea.placeholder = 'Hunt-and-peck typing requires v2 native telemetry. Wait/retry or upgrade the APK.';
+            return;
+        }
         if (nativeBound() && (!transport.isNative() || !winForms())) {
             inputArea.disabled = !transport.isNative();
             inputArea.placeholder = transport.isNative() ? 'Start typing here...' : 'Waiting for native telemetry ready reply...';
@@ -1546,6 +1557,9 @@ document.addEventListener('DOMContentLoaded', async function () {
     // Apply URL parameter overrides after presets are applied
     applyURLParameterOverrides();
 
+    window.addEventListener('surface-inputs-capabilities', () => {
+        if (taskProfile) checkAndUpdateInputAreaState();
+    });
     window.addEventListener('surface-inputs-mode', () => {
         if (!testActive && promptResults.length === 0) checkAndUpdateInputAreaState();
     });
