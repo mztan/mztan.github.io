@@ -22,7 +22,7 @@ const cases = [
   {
     file: 'keyboard/index.html',
     opening: '<p class="instructions">',
-    text: 'For this task, copy the prompt as quickly as you can without sacrificing accuracy.',
+    text: 'For this task, copy the prompt as quickly as you can without sacrificing accuracy.' + (environment === 'surface-inputs-dev' ? ' Press Enter after each prompt.' : ''),
   },
 ];
 
@@ -70,3 +70,14 @@ test(`${environment}: guided setup and text-typing mode do not hide or replace t
   assert(script.includes('if (instructions) instructions.textContent = DEFAULT_INSTRUCTIONS;'));
   assert(!/instructions\.style\.(display|visibility)\s*=\s*['"](?:none|hidden)/.test(script));
 });
+
+if (environment === 'surface-inputs-dev') {
+  test('DEV hunt-and-peck instructions inherit the Typing instruction font size', () => {
+    const css = fs.readFileSync(path.join(root, 'keyboard/typing-task.css'), 'utf8');
+    const rule = css.match(/\.typing-task-preset\s+\.hunt-peck-guidance\s+\.instructions\s*\{([^}]+)\}/);
+    assert(rule);
+    assert(!/font-size\s*:/.test(rule[1]));
+    const html = fs.readFileSync(path.join(root, 'keyboard/index.html'), 'utf8');
+    assert(html.includes('typing-task.css?v=typing-instructions-5'));
+  });
+}
